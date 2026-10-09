@@ -135,4 +135,87 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
       }
     }
   });
+
+  test("Post-Phase-3 Issue 4 & 9: Pits are circular, and pit IDs P0–P13 are hidden from board", async ({
+    page,
+  }) => {
+    // Verify no visible P0-P13 badge text inside any pit
+    for (let i = 0; i < 14; i++) {
+      const pit = page.getByTestId(`pit-${i}`);
+      const text = await pit.innerText();
+      expect(text).not.toContain(`P${i}`);
+    }
+
+    // Verify row labels do not expose P0-P6 or P13-P7
+    await expect(page.getByText("Player 1 Side (P0 – P6)")).not.toBeVisible();
+    await expect(page.getByText("Player 2 Side (P13 – P7)")).not.toBeVisible();
+    await expect(page.getByText("Player 1 Side")).toBeVisible();
+    await expect(page.getByText("Player 2 Side")).toBeVisible();
+  });
+
+  test("Post-Phase-3 Issue 5: Numeric seed counts are displayed outside the pits", async ({
+    page,
+  }) => {
+    // Verify external count exists for every pit outside the button
+    for (let i = 0; i < 14; i++) {
+      const countEl = page.getByTestId(`pit-count-${i}`);
+      await expect(countEl).toBeVisible();
+      await expect(countEl).toHaveText("5");
+
+      // Verify the pit button itself does not contain the numeric count as text
+      const pitBtn = page.getByTestId(`pit-${i}`);
+      const pitText = await pitBtn.innerText();
+      // Pit interior should only have visual beads or be empty, not numeric text
+      expect(pitText.trim()).toBe("");
+    }
+  });
+
+  test("Post-Phase-3 Issue 7: Exactly one storage display exists per player without duplicates", async ({
+    page,
+  }) => {
+    // Verify exactly one Player 1 storage bowl and one Player 2 storage bowl on desktop
+    const p1StorageBowls = page.locator("[data-testid='storage-player1']");
+    const p2StorageBowls = page.locator("[data-testid='storage-player2']");
+    await expect(p1StorageBowls).toHaveCount(1);
+    await expect(p2StorageBowls).toHaveCount(1);
+    await expect(p1StorageBowls).toBeVisible();
+    await expect(p2StorageBowls).toBeVisible();
+
+    // Verify PlayerPanels at top does not duplicate the storage count
+    const p1Card = page.getByTestId("player-card-1");
+    await expect(p1Card).toContainText("Round Wins:");
+    await expect(p1Card).not.toContainText("Captured:");
+  });
+
+  test("Post-Phase-3 Issue 3: Toggle switches between Slow Mode and Fast Mode", async ({
+    page,
+  }) => {
+    const toggleBtn = page.getByTestId("toggle-animation-btn");
+    // Initially in Slow Mode
+    await expect(toggleBtn).toContainText("Slow Mode");
+
+    // Click to switch to Fast Mode
+    await toggleBtn.click();
+    await expect(toggleBtn).toContainText("Fast Mode");
+
+    // Click to switch back to Slow Mode
+    await toggleBtn.click();
+    await expect(toggleBtn).toContainText("Slow Mode");
+  });
+
+  test("Post-Phase-3 Responsive Layout: Board renders cleanly on mobile viewport", async ({
+    page,
+  }) => {
+    // Set mobile viewport (iPhone 12 / 390x844)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // Verify both storage bowls remain visible without duplicates
+    const p1Storage = page.locator("[data-testid='storage-player1']");
+    const p2Storage = page.locator("[data-testid='storage-player2']");
+    await expect(p1Storage).toHaveCount(1);
+    await expect(p2Storage).toHaveCount(1);
+    await expect(p1Storage).toBeVisible();
+    await expect(p2Storage).toBeVisible();
+  });
 });

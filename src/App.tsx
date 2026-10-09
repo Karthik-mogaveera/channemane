@@ -26,22 +26,16 @@ export const App: React.FC = () => {
     isRulesOpen,
     setIsRulesOpen,
     animationSettings,
-    setAnimationSettings,
     selectPit,
     claimBonus,
     startNextRound,
     restartMatch,
     clearError,
     dismissSettlementModal,
+    reopenSettlementModal,
     dismissMatchModal,
+    toggleAnimationSpeed,
   } = useChannemaneGame();
-
-  const handleToggleAnimation = () => {
-    setAnimationSettings({
-      ...animationSettings,
-      enabled: !animationSettings.enabled,
-    });
-  };
 
   return (
     <div className="app-container">
@@ -50,7 +44,7 @@ export const App: React.FC = () => {
         onRestart={() => restartMatch("PLAYER_1")}
         onOpenRules={() => setIsRulesOpen(true)}
         animationSettings={animationSettings}
-        onToggleAnimation={handleToggleAnimation}
+        onToggleAnimation={toggleAnimationSpeed}
       />
 
       {/* Turn & Status Indicator */}
@@ -62,6 +56,38 @@ export const App: React.FC = () => {
         isAnimating={isAnimating}
         visualHandSeeds={visualHandSeeds}
       />
+
+      {/* Round Review Action Bar (Issue 8) */}
+      {gameState.phase === "ROUND_SETTLEMENT" && (
+        <div
+          className="round-settlement-action-bar"
+          data-testid="settlement-review-bar"
+          role="region"
+          aria-label="Round settlement review controls"
+        >
+          <div className="settlement-bar-info">
+            <span>🏁 <strong>Round {gameState.round} Settled!</strong> Reviewing board state.</span>
+          </div>
+          <div className="settlement-bar-buttons">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={reopenSettlementModal}
+              data-testid="reopen-settlement-btn"
+            >
+              📊 View Summary
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={startNextRound}
+              data-testid="advance-next-round-btn"
+            >
+              Start Next Round →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Invalid Action Error Alert */}
       {lastActionError && (

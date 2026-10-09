@@ -24,11 +24,13 @@ describe("Pit Component", () => {
 
     const button = screen.getByTestId("pit-3");
     expect(button).toBeInTheDocument();
-    expect(screen.getByText("P3")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
+    // Pit ID badge P3 is hidden per Issue 9
+    expect(screen.queryByText("P3")).not.toBeInTheDocument();
+    // External seed count is rendered
+    expect(screen.getByTestId("pit-count-3")).toHaveTextContent("5");
     expect(button).toHaveAttribute(
       "aria-label",
-      "Pit P3, Player 1, 5 seeds, Selectable"
+      "Player 1 Pit, 5 seeds, Selectable"
     );
   });
 
@@ -103,7 +105,7 @@ describe("Pit Component", () => {
     const button = screen.getByTestId("pit-6");
     expect(button).toBeDisabled();
     expect(screen.getByText("🔒")).toBeInTheDocument();
-    expect(button).toHaveAttribute("aria-label", "Pit P6, Player 1, Closed");
+    expect(button).toHaveAttribute("aria-label", "Player 1 Pit, Closed");
   });
 
   it("renders CLAIM +4 badge and triggers onClaimBonus when clicked", () => {

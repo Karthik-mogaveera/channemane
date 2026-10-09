@@ -94,6 +94,37 @@ export interface SowStep {
 }
 
 /**
+ * Deterministic fine-grained turn animation events for real-time visualization (Issue 6)
+ */
+export type TurnAnimationEvent =
+  | {
+      type: "PICKUP";
+      pitId: number;
+      seedsPickedUp: number;
+    }
+  | {
+      type: "DROP";
+      pitId: number;
+      seedsPlaced: number;
+      resultingSeeds: number;
+      seedsRemainingInHand: number;
+      bonusTriggered: boolean;
+      bonusOwner: Player | null;
+    }
+  | {
+      type: "SCOOP";
+      pitId: number;
+      seedsScooped: number;
+    }
+  | {
+      type: "CAPTURE";
+      capturedPitId: number;
+      capturingPlayer: Player;
+      seedsCaptured: number;
+      newStorageTotal: number;
+    };
+
+/**
  * Type guard for Player
  */
 export function isPlayer(value: unknown): value is Player {

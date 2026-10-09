@@ -33,11 +33,15 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           className="btn btn-secondary"
           onClick={onToggleAnimation}
-          aria-label={animationSettings.enabled ? "Disable sowing animations" : "Enable sowing animations"}
+          aria-label={
+            animationSettings.speed === "SLOW"
+              ? "Switch to Fast animation mode"
+              : "Switch to Slow animation mode"
+          }
           data-testid="toggle-animation-btn"
-          title="Toggle Animation Speed/State"
+          title="Toggle Animation Speed (Slow / Fast)"
         >
-          {animationSettings.enabled ? "⚡ Fast Mode" : "🎬 Slow Mode"}
+          {animationSettings.speed === "SLOW" ? "🎬 Slow Mode" : "⚡ Fast Mode"}
         </button>
 
         <button

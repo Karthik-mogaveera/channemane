@@ -1,8 +1,8 @@
 /**
  * Interactive Pit Component
- * Renders an individual Channemane pit with seed counters, visual beads,
- * ownership indicators, active sowing highlight, and bonus claim badge.
- * Uses a pit-cell wrapper to avoid invalid nested <button> HTML structures.
+ * Renders an individual Channemane pit with circular geometry, seed beads,
+ * ownership styling, active sowing highlight, bonus claim button, and
+ * external seed count positioned on the player's side (Issues 4, 5, 9).
  */
 
 import React from "react";
@@ -35,13 +35,14 @@ export const Pit: React.FC<PitProps> = ({
 }) => {
   const isClosed = status === "CLOSED";
   const hasBonus = bonusAvailable && seeds === 4 && !isClosed;
-  const ownerLabel = owner === "PLAYER_1" ? "Player 1" : "Player 2";
+  const isPlayer1 = owner === "PLAYER_1";
+  const ownerLabel = isPlayer1 ? "Player 1" : "Player 2";
 
   const ariaLabel = isClosed
-    ? `Pit P${pitId}, ${ownerLabel}, Closed`
+    ? `${ownerLabel} Pit, Closed`
     : hasBonus
-    ? `Pit P${pitId}, ${ownerLabel}, 4 seeds, Bonus Available to claim`
-    : `Pit P${pitId}, ${ownerLabel}, ${seeds} seeds${isSelectable ? ", Selectable" : ""}`;
+    ? `${ownerLabel} Pit, 4 seeds, Bonus Available to claim`
+    : `${ownerLabel} Pit, ${seeds} seeds${isSelectable ? ", Selectable" : ""}`;
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -55,64 +56,89 @@ export const Pit: React.FC<PitProps> = ({
   const handleBonusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!isAnimating && hasBonus) {
+    if (hasBonus) {
       onClaimBonus(pitId);
     }
   };
 
-  // Up to 5 small graphical beads for visual flair
+  // Up to 5 small graphical beads for visual flair inside pit
   const visualBeadsCount = Math.min(seeds, 5);
 
   return (
-    <div className="pit-cell" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-      <button
-        type="button"
-        className={`channemane-pit ${isSelectable ? "selectable" : ""} ${
-          isActiveDrop ? "active-drop" : ""
-        } ${hasBonus ? "has-bonus" : ""} ${isClosed ? "closed" : ""}`}
-        onClick={handleClick}
-        disabled={isClosed || isAnimating || (!isSelectable && !hasBonus)}
-        aria-label={ariaLabel}
-        data-testid={`pit-${pitId}`}
-        data-pit-id={pitId}
-        data-seeds={seeds}
-        data-status={status}
-        data-selectable={isSelectable}
-        data-has-bonus={hasBonus}
-      >
-        <span className="pit-id-badge">P{pitId}</span>
+    <div
+      className={`pit-cell ${isPlayer1 ? "p1-pit-cell" : "p2-pit-cell"}`}
+      data-testid={`pit-cell-${pitId}`}
+    >
+      {/* Player 1 external count: ABOVE pit (Player 1 side) */}
+      {isPlayer1 && (
+        <div
+          className={`pit-external-count p1-count ${seeds === 0 ? "empty" : ""}`}
+          data-testid={`pit-count-${pitId}`}
+          aria-hidden="true"
+        >
+          {seeds}
+        </div>
+      )}
 
-        {isClosed ? (
-          <span className="closed-lock-icon" aria-hidden="true" title="Closed Pit">
-            🔒
-          </span>
-        ) : (
-          <>
-            <span className={`pit-seed-count ${seeds === 0 ? "empty" : ""}`}>
-              {seeds}
+      <div className="pit-button-wrapper" style={{ position: "relative" }}>
+        <button
+          type="button"
+          className={`channemane-pit ${isSelectable ? "selectable" : ""} ${
+            isActiveDrop ? "active-drop" : ""
+          } ${hasBonus ? "has-bonus" : ""} ${isClosed ? "closed" : ""}`}
+          onClick={handleClick}
+          disabled={isClosed || isAnimating || (!isSelectable && !hasBonus)}
+          aria-label={ariaLabel}
+          data-testid={`pit-${pitId}`}
+          data-pit-id={pitId}
+          data-seeds={seeds}
+          data-status={status}
+          data-selectable={isSelectable}
+          data-has-bonus={hasBonus}
+        >
+          {/* Note: Pit IDs P0-P13 are hidden per Issue 9 */}
+
+          {isClosed ? (
+            <span
+              className="closed-lock-icon"
+              aria-hidden="true"
+              title="Closed Pit"
+            >
+              🔒
             </span>
-
-            {seeds > 0 && (
+          ) : (
+            seeds > 0 && (
               <div className="seed-cluster" aria-hidden="true">
                 {Array.from({ length: visualBeadsCount }).map((_, i) => (
                   <span key={i} className="seed-bead" />
                 ))}
               </div>
-            )}
-          </>
-        )}
-      </button>
-
-      {hasBonus && (
-        <button
-          type="button"
-          className="bonus-claim-badge"
-          onClick={handleBonusClick}
-          aria-label={`Claim +4 bonus on Pit P${pitId}`}
-          data-testid={`claim-bonus-${pitId}`}
-        >
-          CLAIM +4
+            )
+          )}
         </button>
+
+        {hasBonus && (
+          <button
+            type="button"
+            className="bonus-claim-badge"
+            onClick={handleBonusClick}
+            aria-label={`Claim +4 bonus on ${ownerLabel} Pit`}
+            data-testid={`claim-bonus-${pitId}`}
+          >
+            CLAIM +4
+          </button>
+        )}
+      </div>
+
+      {/* Player 2 external count: BELOW pit (Player 2 side) */}
+      {!isPlayer1 && (
+        <div
+          className={`pit-external-count p2-count ${seeds === 0 ? "empty" : ""}`}
+          data-testid={`pit-count-${pitId}`}
+          aria-hidden="true"
+        >
+          {seeds}
+        </div>
       )}
     </div>
   );

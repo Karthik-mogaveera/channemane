@@ -35,17 +35,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div className="board-wrapper">
       <div className="channemane-board" data-testid="channemane-board" role="region" aria-label="Channemane Game Board">
-        {/* Desktop Left Bowl: Player 1 */}
+        {/* Left Bowl: Player 1 */}
         <StorageBowl
           player="PLAYER_1"
           storageSeeds={gameState.players.player1.storage}
-          className="desktop-only"
+          className="board-storage-p1"
         />
 
         {/* Center 2x7 Pits Grid */}
         <div className="pits-grid-container">
           <div className="row-label" aria-hidden="true">
-            Player 1 Side (P0 – P6)
+            Player 1 Side
           </div>
           <div className="pits-row top-row" role="row" aria-label="Player 1 pits row">
             {topRowPitIds.map((pitId) => {
@@ -89,27 +89,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
           </div>
           <div className="row-label" aria-hidden="true">
-            Player 2 Side (P13 – P7)
+            Player 2 Side
           </div>
         </div>
 
-        {/* Desktop Right Bowl: Player 2 */}
+        {/* Right Bowl: Player 2 */}
         <StorageBowl
           player="PLAYER_2"
           storageSeeds={gameState.players.player2.storage}
-          className="desktop-only"
-        />
-      </div>
-
-      {/* Mobile Storage Bowls (Displayed below board on mobile) */}
-      <div className="storage-bowls-mobile" aria-label="Player storage totals">
-        <StorageBowl
-          player="PLAYER_1"
-          storageSeeds={gameState.players.player1.storage}
-        />
-        <StorageBowl
-          player="PLAYER_2"
-          storageSeeds={gameState.players.player2.storage}
+          className="board-storage-p2"
         />
       </div>
     </div>

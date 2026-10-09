@@ -1,6 +1,7 @@
 /**
  * Storage Bowl Component
  * Displays captured / accumulated storage seeds for Player 1 and Player 2.
+ * Single source of truth for physical player storage inside the board layout.
  */
 
 import React from "react";
@@ -20,6 +21,7 @@ export const StorageBowl: React.FC<StorageBowlProps> = ({
   const isP1 = player === "PLAYER_1";
   const playerLabel = isP1 ? "Player 1" : "Player 2";
   const testId = isP1 ? "storage-player1" : "storage-player2";
+  const countTestId = isP1 ? "p1-captured-count" : "p2-captured-count";
 
   return (
     <div
@@ -29,7 +31,9 @@ export const StorageBowl: React.FC<StorageBowlProps> = ({
       role="region"
     >
       <span className="storage-label">{playerLabel}</span>
-      <span className="storage-count">{storageSeeds}</span>
+      <span className="storage-count" data-testid={countTestId}>
+        {storageSeeds}
+      </span>
       <span className="storage-pill">Captured</span>
     </div>
   );

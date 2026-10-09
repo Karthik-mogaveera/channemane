@@ -28,8 +28,8 @@ describe("GameBoard Component", () => {
       expect(screen.getByTestId(`pit-${i}`)).toBeInTheDocument();
     }
 
-    // Verify storage bowls exist
-    expect(screen.getAllByTestId("storage-player1").length).toBeGreaterThan(0);
-    expect(screen.getAllByTestId("storage-player2").length).toBeGreaterThan(0);
+    // Verify exactly one storage bowl exists per player (Issue 7)
+    expect(screen.getAllByTestId("storage-player1").length).toBe(1);
+    expect(screen.getAllByTestId("storage-player2").length).toBe(1);
   });
 });

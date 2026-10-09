@@ -5,11 +5,19 @@
 
 import { BONUS_CLAIM_SEEDS, isValidPitId } from "./constants";
 import type { ActionResult, GameState, Player } from "./types";
+import { shouldEndRound } from "./roundEnd";
+import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
+import { checkAndHandleMatchEnd, type MatchEndResult } from "./matchEnd";
+import { hasAnyValidMove } from "./selection";
 
 export interface ClaimBonusResult {
   pitId: number;
   owner: Player;
   seedsClaimed: number;
+  roundEnded: boolean;
+  roundSettlement?: RoundSettlementResult;
+  matchEnded: boolean;
+  matchResult?: MatchEndResult;
 }
 
 /**
@@ -26,6 +34,10 @@ export function canClaimBonus(
   pitId: number,
   claimingPlayer?: Player
 ): boolean {
+  if (state.phase === "ROUND_SETTLEMENT" || state.phase === "MATCH_END") {
+    return false;
+  }
+
   if (!isValidPitId(pitId)) {
     return false;
   }
@@ -53,6 +65,7 @@ export function canClaimBonus(
  * - Transfers 4 seeds to pit owner's storage.
  * - Sets pit seeds to 0.
  * - Sets pit bonusAvailable to false.
+ * - Evaluates round-ending conditions (Issue 1).
  * - Preserves 70-seed conservation invariant.
  */
 export function claimBonus(
@@ -60,6 +73,13 @@ export function claimBonus(
   pitId: number,
   claimingPlayer?: Player
 ): ActionResult<ClaimBonusResult> {
+  if (state.phase === "ROUND_SETTLEMENT" || state.phase === "MATCH_END") {
+    return {
+      success: false,
+      error: `Cannot claim bonus: game is already in phase ${state.phase}`,
+    };
+  }
+
   if (!isValidPitId(pitId)) {
     return {
       success: false,
@@ -99,12 +119,41 @@ export function claimBonus(
     state.players.player2.storage += BONUS_CLAIM_SEEDS;
   }
 
+  // Check round-ending conditions after bonus collection (Issue 1)
+  let roundEnded = false;
+  let roundSettlement: RoundSettlementResult | undefined;
+  let matchEnded = false;
+  let matchResult: MatchEndResult | undefined;
+
+  if (shouldEndRound(state)) {
+    roundEnded = true;
+    const settlementOutcome = executeRoundSettlement(state);
+    if (settlementOutcome.success) {
+      roundSettlement = settlementOutcome.data;
+    }
+    matchResult = checkAndHandleMatchEnd(state);
+    matchEnded = matchResult.isMatchEnd;
+  } else {
+    // If active player now has no valid moves because of bonus claim, check auto-pass
+    if (!hasAnyValidMove(state, state.currentPlayer)) {
+      const opponent: Player =
+        state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
+      if (hasAnyValidMove(state, opponent)) {
+        state.currentPlayer = opponent;
+      }
+    }
+  }
+
   return {
     success: true,
     data: {
       pitId,
       owner,
       seedsClaimed: BONUS_CLAIM_SEEDS,
+      roundEnded,
+      roundSettlement,
+      matchEnded,
+      matchResult,
     },
   };
 }

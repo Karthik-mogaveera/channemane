@@ -10,7 +10,7 @@ import { shouldEndRound } from "./roundEnd";
 import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
 import { checkAndHandleMatchEnd, type MatchEndResult } from "./matchEnd";
 import { transitionTurnPhase } from "./turnStateMachine";
-import type { ActionResult, GameState, Player } from "./types";
+import type { ActionResult, GameState, Player, TurnAnimationEvent } from "./types";
 
 export interface TurnResult {
   pitSelected: number;
@@ -22,6 +22,7 @@ export interface TurnResult {
   matchResult?: MatchEndResult;
   turnPassed: boolean;
   nextPlayer: Player;
+  animationEvents?: TurnAnimationEvent[];
 }
 
 /**
@@ -54,6 +55,7 @@ export function playTurn(
   }
 
   state.selectedPit = pitId;
+  const turnPlayer = state.currentPlayer;
 
   // Step 1: Sowing and continuous sowing
   const sowOutcome = sowFromPit(state, pitId);
@@ -131,6 +133,23 @@ export function playTurn(
     }
   }
 
+  const animationEvents: TurnAnimationEvent[] = [
+    ...(sowResult.animationEvents ?? []),
+  ];
+
+  if (captureResult.capturedSeeds > 0 && captureResult.capturedPitId !== null) {
+    animationEvents.push({
+      type: "CAPTURE",
+      capturedPitId: captureResult.capturedPitId,
+      capturingPlayer: turnPlayer,
+      seedsCaptured: captureResult.capturedSeeds,
+      newStorageTotal:
+        turnPlayer === "PLAYER_1"
+          ? state.players.player1.storage
+          : state.players.player2.storage,
+    });
+  }
+
   return {
     success: true,
     data: {
@@ -143,6 +162,7 @@ export function playTurn(
       matchResult,
       turnPassed,
       nextPlayer: state.currentPlayer,
+      animationEvents,
     },
   };
 }

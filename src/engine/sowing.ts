@@ -6,7 +6,7 @@
 import { BONUS_THRESHOLD, BONUS_EXPIRATION_THRESHOLD } from "./constants";
 import { getNextOpenPit } from "./traversal";
 import { pickupSeeds } from "./pickup";
-import type { ActionResult, GameState, SowStep } from "./types";
+import type { ActionResult, GameState, SowStep, TurnAnimationEvent } from "./types";
 
 export interface SowResult {
   startPitId: number;
@@ -15,6 +15,7 @@ export interface SowResult {
   shouldEvaluateCapture: boolean;
   steps: SowStep[];
   scoopsCount: number;
+  animationEvents?: TurnAnimationEvent[];
 }
 
 /**
@@ -35,6 +36,13 @@ export function sowFromPit(
 
   state.turnPhase = "SOWING";
   const steps: SowStep[] = [];
+  const animationEvents: TurnAnimationEvent[] = [
+    {
+      type: "PICKUP",
+      pitId: startPitId,
+      seedsPickedUp: pickupRes.data.seedsPickedUp,
+    },
+  ];
   let scoopsCount = 1;
   let currentDropPointer = startPitId;
   let lastDestinationPit: number = startPitId;
@@ -86,6 +94,16 @@ export function sowFromPit(
         bonusOwner: bonusTriggered ? targetPit.owner : null,
         seedsRemainingInHand: hand,
       });
+
+      animationEvents.push({
+        type: "DROP",
+        pitId: nextPitId,
+        seedsPlaced: 1,
+        resultingSeeds: targetPit.seeds,
+        seedsRemainingInHand: hand,
+        bonusTriggered,
+        bonusOwner: bonusTriggered ? targetPit.owner : null,
+      });
     }
 
     state.seedsInHand = 0;
@@ -101,7 +119,13 @@ export function sowFromPit(
       // Continuous sowing condition met: next open pit contains seeds
       scoopsCount++;
       state.turnPhase = "CONTINUOUS_SOWING";
-      state.seedsInHand = nextPit.seeds;
+      const scoopedSeeds = nextPit.seeds;
+      animationEvents.push({
+        type: "SCOOP",
+        pitId: nextOpenAfterEnd,
+        seedsScooped: scoopedSeeds,
+      });
+      state.seedsInHand = scoopedSeeds;
       nextPit.seeds = 0;
       nextPit.bonusAvailable = false;
       currentDropPointer = nextOpenAfterEnd;
@@ -121,6 +145,7 @@ export function sowFromPit(
       shouldEvaluateCapture,
       steps,
       scoopsCount,
+      animationEvents,
     },
   };
 }

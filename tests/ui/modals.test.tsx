@@ -34,6 +34,31 @@ describe("Game Modals", () => {
     expect(handleNext).toHaveBeenCalledTimes(1);
   });
 
+  it("triggers onClose when Review Board button is clicked (Issue 8)", () => {
+    const handleNext = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <SettlementModal
+        settlement={{
+          player1RemainingTransferred: 0,
+          player2RemainingTransferred: 0,
+          player1FinalStorage: 35,
+          player2FinalStorage: 35,
+          roundWinner: null,
+        }}
+        onStartNextRound={handleNext}
+        onClose={handleClose}
+      />
+    );
+
+    const reviewBtn = screen.getByTestId("review-board-btn");
+    expect(reviewBtn).toBeInTheDocument();
+    fireEvent.click(reviewBtn);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+    expect(handleNext).not.toHaveBeenCalled();
+  });
+
   it("renders MatchEndModal with final winner and restart button", () => {
     const handleNewMatch = vi.fn();
     const handleClose = vi.fn();

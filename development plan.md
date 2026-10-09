@@ -118,7 +118,7 @@ Before implementation, the three-role consensus panel reviewed the architecture:
 
 ---
 
-## 5. Phase 2 Verification & Test Metrics
+## 8. Phase 2 Verification & Test Metrics (Preserved)
 - **Phase 2 Status**: COMPLETE
 - **Test Runner**: Vitest v3.2.7
 - **Test Files**: 19 passed (19 total)
@@ -126,3 +126,31 @@ Before implementation, the three-role consensus panel reviewed the architecture:
 - **TypeScript Compilation**: `tsc --noEmit` passed with 0 errors
 - **Production Build**: `tsc` passed with 0 errors, full `.d.ts` and `.js` bundles generated in `dist/`
 - **Total Seeds Invariant**: Maintained at exactly 70 continuously across board setup, sowing, continuous sowing, capture, bonus collection, round settlement, and 500-turn deterministic property simulations with PRNG seeds.
+
+---
+
+## 9. Post-Phase-3 Bug Fixes & Gameplay/UI Improvements Tracking
+
+| Issue ID | Summary | Root Cause | Engine / UI Fix | Status |
+|---|---|---|---|---|
+| **ISSUE-01** | Check round-ending conditions after bonus collection | `claimBonus` in `bonus.ts` previously only updated pit/storage/bonusAvailable without evaluating `shouldEndRound(state)`. When claiming bonuses emptied the board or left < 4 seeds, game stayed in `TURN_DECISION` without settling. | Added `shouldEndRound` evaluation, atomic `executeRoundSettlement(state)`, and `checkAndHandleMatchEnd(state)` to `claimBonus`. | **COMPLETED & VALIDATED** |
+| **ISSUE-02** | Allow bonus claiming during and after sowing by pit owner | `ChannemaneGame.getClaimableBonuses` and UI checks defaulted claiming player to `state.currentPlayer`, preventing the non-turn player from claiming their own pit bonus. | Disconnected claiming player from `state.currentPlayer`. Owner of the pit is now the sole authority to claim their bonus anytime it is available. | **COMPLETED & VALIDATED** |
+| **ISSUE-03** | Make Slow mode genuinely slower | Sowing step timing was hard-coded or too fast (~220ms). Slow mode was running at the speed Fast mode should use. | Centralized `ANIMATION_SPEED_CONFIG` with `SLOW: 450ms/step` and `FAST: 140ms/step`. Added Speed Toggle button in Header. | **COMPLETED & VALIDATED** |
+| **ISSUE-04** | Make pits circular and increase size by ~1.7× | Pit CSS lacked explicit aspect ratio constraints (`1/1`) and equal width/height, allowing stretching. Size was 36-48px. | Styled pits with `aspect-ratio: 1/1; border-radius: 50%` and dimensions `clamp(48px, 6.6vw, 82px)` (~1.7× original diameter without doubling). | **COMPLETED & VALIDATED** |
+| **ISSUE-05** | Display seed counts outside the pits | Numeric count badge was centered inside the pit button alongside seed beads. | Moved count badge outside the pit button to the owner-facing side (above pit for Player 1, below pit for Player 2), leaving only beads inside the pit. | **COMPLETED & VALIDATED** |
+| **ISSUE-06** | Real-time seed-by-seed sowing animation and counts | Turn result was applied in batch after animation, so pit counts did not increment at the moment seeds landed. | Emitted deterministic `TurnAnimationEvent`s (`PICKUP`, `DROP`, `SCOOP`, `CAPTURE`) from engine. Visual pit states and numeric counts update on each seed landing and scoop. | **COMPLETED & VALIDATED** |
+| **ISSUE-07** | Remove duplicate player storage displays | Player storage was rendered in both `PlayerPanels` and board storage bowls, plus an extra `.storage-bowls-mobile` container rendered unconstrained on desktop. | Removed duplicate storage counts from `PlayerPanels` and removed redundant mobile storage container, keeping storage exclusively in board bowls. | **COMPLETED & VALIDATED** |
+| **ISSUE-08** | Fix Review Board navigation to next round | SettlementModal "Review Board" button called `onClose` which dismissed the modal, leaving user in `ROUND_SETTLEMENT` phase without controls to start the next round. | Added persistent `.round-settlement-action-bar` during board review with "Start Next Round →" and "View Summary" buttons. | **COMPLETED & VALIDATED** |
+| **ISSUE-09** | Hide pit IDs P0–P13 from player-facing board | Visible badge `<span className="pit-id">P{pitId}</span>` and row labels `(P0–P6)` / `(P13–P7)` were displayed. | Removed visible pit ID badges and row labels. Retained `data-testid` and `aria-label` for automated testing and screen reader accessibility. | **COMPLETED & VALIDATED** |
+
+---
+
+## 10. Post-Phase-3 Verification & Test Metrics
+- **Post-Phase-3 Status**: COMPLETE
+- **Unit & Integration Tests (Vitest)**: 24 test suites, 122 tests passed (0 failed, 0 skipped)
+- **E2E Browser Tests (Playwright Chromium)**: 13 tests passed (0 failed, 0 skipped, runtime 24.2s)
+- **TypeScript Typecheck**: `tsc --noEmit` passed with 0 errors
+- **Production Build**: `tsc && vite build` built clean in 2.14s (Output: `dist/index.html`, `dist/assets/index-*.css`, `dist/assets/index-*.js`)
+- **Seed Conservation Invariant**: 70 seeds strictly conserved across all states, bonus claims, real-time animation visual states, and round settlements.
+- **Visual & Layout Quality**: Truly circular pits, ~1.7× enlarged diameter, exterior owner-facing counts, single desktop/mobile storage bowls, and zero visible technical pit IDs.
+

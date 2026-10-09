@@ -65,7 +65,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               <div className="score-val" data-testid="settlement-p1-storage">
                 {settlement.player1FinalStorage}
               </div>
-              <small>Seeds on P0–P6 swept: +{settlement.player1RemainingTransferred}</small>
+              <small>Seeds swept from Player 1 side: +{settlement.player1RemainingTransferred}</small>
             </div>
 
             <div className="score-box">
@@ -73,7 +73,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               <div className="score-val" data-testid="settlement-p2-storage">
                 {settlement.player2FinalStorage}
               </div>
-              <small>Seeds on P7–P13 swept: +{settlement.player2RemainingTransferred}</small>
+              <small>Seeds swept from Player 2 side: +{settlement.player2RemainingTransferred}</small>
             </div>
           </div>
 
@@ -89,6 +89,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
             type="button"
             className="btn btn-secondary"
             onClick={onClose}
+            data-testid="review-board-btn"
           >
             Review Board
           </button>

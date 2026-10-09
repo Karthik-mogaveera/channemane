@@ -57,7 +57,7 @@ export class ChannemaneGame {
   }
 
   public getClaimableBonuses(player?: Player): number[] {
-    return getClaimableBonusPits(this.state, player ?? this.state.currentPlayer);
+    return getClaimableBonusPits(this.state, player);
   }
 
   /**
@@ -74,7 +74,7 @@ export class ChannemaneGame {
     pitId: number,
     player?: Player
   ): ActionResult<ClaimBonusResult> {
-    return claimBonus(this.state, pitId, player ?? this.state.currentPlayer);
+    return claimBonus(this.state, pitId, player);
   }
 
   /**

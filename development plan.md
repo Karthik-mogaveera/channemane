@@ -154,3 +154,24 @@ Before implementation, the three-role consensus panel reviewed the architecture:
 - **Seed Conservation Invariant**: 70 seeds strictly conserved across all states, bonus claims, real-time animation visual states, and round settlements.
 - **Visual & Layout Quality**: Truly circular pits, ~1.7× enlarged diameter, exterior owner-facing counts, single desktop/mobile storage bowls, and zero visible technical pit IDs.
 
+---
+
+## 11. Critical Bonus Ownership Correction & Verification
+
+### Root Cause
+Prior implementation attempted to validate `claimingPlayer` against `pit.owner` or assume physical user authentication in `canClaimBonus` and `claimBonus`. Because a shared touchscreen or Pass & Play setup cannot reliably identify which physical player touches the screen, attempting to validate the UI actor caused incorrect rejections or potential routing mismatches.
+
+### Authoritative Correction
+1. **Unconditional Ownership Routing**: A bonus strictly belongs to `pit.owner`. Regardless of whose turn is active or which physical person touches the Claim button, the 4 seeds are credited to `pit.owner` and the other player's storage is untouched.
+2. **Eligibility Criteria**: Unchanged: `pit.seeds === 4 && pit.bonusAvailable === true`. No physical authentication required.
+3. **State Mutation**: On claim, `pit.seeds = 0`, `pit.bonusAvailable = false`, `pit.owner.storage += 4`, and round-ending / settlement conditions are evaluated immediately.
+4. **Immediate UI Feedback**: `useChannemaneGame` updates both `gameState` and active `visualPlayers` immediately on bonus claim.
+
+### Verified Test Results
+- **Vitest**: 24 test suites, 123 tests passed (0 failed, 0 skipped) in 16.42s
+- **Playwright**: 13 browser E2E tests passed (0 failed, 0 skipped) in 30.1s
+- **TypeScript**: `tsc --noEmit` passed with 0 errors
+- **Production Build**: `tsc && vite build` built cleanly in 2.27s (dist generated)
+- **Git & Deployment**: Pushed to `main` branch
+
+

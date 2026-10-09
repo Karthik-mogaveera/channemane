@@ -6,64 +6,158 @@ import {
 } from "../src/engine/bonus";
 import { createInitialGame, verifySeedConservation } from "../src/engine/board";
 
-describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
-  it("should permit pit owner to claim an active bonus of 4 seeds", () => {
-    const game = createInitialGame("PLAYER_1");
+describe("Authoritative Bonus Ownership & Lifecycle", () => {
+  it("Example 1: Player 1 pit bonus clicked during Player 2 turn (even by Player 2) credits Player 1", () => {
+    const game = createInitialGame("PLAYER_2");
+    expect(game.currentPlayer).toBe("PLAYER_2");
+
     // Setup P3 (Player 1 pit) with 4 seeds and bonusAvailable = true
-    // Deduct 1 seed from storage or pits to keep 70 total
     game.pits[3].seeds = 4;
     game.pits[3].bonusAvailable = true;
-    game.players.player1.storage = 1; // 13*5 + 4 + 1 = 70
+    game.players.player1.storage = 1;
     expect(verifySeedConservation(game)).toBe(true);
 
-    expect(canClaimBonus(game, 3, "PLAYER_1")).toBe(true);
-    expect(getClaimableBonusPits(game, "PLAYER_1")).toEqual([3]);
+    const initialP1Storage = game.players.player1.storage; // 1
+    const initialP2Storage = game.players.player2.storage; // 0
 
-    const result = claimBonus(game, 3, "PLAYER_1");
+    // Can claim bonus on P3
+    expect(canClaimBonus(game, 3)).toBe(true);
+
+    // Player 2 physically triggers the claim on P3
+    const result = claimBonus(game, 3, "PLAYER_2");
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.seedsClaimed).toBe(4);
       expect(result.data.owner).toBe("PLAYER_1");
+      expect(result.data.seedsClaimed).toBe(4);
     }
 
-    // Pit should now have 0 seeds, bonusAvailable = false
+    // P3 seeds reset to 0 and bonusAvailable resets to false
     expect(game.pits[3].seeds).toBe(0);
     expect(game.pits[3].bonusAvailable).toBe(false);
-    // Player 1 storage receives 4 seeds: 1 + 4 = 5
-    expect(game.players.player1.storage).toBe(5);
+
+    // PLAYER_1 storage increases by exactly 4
+    expect(game.players.player1.storage).toBe(initialP1Storage + 4);
+    // PLAYER_2 storage remains completely unchanged
+    expect(game.players.player2.storage).toBe(initialP2Storage);
+
+    // Invariant maintained
     expect(verifySeedConservation(game)).toBe(true);
   });
 
-  it("should reject non-owner attempting to claim another player's bonus", () => {
+  it("Example 2: Player 2 pit bonus clicked during Player 1 turn (even by Player 1) credits Player 2", () => {
     const game = createInitialGame("PLAYER_1");
-    // P9 belongs to Player 2
-    game.pits[9].seeds = 4;
-    game.pits[9].bonusAvailable = true;
+    expect(game.currentPlayer).toBe("PLAYER_1");
+
+    // Setup P10 (Player 2 pit) with 4 seeds and bonusAvailable = true
+    game.pits[10].seeds = 4;
+    game.pits[10].bonusAvailable = true;
+    game.players.player2.storage = 2;
+    game.players.player1.storage = 1; // 12*5 + 4 + 2 + 1 = 67? wait: 13*5 + 4 + 1 = 70
+    // let's adjust:
+    game.players.player1.storage = 0;
+    game.players.player2.storage = 1; // 13*5 + 4 + 1 = 70
+    expect(verifySeedConservation(game)).toBe(true);
+
+    const initialP1Storage = game.players.player1.storage; // 0
+    const initialP2Storage = game.players.player2.storage; // 1
+
+    expect(canClaimBonus(game, 10)).toBe(true);
+
+    // Player 1 physically triggers the claim on P10
+    const result = claimBonus(game, 10, "PLAYER_1");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.owner).toBe("PLAYER_2");
+      expect(result.data.seedsClaimed).toBe(4);
+    }
+
+    // P10 seeds reset to 0 and bonusAvailable resets to false
+    expect(game.pits[10].seeds).toBe(0);
+    expect(game.pits[10].bonusAvailable).toBe(false);
+
+    // PLAYER_2 storage increases by exactly 4
+    expect(game.players.player2.storage).toBe(initialP2Storage + 4);
+    // PLAYER_1 storage remains completely unchanged
+    expect(game.players.player1.storage).toBe(initialP1Storage);
+
+    // Invariant maintained
+    expect(verifySeedConservation(game)).toBe(true);
+  });
+
+  it("ensures pit owner determines the recipient, not the active turn player", () => {
+    const gameP1Turn = createInitialGame("PLAYER_1");
+    gameP1Turn.pits[4].seeds = 4;
+    gameP1Turn.pits[4].bonusAvailable = true;
+    gameP1Turn.players.player1.storage = 1;
+
+    const resP1 = claimBonus(gameP1Turn, 4);
+    expect(resP1.success).toBe(true);
+    expect(gameP1Turn.players.player1.storage).toBe(5);
+    expect(gameP1Turn.players.player2.storage).toBe(0);
+
+    const gameP2Turn = createInitialGame("PLAYER_2");
+    gameP2Turn.pits[11].seeds = 4;
+    gameP2Turn.pits[11].bonusAvailable = true;
+    gameP2Turn.players.player2.storage = 1;
+
+    const resP2 = claimBonus(gameP2Turn, 11);
+    expect(resP2.success).toBe(true);
+    expect(gameP2Turn.players.player2.storage).toBe(5);
+    expect(gameP2Turn.players.player1.storage).toBe(0);
+  });
+
+  it("collects a claimable bonus exactly once and rejects duplicate claims", () => {
+    const game = createInitialGame("PLAYER_1");
+    game.pits[5].seeds = 4;
+    game.pits[5].bonusAvailable = true;
     game.players.player1.storage = 1;
 
-    // Player 1 tries to claim Player 2's bonus
-    expect(canClaimBonus(game, 9, "PLAYER_1")).toBe(false);
-    const result = claimBonus(game, 9, "PLAYER_1");
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toMatch(/does not own/i);
-    }
+    // First claim succeeds
+    const firstClaim = claimBonus(game, 5);
+    expect(firstClaim.success).toBe(true);
+    expect(game.pits[5].seeds).toBe(0);
+    expect(game.pits[5].bonusAvailable).toBe(false);
+    expect(game.players.player1.storage).toBe(5);
+
+    // Second claim immediately fails
+    const secondClaim = claimBonus(game, 5);
+    expect(secondClaim.success).toBe(false);
+    expect(game.players.player1.storage).toBe(5); // Not modified
+    expect(verifySeedConservation(game)).toBe(true);
   });
 
-  it("should reject bonus claim if seeds !== 4 or bonusAvailable === false", () => {
+  it("rejects claiming an ineligible pit and does not mutate game state", () => {
     const game = createInitialGame("PLAYER_1");
-    // P2 has 5 seeds
-    expect(canClaimBonus(game, 2, "PLAYER_1")).toBe(false);
+    const initialP1Storage = game.players.player1.storage;
+    const initialP2Storage = game.players.player2.storage;
 
-    // P2 has 4 seeds but bonusAvailable is false
+    // Pit 2 has 5 seeds
+    expect(canClaimBonus(game, 2)).toBe(false);
+    const res1 = claimBonus(game, 2);
+    expect(res1.success).toBe(false);
+    expect(game.players.player1.storage).toBe(initialP1Storage);
+    expect(game.players.player2.storage).toBe(initialP2Storage);
+
+    // Pit 2 has 4 seeds but bonusAvailable is false
     game.pits[2].seeds = 4;
     game.pits[2].bonusAvailable = false;
-    expect(canClaimBonus(game, 2, "PLAYER_1")).toBe(false);
-    const result = claimBonus(game, 2, "PLAYER_1");
-    expect(result.success).toBe(false);
+    game.players.player1.storage = 1;
+    expect(canClaimBonus(game, 2)).toBe(false);
+    const res2 = claimBonus(game, 2);
+    expect(res2.success).toBe(false);
+
+    // Invalid pit ID
+    expect(canClaimBonus(game, 99)).toBe(false);
+    const res3 = claimBonus(game, 99);
+    expect(res3.success).toBe(false);
+
+    // State not mutated by failed claims
+    expect(game.players.player1.storage).toBe(1);
+    expect(game.players.player2.storage).toBe(initialP2Storage);
+    expect(verifySeedConservation(game)).toBe(true);
   });
 
-  it("should handle multiple independent bonus opportunities", () => {
+  it("handles multiple independent bonus opportunities correctly", () => {
     const game = createInitialGame("PLAYER_1");
     // P1 (P1's pit) and P8 (P2's pit) both have bonuses
     game.pits[1].seeds = 4;
@@ -75,9 +169,10 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
 
     expect(getClaimableBonusPits(game, "PLAYER_1")).toEqual([1]);
     expect(getClaimableBonusPits(game, "PLAYER_2")).toEqual([8]);
+    expect(getClaimableBonusPits(game)).toEqual([1, 8]);
 
-    // Claim P8 for Player 2
-    const resP2 = claimBonus(game, 8, "PLAYER_2");
+    // Claim P8 (Player 2 pit)
+    const resP2 = claimBonus(game, 8);
     expect(resP2.success).toBe(true);
     expect(game.pits[8].seeds).toBe(0);
     expect(game.players.player2.storage).toBe(4);
@@ -86,8 +181,8 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
     expect(game.pits[1].seeds).toBe(4);
     expect(game.pits[1].bonusAvailable).toBe(true);
 
-    // Claim P1 for Player 1
-    const resP1 = claimBonus(game, 1, "PLAYER_1");
+    // Claim P1 (Player 1 pit)
+    const resP1 = claimBonus(game, 1);
     expect(resP1.success).toBe(true);
     expect(game.pits[1].seeds).toBe(0);
     expect(game.players.player1.storage).toBe(6);
@@ -95,9 +190,8 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
     expect(verifySeedConservation(game)).toBe(true);
   });
 
-  it("ISSUE-1: should trigger round settlement when bonus collection reduces board seeds to 0", () => {
+  it("ISSUE-1: triggers round settlement when bonus collection reduces board seeds to 0", () => {
     const game = createInitialGame("PLAYER_1");
-    // Clear all pits
     for (const pit of game.pits) {
       pit.seeds = 0;
       pit.bonusAvailable = false;
@@ -113,7 +207,7 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
     game.players.player2.storage = 31;
     expect(verifySeedConservation(game)).toBe(true);
 
-    // 1. Player 2 claims P8 bonus
+    // 1. Claim P8 bonus
     const claim1 = claimBonus(game, 8);
     expect(claim1.success).toBe(true);
     if (claim1.success) {
@@ -126,7 +220,7 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
     // 4 seeds remain on board (P1 has 4)
     expect(verifySeedConservation(game)).toBe(true);
 
-    // 2. Player 1 claims P1 bonus -> board now has 0 seeds!
+    // 2. Claim P1 bonus -> board now has 0 seeds!
     const claim2 = claimBonus(game, 1);
     expect(claim2.success).toBe(true);
     if (claim2.success) {
@@ -143,7 +237,7 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
     expect(verifySeedConservation(game)).toBe(true);
   });
 
-  it("ISSUE-1: should trigger round settlement when bonus claim leaves < 4 seeds on board", () => {
+  it("ISSUE-1: triggers round settlement when bonus claim leaves < 4 seeds on board", () => {
     const game = createInitialGame("PLAYER_1");
     for (const pit of game.pits) {
       pit.seeds = 0;
@@ -169,38 +263,5 @@ describe("TASK-09: Bonus Lifecycle (Sections 27-30, Clarification 3)", () => {
       expect(result.data.roundSettlement?.roundWinner).toBe("PLAYER_1");
     }
     expect(verifySeedConservation(game)).toBe(true);
-  });
-
-  it("ISSUE-2: pit owner can claim bonus even when it is the other player's turn", () => {
-    const game = createInitialGame("PLAYER_1");
-    // It is currently PLAYER_1's turn
-    expect(game.currentPlayer).toBe("PLAYER_1");
-
-    // Setup P9 (Player 2 pit) with bonus available
-    game.pits[9].seeds = 4;
-    game.pits[9].bonusAvailable = true;
-    game.players.player2.storage = 1;
-
-    // getClaimableBonusPits without player should list P9
-    expect(getClaimableBonusPits(game)).toContain(9);
-
-    // Player 2 can claim their bonus on P9 even though currentPlayer is PLAYER_1
-    const result = claimBonus(game, 9);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.owner).toBe("PLAYER_2");
-      expect(result.data.seedsClaimed).toBe(4);
-      expect(game.players.player2.storage).toBe(5);
-      expect(game.pits[9].seeds).toBe(0);
-    }
-
-    // But Player 1 cannot claim Player 2's bonus
-    game.pits[8].seeds = 4;
-    game.pits[8].bonusAvailable = true;
-    const invalidClaim = claimBonus(game, 8, "PLAYER_1");
-    expect(invalidClaim.success).toBe(false);
-    if (!invalidClaim.success) {
-      expect(invalidClaim.error).toMatch(/does not own/i);
-    }
   });
 });

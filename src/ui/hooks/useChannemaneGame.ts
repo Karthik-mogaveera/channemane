@@ -309,6 +309,15 @@ export function useChannemaneGame(
           );
         });
 
+        // Ensure visualPlayers reflects the updated storage immediately if active during animation
+        setVisualPlayers((prev) => {
+          if (!prev) return null;
+          return {
+            player1: { ...finalState.players.player1 },
+            player2: { ...finalState.players.player2 },
+          };
+        });
+
         if (res.data.roundEnded && res.data.roundSettlement) {
           lastSettlementRef.current = res.data.roundSettlement;
           setSettlementSummary(res.data.roundSettlement);

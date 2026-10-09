@@ -32,7 +32,7 @@ export interface ClaimBonusResult {
 export function canClaimBonus(
   state: GameState,
   pitId: number,
-  claimingPlayer?: Player
+  _actor?: Player
 ): boolean {
   if (state.phase === "ROUND_SETTLEMENT" || state.phase === "MATCH_END") {
     return false;
@@ -51,27 +51,26 @@ export function canClaimBonus(
     return false;
   }
 
-  if (claimingPlayer && pit.owner !== claimingPlayer) {
-    return false;
-  }
-
   return true;
 }
 
 /**
  * Claims a bonus on a pit.
  *
- * Rules:
- * - Transfers 4 seeds to pit owner's storage.
+ * Authoritative Rules:
+ * - A bonus ALWAYS belongs to pit.owner, regardless of whose turn it is
+ *   or which physical player clicked the Claim button.
+ * - The recipient is strictly pit.owner; the other player's storage is untouched.
+ * - Transfers 4 seeds to pit.owner's storage.
  * - Sets pit seeds to 0.
  * - Sets pit bonusAvailable to false.
- * - Evaluates round-ending conditions (Issue 1).
- * - Preserves 70-seed conservation invariant.
+ * - Evaluates round-ending conditions after collection.
+ * - Preserves the 70-seed conservation invariant.
  */
 export function claimBonus(
   state: GameState,
   pitId: number,
-  claimingPlayer?: Player
+  _actor?: Player
 ): ActionResult<ClaimBonusResult> {
   if (state.phase === "ROUND_SETTLEMENT" || state.phase === "MATCH_END") {
     return {
@@ -95,13 +94,6 @@ export function claimBonus(
     };
   }
 
-  if (claimingPlayer && pit.owner !== claimingPlayer) {
-    return {
-      success: false,
-      error: `Player ${claimingPlayer} does not own pit ${pitId} (owner is ${pit.owner})`,
-    };
-  }
-
   if (pit.seeds !== BONUS_CLAIM_SEEDS || !pit.bonusAvailable) {
     return {
       success: false,
@@ -109,6 +101,9 @@ export function claimBonus(
     };
   }
 
+  // The bonus unconditionally belongs to the authoritative owner of the pit.
+  // Whoever triggers the claim (Player 1, Player 2, or physical UI touch),
+  // the 4 seeds are credited to pit.owner's storage.
   const owner = pit.owner;
   pit.seeds = 0;
   pit.bonusAvailable = false;
@@ -166,6 +161,11 @@ export function getClaimableBonusPits(
   player?: Player
 ): number[] {
   return state.pits
-    .filter((pit) => canClaimBonus(state, pit.id, player))
+    .filter((pit) => {
+      if (player && pit.owner !== player) {
+        return false;
+      }
+      return canClaimBonus(state, pit.id);
+    })
     .map((pit) => pit.id);
 }

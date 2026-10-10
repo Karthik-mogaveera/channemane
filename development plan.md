@@ -167,11 +167,39 @@ Prior implementation attempted to validate `claimingPlayer` against `pit.owner` 
 3. **State Mutation**: On claim, `pit.seeds = 0`, `pit.bonusAvailable = false`, `pit.owner.storage += 4`, and round-ending / settlement conditions are evaluated immediately.
 4. **Immediate UI Feedback**: `useChannemaneGame` updates both `gameState` and active `visualPlayers` immediately on bonus claim.
 
+---
+
+## 12. Bonus Claiming in Every Scenario (During and After Sowing)
+
+### Root Cause
+Previously, `ChannemaneGame.selectPit` executed the entire sowing sequence synchronously to completion in a single function call, while the UI played back animation steps via pre-scheduled timeouts using a local snapshot. As a result:
+1. Mid-sowing bonus claims in the UI were rejected by the engine because the engine was already at the post-turn state where the pit might have received a 5th seed (bonus expired), was scooped, or captured.
+2. Even if claimed, subsequent animation timeouts overwrote the claimed pit state with the pre-recorded snapshot.
+
+### Architectural Solution
+1. **Engine-Driven Discrete Turn Stepping**:
+   - Implemented `startTurn(pitId)` and `stepTurn()` directly in `ChannemaneGame` in `src/engine/simulation.ts`.
+   - Each discrete step (pickup, single-seed drop, continuous scoop, capture, turn completion) mutates the authoritative `GameState` in place.
+   - Sowing does not end prematurely while `seedsInHand > 0` (`shouldEndRound` guarded).
+2. **Real-Time Interactive Bonus Claims**:
+   - At the exact step when a pit reaches 4 seeds, `bonusAvailable = true` in the live engine state.
+   - If the player clicks "CLAIM +4" during sowing or after sowing, `game.claimBonus(pitId)` executes against the live state:
+     - 4 seeds transferred to `pit.owner` storage immediately.
+     - Pit seeds reset to 0; `bonusAvailable` reset to false.
+     - React `gameState` re-rendered immediately.
+     - Sowing continues from the mutated state without desynchronization.
+3. **Seven-Scenario Test Matrix**:
+   - Tests 1a & 1b: Player 1 is sowing; Player 1 pit / Player 2 pit reaches 4 seeds; Claim clicked immediately -> +4 to owner.
+   - Tests 2a & 2b: Player 2 is sowing; Player 2 pit / Player 1 pit reaches 4 seeds; Claim clicked immediately -> +4 to owner.
+   - Test 3: Sowing has finished; Claim clicked on eligible pit -> +4 to owner.
+   - Tests 4 & 5: Player 1's turn; Player 2 / Player 1 bonus pit Claim button clicked -> +4 to pit owner.
+   - Tests 6 & 7: Player 2's turn; Player 1 / Player 2 bonus pit Claim button clicked -> +4 to pit owner.
+
 ### Verified Test Results
-- **Vitest**: 24 test suites, 123 tests passed (0 failed, 0 skipped) in 16.42s
-- **Playwright**: 13 browser E2E tests passed (0 failed, 0 skipped) in 30.1s
+- **Vitest**: 26 test suites, 134 tests passed (0 failed, 0 skipped) in 16.17s
+- **Playwright**: 13 browser E2E tests passed (0 failed, 0 skipped) in 28.8s
 - **TypeScript**: `tsc --noEmit` passed with 0 errors
-- **Production Build**: `tsc && vite build` built cleanly in 2.27s (dist generated)
-- **Git & Deployment**: Pushed to `main` branch
+- **Production Build**: `tsc && vite build` built cleanly in 2.05s (dist generated)
+
 
 

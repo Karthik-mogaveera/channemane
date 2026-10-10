@@ -33,6 +33,11 @@ export type RoundEndReason =
  * @returns boolean true if round should transition to settlement.
  */
 export function shouldEndRound(state: GameState): boolean {
+  // If seeds are actively held in hand mid-sowing, the round does not end mid-hand
+  if (state.seedsInHand > 0) {
+    return false;
+  }
+
   const boardSeeds = getTotalBoardSeeds(state);
 
   // Condition 1: board seeds strictly less than 4

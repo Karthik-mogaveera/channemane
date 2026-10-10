@@ -10,8 +10,6 @@ import type {
   GameState,
   Player,
   ActionResult,
-  Pit,
-  TurnAnimationEvent,
 } from "../../engine/types";
 import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
@@ -80,10 +78,6 @@ export function useChannemaneGame(
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [activeDropPit, setActiveDropPit] = useState<number | null>(null);
   const [visualHandSeeds, setVisualHandSeeds] = useState<number>(0);
-  const [visualPits, setVisualPits] = useState<Pit[] | null>(null);
-  const [visualPlayers, setVisualPlayers] = useState<
-    GameState["players"] | null
-  >(null);
 
   const [lastActionError, setLastActionError] = useState<string | null>(null);
 
@@ -152,7 +146,7 @@ export function useChannemaneGame(
    */
   const selectPit = useCallback(
     (pitId: number): ActionResult<TurnResult> | null => {
-      if (isAnimating) {
+      if (isAnimating || gameRef.current.isTurnInProgress()) {
         return null;
       }
 
@@ -164,132 +158,122 @@ export function useChannemaneGame(
       }
 
       clearError();
-      const result = gameRef.current.selectPit(pitId);
-
-      if (!result.success) {
-        setLastActionError(result.error);
-        return result;
+      const startRes = gameRef.current.startTurn(pitId);
+      if (!startRes.success) {
+        setLastActionError(startRes.error);
+        return { success: false, error: startRes.error };
       }
 
-      const turnResult = result.data;
-      const events: TurnAnimationEvent[] = turnResult.animationEvents ?? [];
+      // Pickup immediately reflected in authoritative state (Issue 6)
+      const pickupState = gameRef.current.getState();
+      setGameState(pickupState);
+      setActiveDropPit(pitId);
+      setVisualHandSeeds(pickupState.seedsInHand);
 
-      // Handle real-time animation sequence
-      if (animationSettings.enabled && events.length > 0) {
-        setIsAnimating(true);
-        const delay = animationSettings.stepDelayMs;
+      const delay = animationSettings.enabled
+        ? animationSettings.stepDelayMs
+        : 0;
 
-        // Mutable snapshot for step-by-step updates
-        const currentPits = gameState.pits.map((p) => ({ ...p }));
-        let currentHand = 0;
-        let p1Storage = gameState.players.player1.storage;
-        let p2Storage = gameState.players.player2.storage;
-
-        // Step 1: Immediate Pickup representation on user click (Issue 6)
-        if (events[0]?.type === "PICKUP") {
-          const pickupEvent = events[0];
-          const pit = currentPits[pickupEvent.pitId];
-          if (pit) {
-            pit.seeds = 0;
-            pit.bonusAvailable = false;
-          }
-          currentHand = pickupEvent.seedsPickedUp;
-          setActiveDropPit(pickupEvent.pitId);
-          setVisualHandSeeds(currentHand);
-          setVisualPits(currentPits.map((p) => ({ ...p })));
+      if (delay === 0) {
+        // Fast/instant execution
+        while (gameRef.current.isTurnInProgress()) {
+          gameRef.current.stepTurn();
         }
-
-        // Subsequent steps (drops, scoops, captures) scheduled with sequential delay
-        const dropEvents = events.slice(1);
-        dropEvents.forEach((event, idx) => {
-          const timeout = setTimeout(() => {
-            if (event.type === "DROP") {
-              const pit = currentPits[event.pitId];
-              if (pit) {
-                pit.seeds = event.resultingSeeds;
-                if (event.bonusTriggered) {
-                  pit.bonusAvailable = true;
-                }
-                if (event.resultingSeeds === 5) {
-                  pit.bonusAvailable = false;
-                }
-              }
-              currentHand = event.seedsRemainingInHand;
-              setActiveDropPit(event.pitId);
-              setVisualHandSeeds(currentHand);
-              setVisualPits(currentPits.map((p) => ({ ...p })));
-            } else if (event.type === "SCOOP") {
-              const pit = currentPits[event.pitId];
-              if (pit) {
-                pit.seeds = 0;
-                pit.bonusAvailable = false;
-              }
-              currentHand = event.seedsScooped;
-              setActiveDropPit(event.pitId);
-              setVisualHandSeeds(currentHand);
-              setVisualPits(currentPits.map((p) => ({ ...p })));
-            } else if (event.type === "CAPTURE") {
-              const pit = currentPits[event.capturedPitId];
-              if (pit) {
-                pit.seeds = 0;
-                pit.bonusAvailable = false;
-              }
-              if (event.capturingPlayer === "PLAYER_1") {
-                p1Storage = event.newStorageTotal;
-              } else {
-                p2Storage = event.newStorageTotal;
-              }
-              setActiveDropPit(event.capturedPitId);
-              setVisualPits(currentPits.map((p) => ({ ...p })));
-              setVisualPlayers({
-                player1: { ...gameState.players.player1, storage: p1Storage },
-                player2: { ...gameState.players.player2, storage: p2Storage },
-              });
-            }
-          }, (idx + 1) * delay);
-          animationTimeoutsRef.current.push(timeout);
-        });
-
-        // Conclude animation and sync final authoritative state
-        const endTimeout = setTimeout(() => {
-          setIsAnimating(false);
-          setActiveDropPit(null);
-          setVisualHandSeeds(0);
-          setVisualPits(null);
-          setVisualPlayers(null);
-          const finalState = gameRef.current.getState();
-          setGameState(finalState);
-
-          if (turnResult.roundEnded && turnResult.roundSettlement) {
-            lastSettlementRef.current = turnResult.roundSettlement;
-            setSettlementSummary(turnResult.roundSettlement);
-          }
-          if (turnResult.matchEnded && turnResult.matchResult) {
-            setMatchSummary(turnResult.matchResult);
-          }
-        }, (dropEvents.length + 1) * delay);
-
-        animationTimeoutsRef.current.push(endTimeout);
-      } else {
-        // Direct synchronous update
         const finalState = gameRef.current.getState();
         setGameState(finalState);
-        if (turnResult.roundEnded && turnResult.roundSettlement) {
-          lastSettlementRef.current = turnResult.roundSettlement;
-          setSettlementSummary(turnResult.roundSettlement);
+        setActiveDropPit(null);
+        setVisualHandSeeds(0);
+        const lastTurnRes = gameRef.current.getLastTurnResult();
+        if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
+          lastSettlementRef.current = lastTurnRes.roundSettlement;
+          setSettlementSummary(lastTurnRes.roundSettlement);
         }
-        if (turnResult.matchEnded && turnResult.matchResult) {
-          setMatchSummary(turnResult.matchResult);
+        if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
+          setMatchSummary(lastTurnRes.matchResult);
         }
+        return { success: true, data: lastTurnRes! };
       }
 
-      return result;
+      setIsAnimating(true);
+
+      const scheduleNextStep = () => {
+        const timeout = setTimeout(() => {
+          if (!gameRef.current.isTurnInProgress()) {
+            setIsAnimating(false);
+            setActiveDropPit(null);
+            setVisualHandSeeds(0);
+            const finalState = gameRef.current.getState();
+            setGameState(finalState);
+            const lastTurnRes = gameRef.current.getLastTurnResult();
+            if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
+              lastSettlementRef.current = lastTurnRes.roundSettlement;
+              setSettlementSummary(lastTurnRes.roundSettlement);
+            }
+            if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
+              setMatchSummary(lastTurnRes.matchResult);
+            }
+            return;
+          }
+
+          const stepRes = gameRef.current.stepTurn();
+          const currentState = gameRef.current.getState();
+          setGameState(currentState);
+          setVisualHandSeeds(currentState.seedsInHand);
+          if (stepRes.success && stepRes.data.pitId !== undefined) {
+            setActiveDropPit(stepRes.data.pitId);
+          }
+
+          if (stepRes.success && stepRes.data.isComplete) {
+            setIsAnimating(false);
+            setActiveDropPit(null);
+            setVisualHandSeeds(0);
+            if (stepRes.data.roundEnded && stepRes.data.roundSettlement) {
+              lastSettlementRef.current = stepRes.data.roundSettlement;
+              setSettlementSummary(stepRes.data.roundSettlement);
+            }
+            if (stepRes.data.matchEnded && stepRes.data.matchResult) {
+              setMatchSummary(stepRes.data.matchResult);
+            }
+          } else {
+            scheduleNextStep();
+          }
+        }, delay);
+
+        animationTimeoutsRef.current.push(timeout);
+      };
+
+      scheduleNextStep();
+
+      return {
+        success: true,
+        data: {
+          pitSelected: pitId,
+          sowResult: {
+            startPitId: pitId,
+            finalDestinationPit: pitId,
+            nextOpenPitAfterDestination: null,
+            shouldEvaluateCapture: false,
+            steps: [],
+            scoopsCount: 1,
+          },
+          captureResult: {
+            nextOpenPitId: null,
+            capturedPitId: null,
+            capturedSeeds: 0,
+          },
+          roundEnded: false,
+          matchEnded: false,
+          turnPassed: false,
+          nextPlayer: pickupState.currentPlayer,
+        },
+      };
     },
-    [isAnimating, gameState, animationSettings, clearError]
+    [isAnimating, gameState.phase, animationSettings, clearError]
   );
 
   /**
-   * Claims an available bonus on a pit (Issues 1 & 2).
+   * Claims an available bonus on a pit.
+   * Works both during active sowing and after sowing has finished.
    */
   const claimBonus = useCallback(
     (pitId: number): ActionResult<ClaimBonusResult> => {
@@ -300,23 +284,6 @@ export function useChannemaneGame(
       } else {
         const finalState = gameRef.current.getState();
         setGameState(finalState);
-
-        // Also update visual state if currently animating
-        setVisualPits((prev) => {
-          if (!prev) return null;
-          return prev.map((p) =>
-            p.id === pitId ? { ...p, seeds: 0, bonusAvailable: false } : p
-          );
-        });
-
-        // Ensure visualPlayers reflects the updated storage immediately if active during animation
-        setVisualPlayers((prev) => {
-          if (!prev) return null;
-          return {
-            player1: { ...finalState.players.player1 },
-            player2: { ...finalState.players.player2 },
-          };
-        });
 
         if (res.data.roundEnded && res.data.roundSettlement) {
           lastSettlementRef.current = res.data.roundSettlement;
@@ -364,8 +331,6 @@ export function useChannemaneGame(
     setIsAnimating(false);
     setActiveDropPit(null);
     setVisualHandSeeds(0);
-    setVisualPits(null);
-    setVisualPlayers(null);
     setLastActionError(null);
     setSettlementSummary(null);
     lastSettlementRef.current = null;
@@ -375,16 +340,7 @@ export function useChannemaneGame(
     setGameState(gameRef.current.getState());
   }, []);
 
-  const effectiveGameState: GameState = useMemo(() => {
-    if (!isAnimating || !visualPits) {
-      return gameState;
-    }
-    return {
-      ...gameState,
-      pits: visualPits,
-      players: visualPlayers ?? gameState.players,
-    };
-  }, [gameState, isAnimating, visualPits, visualPlayers]);
+  const effectiveGameState: GameState = gameState;
 
   const selectablePits = useMemo(() => {
     if (isAnimating) return [];

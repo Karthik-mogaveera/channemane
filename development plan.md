@@ -201,5 +201,51 @@ Previously, `ChannemaneGame.selectPit` executed the entire sowing sequence synch
 - **TypeScript**: `tsc --noEmit` passed with 0 errors
 - **Production Build**: `tsc && vite build` built cleanly in 2.05s (dist generated)
 
+---
+
+## 13. Authoritative Round-End Condition (`totalBoardSeeds < 4`)
+
+### Authoritative Rule Definition
+The round must end whenever the total number of seeds remaining on the board is strictly less than 4:
+1. **Player 1 side**: sum of seeds in pits P0–P6 (`getPlayerSideSeeds(state, "PLAYER_1")`).
+2. **Player 2 side**: sum of seeds in pits P7–P13 (`getPlayerSideSeeds(state, "PLAYER_2")`).
+3. **Total board seeds**: Player 1 side total + Player 2 side total (`totalBoardSeeds = p1SideSeeds + p2SideSeeds`).
+4. **Authoritative Condition**: `totalBoardSeeds < 4` (using strict `< 4` comparison, never `<= 4`).
+5. **Key Invariants**:
+   - The condition depends strictly and exclusively on `totalBoardSeeds < 4`.
+   - Neither player's side is required to be empty.
+   - Pits can hold any distribution of seeds.
+   - Evaluator does not depend on `currentPlayer` or any individual pit count.
+   - Mid-sowing hands are guarded (`seedsInHand > 0` returns `false` so in-progress seed dropping is not interrupted mid-hand).
+   - Once triggered, existing settlement (`executeRoundSettlement`) transfers remaining P0–P6 seeds to Player 1, P7–P13 seeds to Player 2, empties all pits, and verifies the 70-seed conservation invariant.
+
+### Mandatory 10-Scenario Test Matrix & Boundary Tests
+Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/tests/roundEndCondition.test.ts):
+- **Test 1**: P1 = 0, P2 = 3, Total = 3 -> Round ends (PASSED)
+- **Test 2**: P1 = 1, P2 = 2, Total = 3 -> Round ends (PASSED)
+- **Test 3**: P1 = 2, P2 = 1, Total = 3 -> Round ends (PASSED)
+- **Test 4**: P1 = 3, P2 = 0, Total = 3 -> Round ends (PASSED)
+- **Test 5**: P1 = 0, P2 = 2, Total = 2 -> Round ends (PASSED)
+- **Test 6**: P1 = 1, P2 = 1, Total = 2 -> Round ends (PASSED)
+- **Test 7**: P1 = 2, P2 = 0, Total = 2 -> Round ends (PASSED)
+- **Test 8**: P1 = 1, P2 = 0, Total = 1 -> Round ends (PASSED)
+- **Test 9**: P1 = 0, P2 = 1, Total = 1 -> Round ends (PASSED)
+- **Test 10**: P1 = 0, P2 = 0, Total = 0 -> Round ends (PASSED)
+- **Boundary Tests**:
+  - Total = 4 (distributions: 2+2, 4+0, 0+4, 1+3, 3+1): round does NOT end (PASSED)
+  - Total = 5 (distributions: 3+2, 5+0, 0+5): round does NOT end (PASSED)
+- **Invariant & Integration Tests**:
+  - Current player independence (Player 1 vs Player 2 turn) verified (PASSED)
+  - Pit distribution independence (concentrated vs dispersed) verified (PASSED)
+  - Seeds-in-hand safety guard verified (PASSED)
+  - 70-seed conservation across settlement verified (PASSED)
+  - `playTurn` and `ChannemaneGame` round-ending trigger and settlement verified (PASSED)
+
+### Validation Summary
+- **Vitest**: 27 test files, 158 tests passed (0 failed, 0 skipped)
+- **Playwright E2E**: 13 tests passed (0 failed, 0 skipped)
+- **TypeScript**: `tsc --noEmit` passed with 0 errors
+- **Production Build**: `tsc && vite build` succeeded in 3.64s
+
 
 

@@ -4,7 +4,7 @@
  */
 
 import { MIN_SEEDS_FOR_ROUND_CONTINUATION } from "./constants";
-import { getTotalBoardSeeds, getPlayerSideSeeds } from "./board";
+import { getPlayerSideSeeds } from "./board";
 import type { GameState } from "./types";
 
 export type RoundEndReason =
@@ -13,21 +13,28 @@ export type RoundEndReason =
   | null;
 
 /**
- * Authoritative Round-Ending Evaluator (Section 37)
+ * Authoritative Round-Ending Evaluator
  *
- * The round ends ONLY if one of the following two conditions becomes true:
+ * Mandatory rule:
+ * The round must end whenever the total number of seeds remaining on the board is strictly less than 4.
  *
- * Condition 1 (Section 33):
- * Total board seeds < 4 (strictly less than 4).
+ * Calculate:
+ * - Player 1 side: sum of seeds in pits P0–P6.
+ * - Player 2 side: sum of seeds in pits P7–P13.
+ * - Total board seeds: Player 1 side total + Player 2 side total.
  *
- * Condition 2 (Section 34):
- * (Player 1 side === 0 AND Player 2 side < 4)
- * OR
- * (Player 2 side === 0 AND Player 1 side < 4)
+ * Condition:
+ * totalBoardSeeds < 4
  *
- * Crucial Invariants (Section 35 & 36):
- * - One side empty alone does NOT end the round if opponent has >= 4 seeds.
- * - Empty individual pits do NOT mean the side is empty.
+ * If this condition is true, the round must end. If the total is exactly 4 or greater,
+ * this condition must not end the round.
+ *
+ * Invariants:
+ * - Depends only on the total number of seeds remaining on the board.
+ * - Does not require either player's side to be empty.
+ * - Does not require seeds to be distributed in any particular way.
+ * - Does not depend on currentPlayer or individual pit counts.
+ * - Mid-sowing hands (seedsInHand > 0) are protected from mid-hand interruption.
  *
  * @param state The current GameState.
  * @returns boolean true if round should transition to settlement.
@@ -38,46 +45,24 @@ export function shouldEndRound(state: GameState): boolean {
     return false;
   }
 
-  const boardSeeds = getTotalBoardSeeds(state);
-
-  // Condition 1: board seeds strictly less than 4
-  if (boardSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) {
-    return true;
-  }
-
   const p1SideSeeds = getPlayerSideSeeds(state, "PLAYER_1");
   const p2SideSeeds = getPlayerSideSeeds(state, "PLAYER_2");
+  const totalBoardSeeds = p1SideSeeds + p2SideSeeds;
 
-  // Condition 2: One side empty AND opponent side < 4
-  if (p1SideSeeds === 0 && p2SideSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) {
-    return true;
-  }
-
-  if (p2SideSeeds === 0 && p1SideSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) {
-    return true;
-  }
-
-  return false;
+  // Strict < 4 comparison
+  return totalBoardSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION;
 }
 
 /**
  * Returns the specific reason why a round has ended, or null if the round should continue.
  */
 export function getRoundEndReason(state: GameState): RoundEndReason {
-  const boardSeeds = getTotalBoardSeeds(state);
-
-  if (boardSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) {
-    return "FEWER_THAN_4_BOARD_SEEDS";
-  }
-
   const p1SideSeeds = getPlayerSideSeeds(state, "PLAYER_1");
   const p2SideSeeds = getPlayerSideSeeds(state, "PLAYER_2");
+  const totalBoardSeeds = p1SideSeeds + p2SideSeeds;
 
-  if (
-    (p1SideSeeds === 0 && p2SideSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) ||
-    (p2SideSeeds === 0 && p1SideSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION)
-  ) {
-    return "ONE_SIDE_EMPTY_AND_OPPONENT_UNDER_4";
+  if (totalBoardSeeds < MIN_SEEDS_FOR_ROUND_CONTINUATION) {
+    return "FEWER_THAN_4_BOARD_SEEDS";
   }
 
   return null;

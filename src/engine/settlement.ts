@@ -3,7 +3,7 @@
  * Strictly follows Phase 1 Specification (Sections 40, 41, Clarification 6)
  */
 
-import { getPlayerSideSeeds, verifySeedConservation } from "./board";
+import { getPlayerSideSeeds, verifySeedConservation, cloneGameState } from "./board";
 import type { ActionResult, GameState, Player } from "./types";
 
 export interface RoundSettlementResult {
@@ -12,6 +12,7 @@ export interface RoundSettlementResult {
   player1FinalStorage: number;
   player2FinalStorage: number;
   roundWinner: Player | null;
+  preSettlementState?: GameState;
 }
 
 /**
@@ -29,6 +30,10 @@ export interface RoundSettlementResult {
 export function executeRoundSettlement(
   state: GameState
 ): ActionResult<RoundSettlementResult> {
+  // Capture a complete deep snapshot of the pre-settlement game state (Issue 1)
+  const preSettlementState = cloneGameState(state);
+  preSettlementState.phase = "ROUND_SETTLEMENT";
+
   const p1Remaining = getPlayerSideSeeds(state, "PLAYER_1");
   const p2Remaining = getPlayerSideSeeds(state, "PLAYER_2");
 
@@ -72,6 +77,7 @@ export function executeRoundSettlement(
       player1FinalStorage: state.players.player1.storage,
       player2FinalStorage: state.players.player2.storage,
       roundWinner,
+      preSettlementState,
     },
   };
 }

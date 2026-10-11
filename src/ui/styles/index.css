@@ -52,6 +52,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
 body {
   font-family: var(--font-body);
   background: radial-gradient(circle at 50% 20%, #2b160d 0%, #160b06 100%);
@@ -159,11 +164,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 8px 18px;
   border-radius: var(--radius-md);
   background: rgba(22, 11, 6, 0.85);
   border: 1px solid rgba(212, 175, 55, 0.3);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  min-height: 56px;
+  height: 56px;
+  max-height: 56px;
+  box-sizing: border-box;
 }
 
 .turn-badge {
@@ -290,6 +299,7 @@ body {
   grid-template-columns: auto 1fr auto;
   gap: 16px;
   align-items: center;
+  contain: layout;
 }
 
 /* Storage Bowls */
@@ -365,6 +375,7 @@ body {
   justify-content: center;
   gap: 4px;
   position: relative;
+  width: 100%;
 }
 
 .pit-button-wrapper {
@@ -380,12 +391,15 @@ body {
   font-weight: 800;
   color: var(--seed-ivory);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  min-height: 20px;
-  line-height: 1;
+  height: 24px;
+  min-height: 24px;
+  line-height: 24px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
+  font-variant-numeric: tabular-nums;
   transition: color 0.2s ease;
 }
 
@@ -420,9 +434,10 @@ body {
     inset 0 -2px 6px rgba(255, 255, 255, 0.06),
     0 2px 4px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   user-select: none;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .channemane-pit:focus-visible {
@@ -440,7 +455,6 @@ body {
 }
 
 .channemane-pit.selectable:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.04);
   border-color: #fff2cc;
   box-shadow:
     inset 0 4px 10px rgba(0, 0, 0, 0.8),
@@ -450,9 +464,8 @@ body {
 .channemane-pit.active-drop {
   border-color: #ffffff !important;
   box-shadow:
-    inset 0 0 20px rgba(255, 255, 255, 0.5),
-    0 0 24px rgba(255, 243, 204, 0.9) !important;
-  transform: scale(1.08);
+    inset 0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 24px rgba(255, 243, 204, 0.95) !important;
 }
 
 .channemane-pit.has-bonus {
@@ -473,12 +486,16 @@ body {
 
 /* Seed Cluster Graphics inside pit */
 .seed-cluster {
+  position: absolute;
+  inset: 0;
+  margin: auto;
   display: flex;
   gap: 4px;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   max-width: 52px;
+  max-height: 52px;
   pointer-events: none;
 }
 
@@ -547,11 +564,14 @@ body {
   background: rgba(212, 175, 55, 0.15);
   border: 1px solid var(--brass-gold);
   border-radius: var(--radius-sm);
-  padding: 6px 14px;
-  font-size: 0.85rem;
+  padding: 2px 10px;
+  height: 28px;
+  line-height: 22px;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--gold-light);
-  animation: pulseHand 1s infinite alternate ease-in-out;
+  box-sizing: border-box;
+  animation: pulseHand 1.2s infinite alternate ease-in-out;
 }
 
 /* Modals & Dialogs */
@@ -680,8 +700,8 @@ body {
 }
 
 @keyframes pulseHand {
-  0% { transform: scale(0.98); box-shadow: 0 0 4px var(--gold-glow); }
-  100% { transform: scale(1.02); box-shadow: 0 0 14px var(--gold-glow); }
+  0% { box-shadow: 0 0 4px var(--gold-glow); }
+  100% { box-shadow: 0 0 14px var(--gold-glow); }
 }
 
 @keyframes bonusGlow {
@@ -747,8 +767,8 @@ body {
   }
 
   .channemane-pit {
-    min-width: 40px;
-    min-height: 48px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .pit-seed-count {
@@ -767,8 +787,12 @@ body {
   }
 
   .turn-banner {
-    padding: 10px 14px;
-    font-size: 0.9rem;
+    padding: 6px 12px;
+    font-size: 0.88rem;
+    min-height: 56px;
+    height: 56px;
+    max-height: 56px;
+    box-sizing: border-box;
   }
 
   .pits-row {
@@ -776,8 +800,8 @@ body {
   }
 
   .channemane-pit {
-    min-width: 34px;
-    min-height: 44px;
+    min-width: 36px;
+    min-height: 36px;
     border-width: 1.5px;
   }
 

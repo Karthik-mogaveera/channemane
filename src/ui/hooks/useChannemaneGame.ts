@@ -33,6 +33,9 @@ export interface AnimationSettings {
 export interface UseChannemaneGameReturn {
   // Authoritative & Visual Game State
   gameState: GameState;
+  authoritativeGameState: GameState;
+  isReviewingBoard: boolean;
+  reviewBoardState: GameState | null;
   selectablePits: number[];
   claimableBonuses: number[];
 
@@ -66,14 +69,18 @@ export interface UseChannemaneGameReturn {
 
 export function useChannemaneGame(
   initialStartingPlayer: Player = "PLAYER_1",
-  initialAnimationSettings?: Partial<AnimationSettings>
+  initialAnimationSettings?: Partial<AnimationSettings>,
+  initialGameState?: GameState
 ): UseChannemaneGameReturn {
   const gameRef = useRef<ChannemaneGame>(
-    new ChannemaneGame(initialStartingPlayer)
+    new ChannemaneGame(initialStartingPlayer, initialGameState)
   );
   const [gameState, setGameState] = useState<GameState>(() =>
     gameRef.current.getState()
   );
+
+  const [isReviewingBoard, setIsReviewingBoard] = useState<boolean>(false);
+  const [reviewBoardState, setReviewBoardState] = useState<GameState | null>(null);
 
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [activeDropPit, setActiveDropPit] = useState<number | null>(null);
@@ -116,6 +123,7 @@ export function useChannemaneGame(
 
   const dismissSettlementModal = useCallback(() => {
     setSettlementSummary(null);
+    setIsReviewingBoard(true);
   }, []);
 
   const reopenSettlementModal = useCallback(() => {
@@ -146,7 +154,12 @@ export function useChannemaneGame(
    */
   const selectPit = useCallback(
     (pitId: number): ActionResult<TurnResult> | null => {
-      if (isAnimating || gameRef.current.isTurnInProgress()) {
+      if (
+        isAnimating ||
+        isReviewingBoard ||
+        gameState.phase === "ROUND_SETTLEMENT" ||
+        gameRef.current.isTurnInProgress()
+      ) {
         return null;
       }
 
@@ -187,6 +200,7 @@ export function useChannemaneGame(
         if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
           lastSettlementRef.current = lastTurnRes.roundSettlement;
           setSettlementSummary(lastTurnRes.roundSettlement);
+          setReviewBoardState(lastTurnRes.roundSettlement.preSettlementState ?? null);
         }
         if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
           setMatchSummary(lastTurnRes.matchResult);
@@ -208,6 +222,7 @@ export function useChannemaneGame(
             if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
               lastSettlementRef.current = lastTurnRes.roundSettlement;
               setSettlementSummary(lastTurnRes.roundSettlement);
+              setReviewBoardState(lastTurnRes.roundSettlement.preSettlementState ?? null);
             }
             if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
               setMatchSummary(lastTurnRes.matchResult);
@@ -230,6 +245,7 @@ export function useChannemaneGame(
             if (stepRes.data.roundEnded && stepRes.data.roundSettlement) {
               lastSettlementRef.current = stepRes.data.roundSettlement;
               setSettlementSummary(stepRes.data.roundSettlement);
+              setReviewBoardState(stepRes.data.roundSettlement.preSettlementState ?? null);
             }
             if (stepRes.data.matchEnded && stepRes.data.matchResult) {
               setMatchSummary(stepRes.data.matchResult);
@@ -268,7 +284,7 @@ export function useChannemaneGame(
         },
       };
     },
-    [isAnimating, gameState.phase, animationSettings, clearError]
+    [isAnimating, isReviewingBoard, gameState.phase, animationSettings, clearError]
   );
 
   /**
@@ -277,6 +293,13 @@ export function useChannemaneGame(
    */
   const claimBonus = useCallback(
     (pitId: number): ActionResult<ClaimBonusResult> => {
+      if (isReviewingBoard || gameState.phase === "ROUND_SETTLEMENT") {
+        return {
+          success: false,
+          error: "Cannot claim bonuses while reviewing the board or during round settlement.",
+        };
+      }
+
       clearError();
       const res = gameRef.current.claimBonus(pitId);
       if (!res.success) {
@@ -288,6 +311,7 @@ export function useChannemaneGame(
         if (res.data.roundEnded && res.data.roundSettlement) {
           lastSettlementRef.current = res.data.roundSettlement;
           setSettlementSummary(res.data.roundSettlement);
+          setReviewBoardState(res.data.roundSettlement.preSettlementState ?? null);
         }
         if (res.data.matchEnded && res.data.matchResult) {
           setMatchSummary(res.data.matchResult);
@@ -295,7 +319,7 @@ export function useChannemaneGame(
       }
       return res;
     },
-    [clearError]
+    [isReviewingBoard, gameState.phase, clearError]
   );
 
   /**
@@ -310,13 +334,21 @@ export function useChannemaneGame(
       };
     }
 
+    animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
+    animationTimeoutsRef.current = [];
+    setIsAnimating(false);
+    setActiveDropPit(null);
+    setVisualHandSeeds(0);
+    setIsReviewingBoard(false);
+    setReviewBoardState(null);
+    setSettlementSummary(null);
+    lastSettlementRef.current = null;
+
     clearError();
     const res = gameRef.current.startNextRound();
     if (!res.success) {
       setLastActionError(res.error);
     } else {
-      setSettlementSummary(null);
-      lastSettlementRef.current = null;
       setGameState(gameRef.current.getState());
     }
     return res;
@@ -331,6 +363,8 @@ export function useChannemaneGame(
     setIsAnimating(false);
     setActiveDropPit(null);
     setVisualHandSeeds(0);
+    setIsReviewingBoard(false);
+    setReviewBoardState(null);
     setLastActionError(null);
     setSettlementSummary(null);
     lastSettlementRef.current = null;
@@ -340,19 +374,28 @@ export function useChannemaneGame(
     setGameState(gameRef.current.getState());
   }, []);
 
-  const effectiveGameState: GameState = gameState;
+  const effectiveGameState: GameState = useMemo(() => {
+    if (isReviewingBoard && reviewBoardState) {
+      return reviewBoardState;
+    }
+    return gameState;
+  }, [isReviewingBoard, reviewBoardState, gameState]);
 
   const selectablePits = useMemo(() => {
-    if (isAnimating) return [];
+    if (isAnimating || isReviewingBoard || gameState.phase === "ROUND_SETTLEMENT") return [];
     return gameRef.current.getSelectablePits();
-  }, [isAnimating, gameState]);
+  }, [isAnimating, isReviewingBoard, gameState]);
 
   const claimableBonuses = useMemo(() => {
+    if (isReviewingBoard || gameState.phase === "ROUND_SETTLEMENT") return [];
     return gameRef.current.getClaimableBonuses();
-  }, [gameState]);
+  }, [isReviewingBoard, gameState]);
 
   return {
     gameState: effectiveGameState,
+    authoritativeGameState: gameState,
+    isReviewingBoard,
+    reviewBoardState,
     selectablePits,
     claimableBonuses,
     isAnimating,

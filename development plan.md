@@ -247,5 +247,46 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
 - **TypeScript**: `tsc --noEmit` passed with 0 errors
 - **Production Build**: `tsc && vite build` succeeded in 3.64s
 
+---
+
+## 14. Review Board Pre-Settlement State Restoration & Board Geometric Stabilization During Sowing
+
+### 14.1 Root Cause Analysis
+
+#### Issue 1: Review Board State Restoration
+- **Root Cause**: In `executeRoundSettlement(state)`, the engine cleared all pits to zero and transferred all remaining board seeds to players' storage immediately upon round conclusion. When the player clicked "Review Board", the UI was viewing the post-settlement state where all pits contained 0 seeds and storage already included the transferred seeds.
+- **Solution**:
+  1. Captured a deep immutable snapshot via `cloneGameState(state)` with `phase: "ROUND_SETTLEMENT"` *prior* to modifying pit counts and storage in `executeRoundSettlement`.
+  2. Extended `RoundSettlementResult` with `preSettlementState?: GameState`.
+  3. Stored and propagated `preSettlementState` through `ChannemaneGame` controller (`simulation.ts`) across all turn execution methods (`selectPit`, `stepTurn`, `claimBonus`), accessible via `getPreSettlementState()`.
+  4. Updated `useChannemaneGame.ts` to manage `isReviewingBoard` and `reviewBoardState`. In review mode, `effectiveGameState` returns `reviewBoardState`, displaying exact pre-settlement pit seed counts and storage without mutating live engine state.
+  5. Disabled moves, sowing, continuous sowing, and bonus claiming while reviewing.
+  6. Advancing to the next round or restarting the match exits review mode and resets snapshots cleanly.
+
+#### Issue 2: Board Shaking & Geometric Shifts During Sowing
+- **Root Cause**:
+  1. CSS transforms (`transform: scale(1.08)`) on `.channemane-pit.active-drop` caused pit elements to scale during every seed drop, altering subpixel bounding geometry and triggering visual vibration.
+  2. Hover transform `transform: translateY(-3px) scale(1.04)` on selectable pits created jitter.
+  3. Dynamic insertion of `.hand-status-indicator` into unconstrained `.turn-banner` caused height to expand from 56px to 58px during sowing, pushing the entire board down by 2px on desktop and mobile.
+  4. Dynamic toggling of vertical scrollbar changed viewport width, triggering responsive recalculations.
+- **Solution**:
+  1. Replaced all scale/translate transforms on active and hover pits with stable box-shadow and border glows that preserve exact layout geometry.
+  2. Fixed `.turn-banner` to a strict, non-shifting 56px height with stable padding and compact `.hand-status-indicator`.
+  3. Added `html { scrollbar-gutter: stable; overflow-y: scroll; }` to eliminate scrollbar-induced viewport shifts.
+  4. Positioned seed beads absolutely inside pits (`.seed-cluster`) and reserved fixed height (`24px`) on external seed counts (`.pit-external-count`) so counts change without moving neighboring elements.
+
+### 14.2 Test Verification
+- **New Test Suites**:
+  - `tests/reviewBoard.test.ts`: 6 tests verifying pre-settlement snapshot capture across distributions (0/3, 1/2, 2/1, 3/0, 2, 1, 0 seeds), storage isolation, simulation persistence, and bonus-triggered round settlement.
+  - `tests/ui/reviewBoardUI.test.tsx`: 2 tests verifying full React UI review lifecycle, historical board display, action disabling, summary reopening, next-round setup, and restart reset.
+  - `tests/ui/boardStability.test.tsx`: 5 tests verifying React element key stability during sowing, non-scaling active-drop highlights, progressive seed increments, timer cancellation on reset, and bonus claiming.
+  - `tests/e2e/game.spec.ts`: Added bounding box and layout `offsetTop` measurement tests verifying geometric stability during animated sowing on desktop and mobile viewports.
+- **Validation Results**:
+  - **Vitest**: 30 test files, 171 passed (0 failed, 0 skipped).
+  - **Playwright E2E**: 15 tests passed (0 failed, 0 skipped).
+  - **TypeScript**: `tsc --noEmit` passed with 0 errors.
+  - **Production Build**: `tsc && vite build` succeeded in 2.01s.
+
+
 
 

@@ -218,4 +218,78 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     await expect(p1Storage).toBeVisible();
     await expect(p2Storage).toBeVisible();
   });
+
+  test("Issue 2: Board container and pit bounding boxes remain stable throughout sowing", async ({
+    page,
+  }) => {
+    const board = page.getByTestId("channemane-board");
+    const initialBox = await board.boundingBox();
+    expect(initialBox).not.toBeNull();
+
+    const initialOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
+
+    const pit0 = page.getByTestId("pit-0");
+    const pit6 = page.getByTestId("pit-6");
+    const initialPit6Box = await pit6.boundingBox();
+    const initialPit6RelPos = await pit6.evaluate((el) => {
+      const bRect = el.closest(".channemane-board")!.getBoundingClientRect();
+      const pRect = el.getBoundingClientRect();
+      return { x: pRect.left - bRect.left, y: pRect.top - bRect.top };
+    });
+
+    // Click P0 to start animated sowing
+    await pit0.click();
+
+    // Measure bounding boxes and layout offsets at multiple points during sowing
+    for (let step = 0; step < 5; step++) {
+      await page.waitForTimeout(300);
+      const currentBoardBox = await board.boundingBox();
+      const currentPit6Box = await pit6.boundingBox();
+      const currentOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
+
+      expect(currentBoardBox).not.toBeNull();
+      // Board width and height must remain stable (allowing small 2px browser subpixel rendering tolerance)
+      expect(Math.abs(currentBoardBox!.width - initialBox!.width)).toBeLessThanOrEqual(2);
+      expect(Math.abs(currentBoardBox!.height - initialBox!.height)).toBeLessThanOrEqual(2);
+      // Board layout offsetTop must not shift
+      expect(Math.abs(currentOffsetTop - initialOffsetTop)).toBeLessThanOrEqual(2);
+
+      if (initialPit6Box && currentPit6Box) {
+        // Pit dimensions must not jump
+        expect(Math.abs(currentPit6Box.width - initialPit6Box.width)).toBeLessThanOrEqual(2);
+        expect(Math.abs(currentPit6Box.height - initialPit6Box.height)).toBeLessThanOrEqual(2);
+
+        // Pit relative coordinates within the board must remain stable
+        const currentPit6RelPos = await pit6.evaluate((el) => {
+          const bRect = el.closest(".channemane-board")!.getBoundingClientRect();
+          const pRect = el.getBoundingClientRect();
+          return { x: pRect.left - bRect.left, y: pRect.top - bRect.top };
+        });
+        expect(Math.abs(currentPit6RelPos.x - initialPit6RelPos.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(currentPit6RelPos.y - initialPit6RelPos.y)).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  test("Issue 2: Board remains geometrically stable at mobile viewport size during sowing", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const board = page.getByTestId("channemane-board");
+    const initialBox = await board.boundingBox();
+    expect(initialBox).not.toBeNull();
+    const initialOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
+
+    await page.getByTestId("pit-0").click();
+    for (let step = 0; step < 3; step++) {
+      await page.waitForTimeout(300);
+      const box = await board.boundingBox();
+      const currentOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
+      expect(box).not.toBeNull();
+      expect(Math.abs(box!.width - initialBox!.width)).toBeLessThanOrEqual(2);
+      expect(Math.abs(box!.height - initialBox!.height)).toBeLessThanOrEqual(2);
+      expect(Math.abs(currentOffsetTop - initialOffsetTop)).toBeLessThanOrEqual(2);
+    }
+  });
 });
+

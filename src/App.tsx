@@ -16,6 +16,7 @@ import { RulesModal } from "./ui/components/RulesModal";
 export const App: React.FC = () => {
   const {
     gameState,
+    authoritativeGameState,
     selectablePits,
     isAnimating,
     activeDropPit,
@@ -37,6 +38,10 @@ export const App: React.FC = () => {
     toggleAnimationSpeed,
   } = useChannemaneGame();
 
+  const isRoundSettled =
+    authoritativeGameState.phase === "ROUND_SETTLEMENT" ||
+    gameState.phase === "ROUND_SETTLEMENT";
+
   return (
     <div className="app-container">
       {/* Top Header */}
@@ -50,7 +55,7 @@ export const App: React.FC = () => {
       {/* Turn & Status Indicator */}
       <TurnBanner
         currentPlayer={gameState.currentPlayer}
-        gamePhase={gameState.phase}
+        gamePhase={isRoundSettled ? "ROUND_SETTLEMENT" : gameState.phase}
         turnPhase={gameState.turnPhase}
         round={gameState.round}
         isAnimating={isAnimating}
@@ -58,7 +63,7 @@ export const App: React.FC = () => {
       />
 
       {/* Round Review Action Bar (Issue 8) */}
-      {gameState.phase === "ROUND_SETTLEMENT" && (
+      {isRoundSettled && (
         <div
           className="round-settlement-action-bar"
           data-testid="settlement-review-bar"

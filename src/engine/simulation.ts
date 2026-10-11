@@ -71,6 +71,7 @@ interface InProgressTurnContext {
 export class ChannemaneGame {
   private state: GameState;
   private turnContext: InProgressTurnContext | null = null;
+  private preSettlementState: GameState | null = null;
 
   constructor(startingPlayer: Player = "PLAYER_1", initialState?: GameState) {
     this.state = initialState
@@ -353,6 +354,7 @@ export class ChannemaneGame {
       const settlementOutcome = executeRoundSettlement(this.state);
       if (settlementOutcome.success) {
         roundSettlement = settlementOutcome.data;
+        this.preSettlementState = settlementOutcome.data.preSettlementState ?? null;
       }
       matchResult = checkAndHandleMatchEnd(this.state);
       matchEnded = matchResult.isMatchEnd;
@@ -430,7 +432,11 @@ export class ChannemaneGame {
 
     const lastResult = this.getLastTurnResult();
     if (!lastResult) {
-      return playTurn(this.state, pitId);
+      const fallback = playTurn(this.state, pitId);
+      if (fallback.success && fallback.data.roundSettlement) {
+        this.preSettlementState = fallback.data.roundSettlement.preSettlementState ?? null;
+      }
+      return fallback;
     }
 
     return { success: true, data: lastResult };
@@ -443,7 +449,18 @@ export class ChannemaneGame {
     pitId: number,
     player?: Player
   ): ActionResult<ClaimBonusResult> {
-    return claimBonus(this.state, pitId, player);
+    const res = claimBonus(this.state, pitId, player);
+    if (res.success && res.data.roundEnded && res.data.roundSettlement) {
+      this.preSettlementState = res.data.roundSettlement.preSettlementState ?? null;
+    }
+    return res;
+  }
+
+  /**
+   * Returns a deep clone of the pre-settlement board state snapshot if the round has settled.
+   */
+  public getPreSettlementState(): GameState | null {
+    return this.preSettlementState ? cloneGameState(this.preSettlementState) : null;
   }
 
   /**
@@ -456,6 +473,7 @@ export class ChannemaneGame {
         error: `Cannot start next round: current phase is ${this.state.phase}, expected ROUND_SETTLEMENT`,
       };
     }
+    this.preSettlementState = null;
     return setupNextRound(this.state);
   }
 }

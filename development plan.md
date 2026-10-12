@@ -287,6 +287,65 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
   - **TypeScript**: `tsc --noEmit` passed with 0 errors.
   - **Production Build**: `tsc && vite build` succeeded in 2.01s.
 
+---
+
+## 15. Maximum Seed Capacity Investigation and Perfectly Organized Pit Rendering
+
+### 15.1 Maximum Seed Capacity Investigation
+1. **Engine Source of Truth & Rules Inspected**:
+   - Total Board Seeds: 70 seeds across 14 pits (5 seeds per pit initially).
+   - Continuous sowing allows a player's hand to repeatedly pick up seeds from non-empty pits and distribute them counter-clockwise across both sides of the board.
+   - Pits skipped when closed in later rounds concentrate distributed seeds across fewer pits.
+   - 4-seed bonus claims can be captured or left unclaimed.
+   - Round termination: `totalBoardSeeds < 4`.
+2. **Investigation Methodology**:
+   - Constructed [`tests/seedCapacityAnalysis.test.ts`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/tests/seedCapacityAnalysis.test.ts) combining:
+     - Monte Carlo random simulation across 300 complete matches with varying bonus claim behaviors.
+     - Adversarial targeted beam search (depth 25, beam width 20) with heuristic objective maximizing peak seed count in any pit.
+     - Exhaustive theoretical upper bound analysis.
+3. **Findings**:
+   - **Highest Observed in Simulation**: **42 seeds** in pit 11 during Round 1 via move sequence `[4, 13, 6, 7, 4, 12, 6, 7, 5, 10, 2, 8, 3, 10, 6, 13, 4, 7, 6, 7, 0, 8]`.
+   - **Theoretical Upper Bound**: **70 seeds** (strict board seed conservation).
+   - **Engineering Decision**: The rendering and seed packing system is built to support up to the full theoretical maximum of **70 seeds** in a single pit without overlap or clipping.
+
+### 15.2 Fixed Pit Size and Deterministic Concentric Seed Packing
+1. **Circular Geometry & Coordinate Space**:
+   - Pits have fixed, enlarged circular dimensions: `aspect-ratio: 1 / 1`, `width: clamp(54px, 7.2vw, 92px)`, `height: clamp(54px, 7.2vw, 92px)`, with fixed min dimensions of `48px`.
+   - Dimensions are strictly constant regardless of whether a pit contains 0, 5, 20, 42, or 70 seeds.
+   - Seed rendering uses an SVG coordinate space with `viewBox="-50 -50 100 100"`:
+     - Outer Pit Radius: 50.0
+     - Usable Inner Radius: 44.0 (reserving 6.0 units for pit border rim and padding)
+2. **Packing Algorithm (`calculateSeedPositions(seedCount, pitGeometry)`)**:
+   - Implemented in [`src/ui/utils/seedPacking.ts`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/utils/seedPacking.ts).
+   - Compact concentric ring architecture:
+     - 1 seed: Centered at `(0, 0)`.
+     - 2–7 seeds: 1 ring of radius $R_1 \approx 20.0$.
+     - 8–19 seeds: 1 central seed + 1 ring.
+     - 20–37 seeds: 2 concentric rings + central seed.
+     - 38–70 seeds: 3 concentric rings (capacities 1, 8, 18, 28) + central seed.
+   - For every count $N \in [0..70]$:
+     - Adaptive seed radius $r \in [2.65, 8.5]$ based on ring capacity.
+     - Guaranteed positive visual gap $\ge 0.75$ SVG units: $\text{distance}(A, B) > r_A + r_B$.
+     - Furthest seed edge from center $\le 42.4 < 44.0$, guaranteeing seeds never clip pit rim or depend on `overflow: hidden`.
+     - Deterministic placement: Identical count produces identical positions, eliminating React re-render visual jitter.
+     - Zero seeds renders an empty pit cleanly without phantom seeds or SVG rendering.
+
+### 15.3 Live Game State & Animation Integration
+- Integrated in [`src/ui/components/Pit.tsx`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/components/Pit.tsx) using memoized SVG geometry with radial gradients and glossy specular highlights.
+- External tabular seed numbers remain stable and readable.
+- Preserved sowing animations, active-drop glows, bonus badges, and Review Board historical states.
+
+### 15.4 Test Verification
+- **New Test Suites**:
+  - `tests/seedCapacityAnalysis.test.ts`: Automated simulation & adversarial beam search verifying legal game states reaching 42 seeds and theoretical upper bound 70 seeds.
+  - `tests/seedPacking.test.ts`: 14 geometric tests validating non-overlap, positive gap, boundary containment, determinism, and empty pit handling across `[0, 1, 5, 10, 20, 30, 40, 42, 50, 60, 70]` and the entire range `0..70`.
+  - `tests/ui/pitSeedRendering.test.tsx`: 13 UI & DOM tests validating rendered SVG elements, test IDs, attributes, fixed dimensions, and geometric containment.
+- **Validation Results**:
+  - **Vitest**: 33 test files, 199 passed (0 failed, 0 skipped).
+  - **TypeScript**: `tsc --noEmit` passed with 0 errors.
+  - **Production Build**: `tsc && vite build` succeeded in 3.13s (dist generated cleanly).
+
+
 
 
 

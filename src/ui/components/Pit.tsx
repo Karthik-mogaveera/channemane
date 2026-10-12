@@ -5,8 +5,9 @@
  * external seed count positioned on the player's side (Issues 4, 5, 9).
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import type { Player, PitStatus } from "../../engine/types";
+import { calculateSeedPositions } from "../utils/seedPacking";
 
 export interface PitProps {
   pitId: number;
@@ -61,8 +62,10 @@ export const Pit: React.FC<PitProps> = ({
     }
   };
 
-  // Up to 5 small graphical beads for visual flair inside pit
-  const visualBeadsCount = Math.min(seeds, 5);
+  // Deterministic circular seed packing positions (0..70+)
+  const seedPositions = useMemo(() => {
+    return calculateSeedPositions(seeds);
+  }, [seeds]);
 
   return (
     <div
@@ -108,11 +111,54 @@ export const Pit: React.FC<PitProps> = ({
             </span>
           ) : (
             seeds > 0 && (
-              <div className="seed-cluster" aria-hidden="true">
-                {Array.from({ length: visualBeadsCount }).map((_, i) => (
-                  <span key={i} className="seed-bead" />
+              <svg
+                className="pit-seeds-svg"
+                data-testid={`pit-seeds-svg-${pitId}`}
+                viewBox="-50 -50 100 100"
+                width="100%"
+                height="100%"
+                aria-hidden="true"
+              >
+                <defs>
+                  <radialGradient id={`seed-grad-${pitId}`} cx="35%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#fffdfa" />
+                    <stop offset="35%" stopColor="#f3e5ab" />
+                    <stop offset="70%" stopColor="#bca172" />
+                    <stop offset="100%" stopColor="#6b4423" />
+                  </radialGradient>
+                </defs>
+                {seedPositions.map((pos, idx) => (
+                  <g
+                    key={idx}
+                    className="seed-element"
+                    data-testid={`seed-${pitId}-${idx}`}
+                  >
+                    {/* Shadow */}
+                    <circle
+                      cx={pos.x + 0.3}
+                      cy={pos.y + 0.5}
+                      r={pos.radius}
+                      fill="rgba(0,0,0,0.4)"
+                    />
+                    {/* Main Seed Bead */}
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={pos.radius}
+                      fill={`url(#seed-grad-${pitId})`}
+                      stroke="#4a2e18"
+                      strokeWidth="0.35"
+                    />
+                    {/* Gloss specular reflection */}
+                    <circle
+                      cx={pos.x - pos.radius * 0.28}
+                      cy={pos.y - pos.radius * 0.28}
+                      r={pos.radius * 0.28}
+                      fill="rgba(255,255,255,0.7)"
+                    />
+                  </g>
                 ))}
-              </div>
+              </svg>
             )
           )}
         </button>

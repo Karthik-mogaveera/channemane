@@ -5,6 +5,7 @@
 
 import React from "react";
 import { useChannemaneGame } from "./ui/hooks/useChannemaneGame";
+import { useOrientation } from "./ui/hooks/useOrientation";
 import { Header } from "./ui/components/Header";
 import { TurnBanner } from "./ui/components/TurnBanner";
 import { PlayerPanels } from "./ui/components/PlayerPanels";
@@ -12,8 +13,11 @@ import { GameBoard } from "./ui/components/GameBoard";
 import { SettlementModal } from "./ui/components/SettlementModal";
 import { MatchEndModal } from "./ui/components/MatchEndModal";
 import { RulesModal } from "./ui/components/RulesModal";
+import { OrientationPrompt } from "./ui/components/OrientationPrompt";
 
 export const App: React.FC = () => {
+  const { isPortraitBlocked } = useOrientation();
+
   const {
     gameState,
     authoritativeGameState,
@@ -44,6 +48,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      {/* Mobile Portrait Blocking Screen (Requirement 2) */}
+      {isPortraitBlocked && <OrientationPrompt />}
+
       {/* Top Header */}
       <Header
         onRestart={() => restartMatch("PLAYER_1")}

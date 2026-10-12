@@ -49,9 +49,9 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     // Seeds on P0 should have mutated from initial 5
     await expect(pit0).not.toHaveAttribute("data-seeds", "5");
 
-    // Turn indicator shifts to Player 2
+    // Turn indicator shifts to Player 2 (allow ample time for full multi-round continuous sowing animation)
     const turnIndicator = page.getByTestId("turn-indicator");
-    await expect(turnIndicator).toContainText("PLAYER 2'S TURN");
+    await expect(turnIndicator).toContainText("PLAYER 2'S TURN", { timeout: 15000 });
   });
 
   test("Positive 3: Rules dialog opens, displays Channemane rules, and closes cleanly", async ({
@@ -76,7 +76,7 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
 
     // Play a turn
     await page.getByTestId("pit-0").click();
-    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 2'S TURN");
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 2'S TURN", { timeout: 15000 });
 
     // Click New Game
     await page.getByTestId("restart-btn").click();

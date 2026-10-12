@@ -345,6 +345,53 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
   - **TypeScript**: `tsc --noEmit` passed with 0 errors.
   - **Production Build**: `tsc && vite build` succeeded in 3.13s (dist generated cleanly).
 
+---
+
+## 16. Organized Captured-Seed Storage and Landscape-Only Mobile Gameplay
+
+### 16.1 Organized Captured-Seed Storage Layout & Capacity
+1. **Engine Source of Truth & Invariants**:
+   - Total board seeds: Exactly 70 seeds conserved at all times (`pits total + player1.storage + player2.storage == 70`).
+   - Theoretical maximum storage capacity for a single player: **70 seeds** (e.g. at match victory when opponent is wiped out or across round settlement).
+   - Numeric counters and visual seeds are strictly bound to the engine's authoritative state without any duplicate or UI-only counters.
+2. **Storage Seed Packing Algorithm (`calculateStorageSeedPositions`)**:
+   - Implemented in [`src/ui/utils/storageSeedPacking.ts`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/utils/storageSeedPacking.ts).
+   - Arranges seeds in a clean, compact multi-row grid centered within a fixed $90 \times 180$ coordinate space.
+   - For all counts $N \in [0..70]$:
+     - Non-overlap: $\text{distance}(A, B) \ge r_A + r_B + \text{gap}$ with guaranteed positive gap $\ge 0.05$.
+     - Strict boundary containment: $x - r \ge 0, x + r \le 90, y - r \ge 0, y + r \le 180$.
+     - Deterministic and balanced: Same count always produces the same positions across both Player 1 and Player 2.
+     - Zero seeds renders an empty reservoir without phantom beads.
+3. **StorageBowl Component & Styles**:
+   - Implemented in [`src/ui/components/StorageBowl.tsx`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/components/StorageBowl.tsx) and [`src/ui/styles/index.css`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/styles/index.css).
+   - Fixed dimensions: `width: 104px; height: 230px` (or `88px x 180px` in compact landscape mobile).
+   - Contains a fixed-size seed reservoir (`.storage-seeds-reservoir`) with SVG rendering, drop shadows, radial ivory-tamarind gradient, stroke outline, and specular gloss.
+   - Storage dimensions remain strictly fixed regardless of whether a player has 0, 5, 20, 40, 60, or 70 seeds, completely preventing board shifting or layout distortion.
+
+### 16.2 Landscape-Only Mobile Orientation Enforcement
+1. **Detection Hook (`useOrientation`)**:
+   - Implemented in [`src/ui/hooks/useOrientation.ts`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/hooks/useOrientation.ts).
+   - Uses `matchMedia("(orientation: portrait)")` combined with touch device heuristics (`(pointer: coarse)` and screen dimension $\le 1024\text{px}$).
+   - Never blocks desktop/laptop screens even if the browser window is resized tall or narrow.
+   - Safely requests native `screen.orientation.lock("landscape")` where supported by mobile browser/PWA runtimes without unhandled promise rejections.
+2. **Blocking Screen (`OrientationPrompt`)**:
+   - Implemented in [`src/ui/components/OrientationPrompt.tsx`](file:///c:/Users/karth/OneDrive/Documents/Desktop/CHANNEMANE/src/ui/components/OrientationPrompt.tsx).
+   - Renders a modal overlay (`.orientation-prompt-overlay`) with royal Karnataka gold aesthetics, rotating phone animation, heading "Rotate Your Device", and instructional text.
+   - Blocks pointer events and touch interaction with the board underneath without resetting game state.
+   - Rotating back to landscape immediately restores access to the in-progress board with all seeds, turn progress, Review Board state, and timers intact.
+
+### 16.3 Test Verification
+- **New Test Suites**:
+  - `tests/storagePacking.test.ts`: 11 tests verifying containment, non-overlap, positive gap, and determinism across `0, 1, 5, 10, 20, 30, 40, 50, 60, 70`.
+  - `tests/ui/storageBowl.test.tsx`: 8 UI tests verifying exact SVG seed element counts, test IDs, and Player 1 / Player 2 symmetry.
+  - `tests/ui/orientation.test.tsx`: 4 tests validating mobile portrait blocking, mobile landscape gameplay, desktop bypass, and zero state corruption across rotation.
+- **Validation Results**:
+  - **Vitest**: 36 test files, 222 tests passed (0 failed, 0 skipped).
+  - **Playwright E2E**: 15 tests passed (0 failed, 0 skipped).
+  - **TypeScript**: `tsc --noEmit` passed with 0 errors.
+  - **Production Build**: `tsc && vite build` built cleanly in 4.03s (dist generated).
+
+
 
 
 

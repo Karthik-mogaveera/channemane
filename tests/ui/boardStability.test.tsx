@@ -93,12 +93,23 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
     expect(screen.getByTestId("pit-2")).toHaveAttribute("data-seeds", "6");
     expect(screen.getByTestId("pit-count-2")).toHaveTextContent("6");
 
-    // Complete all steps
+    // Complete drops for batch 1 (reaches WAITING_FOR_CONTINUATION on pit 6)
     act(() => {
       vi.runAllTimers();
     });
 
-    expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 2'S TURN");
+    // Verification of Requirement 1 & 2: Pauses and prompts player
+    expect(screen.getByTestId("turn-indicator")).toHaveTextContent(
+      "Choose the highlighted pit to continue sowing."
+    );
+    const pit6 = screen.getByTestId("pit-6");
+    expect(pit6).toHaveAttribute("data-continuation-target", "true");
+
+    // Click pit 6 to continue sowing batch
+    act(() => {
+      fireEvent.click(pit6);
+      vi.runAllTimers();
+    });
   });
 
   it("Test 9: Animation timers are canceled on game reset or unmount, preventing stale callbacks", () => {
@@ -120,7 +131,7 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
     }).not.toThrow();
   });
 
-  it("Test 7: Bonus claiming remains functional and stable during and after sowing", () => {
+  it("Test 7: Bonus claiming remains functional and stable during and after sowing via gestures", () => {
     const game = createInitialGame("PLAYER_1");
     // P3 has 4 seeds with bonus available
     game.pits[3].seeds = 4;
@@ -140,10 +151,14 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
       />
     );
 
-    const bonusClaimBtn = screen.getByTestId("claim-bonus-3");
-    expect(bonusClaimBtn).toBeInTheDocument();
+    // Requirement 18: No Claim button rendered
+    expect(screen.queryByTestId("claim-bonus-3")).not.toBeInTheDocument();
 
-    fireEvent.click(bonusClaimBtn);
+    const pit3 = screen.getByTestId("pit-3");
+    expect(pit3).toHaveClass("has-bonus");
+
+    // Right-click desktop collection
+    fireEvent.contextMenu(pit3);
     expect(handleClaimBonus).toHaveBeenCalledWith(3);
   });
 });

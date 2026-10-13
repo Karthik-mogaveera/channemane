@@ -45,7 +45,7 @@ describe("App Integration with Channemane Engine", () => {
     expect(screen.getByTestId("p2-captured-count")).toHaveTextContent("0");
   });
 
-  it("allows selecting a legal pit and advances the turn to Player 2", () => {
+  it("allows selecting a legal pit, prompts continuation, and advances the turn", () => {
     render(<App />);
 
     // Player 1 clicks their own pit P0
@@ -57,11 +57,24 @@ describe("App Integration with Channemane Engine", () => {
       vi.runAllTimers();
     });
 
-    // P0 seeds mutated from 5 to final continuous sowing count (not 5)
-    expect(pit0.getAttribute("data-seeds")).not.toBe("5");
+    // P0 seeds dropped from 5 to 0
+    expect(pit0.getAttribute("data-seeds")).toBe("0");
 
-    // Turn should have shifted to Player 2
-    expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 2'S TURN");
+    // Pauses for continuation on pit 6
+    expect(screen.getByTestId("turn-indicator")).toHaveTextContent(
+      "Choose the highlighted pit to continue sowing."
+    );
+    const pit6 = screen.getByTestId("pit-6");
+    expect(pit6).toHaveAttribute("data-continuation-target", "true");
+
+    // Confirm continuation by clicking highlighted pit
+    act(() => {
+      fireEvent.click(pit6);
+      vi.runAllTimers();
+    });
+
+    // Next decision reached
+    expect(pit6.getAttribute("data-seeds")).not.toBe("6");
   });
 
   it("shows real-time seed-by-seed animation increments", () => {
@@ -87,13 +100,15 @@ describe("App Integration with Channemane Engine", () => {
     expect(pit1.getAttribute("data-seeds")).toBe("6");
     expect(screen.getByTestId("pit-count-1")).toHaveTextContent("6");
 
-    // Complete all animation steps
+    // Complete all animation steps for this batch
     act(() => {
       vi.runAllTimers();
     });
 
-    // Turn shifted to Player 2
-    expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 2'S TURN");
+    // Enters continuation pause
+    expect(screen.getByTestId("turn-indicator")).toHaveTextContent(
+      "Choose the highlighted pit to continue sowing."
+    );
   });
 
   it("toggles between Slow Mode and Fast Mode (Issue 3)", () => {

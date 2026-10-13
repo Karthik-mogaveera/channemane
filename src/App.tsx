@@ -22,6 +22,10 @@ export const App: React.FC = () => {
     gameState,
     authoritativeGameState,
     selectablePits,
+    claimableBonuses,
+    interactionState,
+    highlightedContinuationPit,
+    highlightedCapturePit,
     isAnimating,
     activeDropPit,
     visualHandSeeds,
@@ -32,6 +36,8 @@ export const App: React.FC = () => {
     setIsRulesOpen,
     animationSettings,
     selectPit,
+    confirmContinuation,
+    confirmCapture,
     claimBonus,
     startNextRound,
     restartMatch,
@@ -67,6 +73,8 @@ export const App: React.FC = () => {
         round={gameState.round}
         isAnimating={isAnimating}
         visualHandSeeds={visualHandSeeds}
+        interactionState={interactionState}
+        hasClaimableBonus={claimableBonuses.length > 0}
       />
 
       {/* Round Review Action Bar (Issue 8) */}
@@ -131,7 +139,11 @@ export const App: React.FC = () => {
           selectablePits={selectablePits}
           activeDropPit={activeDropPit}
           isAnimating={isAnimating}
+          highlightedContinuationPit={highlightedContinuationPit}
+          highlightedCapturePit={highlightedCapturePit}
           onSelectPit={(pitId) => selectPit(pitId)}
+          onConfirmContinuation={(pitId) => confirmContinuation(pitId)}
+          onConfirmCapture={(pitId) => confirmCapture(pitId)}
           onClaimBonus={(pitId) => claimBonus(pitId)}
         />
       </main>

@@ -16,7 +16,11 @@ export interface GameBoardProps {
   selectablePits: number[];
   activeDropPit: number | null;
   isAnimating: boolean;
+  highlightedContinuationPit?: number | null;
+  highlightedCapturePit?: number | null;
   onSelectPit: (pitId: number) => void;
+  onConfirmContinuation?: (pitId: number) => void;
+  onConfirmCapture?: (pitId: number) => void;
   onClaimBonus: (pitId: number) => void;
 }
 
@@ -25,7 +29,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   selectablePits,
   activeDropPit,
   isAnimating,
+  highlightedContinuationPit = null,
+  highlightedCapturePit = null,
   onSelectPit,
+  onConfirmContinuation,
+  onConfirmCapture,
   onClaimBonus,
 }) => {
   // Authoritative physical layout
@@ -34,7 +42,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="board-wrapper">
-      <div className="channemane-board" data-testid="channemane-board" role="region" aria-label="Channemane Game Board">
+      <div
+        className="channemane-board"
+        data-testid="channemane-board"
+        role="region"
+        aria-label="Channemane Game Board"
+        onContextMenu={(e) => e.preventDefault()}
+      >
         {/* Left Bowl: Player 1 */}
         <StorageBowl
           player="PLAYER_1"
@@ -61,7 +75,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   isSelectable={selectablePits.includes(pitId)}
                   isActiveDrop={activeDropPit === pitId}
                   isAnimating={isAnimating}
+                  isContinuationTarget={highlightedContinuationPit === pitId}
+                  isCaptureTarget={highlightedCapturePit === pitId}
                   onSelect={onSelectPit}
+                  onConfirmContinuation={onConfirmContinuation}
+                  onConfirmCapture={onConfirmCapture}
                   onClaimBonus={onClaimBonus}
                 />
               );
@@ -82,7 +100,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   isSelectable={selectablePits.includes(pitId)}
                   isActiveDrop={activeDropPit === pitId}
                   isAnimating={isAnimating}
+                  isContinuationTarget={highlightedContinuationPit === pitId}
+                  isCaptureTarget={highlightedCapturePit === pitId}
                   onSelect={onSelectPit}
+                  onConfirmContinuation={onConfirmContinuation}
+                  onConfirmCapture={onConfirmCapture}
                   onClaimBonus={onClaimBonus}
                 />
               );

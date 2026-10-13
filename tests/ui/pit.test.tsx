@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { Pit } from "../../src/ui/components/Pit";
 
 describe("Pit Component", () => {
@@ -108,7 +108,8 @@ describe("Pit Component", () => {
     expect(button).toHaveAttribute("aria-label", "Player 1 Pit, Closed");
   });
 
-  it("renders CLAIM +4 badge and triggers onClaimBonus when clicked", () => {
+  it("renders no Claim button, has gold bonus styling, and claims bonus via long-press and right-click", () => {
+    vi.useFakeTimers();
     const handleSelect = vi.fn();
     const handleClaim = vi.fn();
 
@@ -127,13 +128,31 @@ describe("Pit Component", () => {
       />
     );
 
-    const bonusBadge = screen.getByTestId("claim-bonus-2");
-    expect(bonusBadge).toBeInTheDocument();
-    expect(bonusBadge).toHaveTextContent("CLAIM +4");
+    // Requirement 18: No Claim button is rendered
+    expect(screen.queryByTestId("claim-bonus-2")).not.toBeInTheDocument();
+    expect(screen.queryByText(/CLAIM \+4/i)).not.toBeInTheDocument();
 
-    fireEvent.click(bonusBadge);
+    const button = screen.getByTestId("pit-2");
+    // Requirement 19: Displays gold indicator
+    expect(button).toHaveClass("has-bonus");
+
+    // Right-click desktop collection
+    act(() => {
+      fireEvent.contextMenu(button);
+    });
     expect(handleClaim).toHaveBeenCalledWith(2);
     expect(handleSelect).not.toHaveBeenCalled();
+
+    handleClaim.mockClear();
+
+    // Mobile long-press collection (500ms)
+    act(() => {
+      fireEvent.pointerDown(button, { clientX: 100, clientY: 100, button: 0 });
+      vi.advanceTimersByTime(500);
+    });
+    expect(handleClaim).toHaveBeenCalledWith(2);
+
+    vi.useRealTimers();
   });
 
   it("disables interaction while isAnimating is true", () => {

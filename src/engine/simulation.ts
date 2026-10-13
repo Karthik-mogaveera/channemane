@@ -9,7 +9,7 @@ import { validatePitSelection } from "./selection";
 import { pickupSeeds } from "./pickup";
 import { getNextOpenPit } from "./traversal";
 import { BONUS_THRESHOLD, BONUS_EXPIRATION_THRESHOLD } from "./constants";
-import { evaluateAndExecuteCapture, type CaptureResult } from "./capture";
+import { evaluateAndExecuteCapture, getCapturablePit, type CaptureResult } from "./capture";
 import { transitionTurnPhase } from "./turnStateMachine";
 import { shouldEndRound } from "./roundEnd";
 import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
@@ -31,6 +31,8 @@ export type TurnStepType =
   | "PICKUP"
   | "DROP"
   | "SCOOP"
+  | "WAITING_FOR_CONTINUATION"
+  | "WAITING_FOR_CAPTURE"
   | "CAPTURE"
   | "TURN_COMPLETED";
 
@@ -44,6 +46,9 @@ export interface TurnStepResult {
   bonusTriggered?: boolean;
   bonusOwner?: Player | null;
   captureResult?: CaptureResult;
+  capturablePitId?: number;
+  capturableSeeds?: number;
+  nextContinuationPitId?: number;
   roundEnded?: boolean;
   roundSettlement?: RoundSettlementResult;
   matchEnded?: boolean;
@@ -62,6 +67,8 @@ interface InProgressTurnContext {
   animationEvents: TurnAnimationEvent[];
   isComplete: boolean;
   turnResult?: TurnResult;
+  awaitingContinuationPitId?: number | null;
+  awaitingCapturePitId?: number | null;
 }
 
 /**
@@ -281,67 +288,147 @@ export class ChannemaneGame {
       this.state.pits
     );
 
-    // If next open pit has seeds -> Continuous Sowing Scoop
+    // If next open pit has seeds -> Continuous Sowing Pause
     if (
       nextOpenAfterEnd !== null &&
       this.state.pits[nextOpenAfterEnd].seeds > 0
     ) {
-      this.turnContext.scoopsCount++;
-      this.state.turnPhase = "CONTINUOUS_SOWING";
-      const nextPit = this.state.pits[nextOpenAfterEnd];
-      const scoopedSeeds = nextPit.seeds;
-      this.state.seedsInHand = scoopedSeeds;
-      nextPit.seeds = 0;
-      nextPit.bonusAvailable = false;
-      this.turnContext.currentDropPointer = nextOpenAfterEnd;
-
-      const scoopEvent: TurnAnimationEvent = {
-        type: "SCOOP",
-        pitId: nextOpenAfterEnd,
-        seedsScooped: scoopedSeeds,
-      };
-      this.turnContext.animationEvents.push(scoopEvent);
-
+      this.turnContext.awaitingContinuationPitId = nextOpenAfterEnd;
       return {
         success: true,
         data: {
-          type: "SCOOP",
+          type: "WAITING_FOR_CONTINUATION",
+          nextContinuationPitId: nextOpenAfterEnd,
           pitId: nextOpenAfterEnd,
-          seedsScooped: scoopedSeeds,
-          seedsRemainingInHand: scoopedSeeds,
           isComplete: false,
         },
       };
     }
 
-    // Step C: Stopping condition met! Next pit is empty (or null).
+    // Step C: Stopping condition met! Inspect capture
     this.state.turnPhase = "CAPTURE_CHECK";
-    let captureResult: CaptureResult = {
+    let capturableInfo = { capturablePitId: null as number | null, seeds: 0 };
+    if (nextOpenAfterEnd !== null) {
+      capturableInfo = getCapturablePit(this.state, this.turnContext.lastDestinationPit);
+    }
+
+    if (capturableInfo.capturablePitId !== null && capturableInfo.seeds > 0) {
+      this.turnContext.awaitingCapturePitId = capturableInfo.capturablePitId;
+      return {
+        success: true,
+        data: {
+          type: "WAITING_FOR_CAPTURE",
+          capturablePitId: capturableInfo.capturablePitId,
+          capturableSeeds: capturableInfo.seeds,
+          pitId: capturableInfo.capturablePitId,
+          isComplete: false,
+        },
+      };
+    }
+
+    // No capture to confirm: complete turn directly
+    return this.finalizeTurn(null);
+  }
+
+  /**
+   * Confirms manual continuation on the required pit.
+   */
+  public continueSowing(pitId: number): ActionResult<TurnStepResult> {
+    if (!this.turnContext || this.turnContext.isComplete) {
+      return { success: false, error: "No turn in progress to continue" };
+    }
+    if (this.turnContext.awaitingContinuationPitId !== pitId) {
+      return {
+        success: false,
+        error: `Invalid continuation pit ${pitId}; expected ${this.turnContext.awaitingContinuationPitId}`,
+      };
+    }
+
+    const nextOpenAfterEnd = pitId;
+    this.turnContext.awaitingContinuationPitId = null;
+    this.turnContext.scoopsCount++;
+    this.state.turnPhase = "CONTINUOUS_SOWING";
+    const nextPit = this.state.pits[nextOpenAfterEnd];
+    const scoopedSeeds = nextPit.seeds;
+    this.state.seedsInHand = scoopedSeeds;
+    nextPit.seeds = 0;
+    nextPit.bonusAvailable = false;
+    this.turnContext.currentDropPointer = nextOpenAfterEnd;
+
+    const scoopEvent: TurnAnimationEvent = {
+      type: "SCOOP",
+      pitId: nextOpenAfterEnd,
+      seedsScooped: scoopedSeeds,
+    };
+    this.turnContext.animationEvents.push(scoopEvent);
+
+    return {
+      success: true,
+      data: {
+        type: "SCOOP",
+        pitId: nextOpenAfterEnd,
+        seedsScooped: scoopedSeeds,
+        seedsRemainingInHand: scoopedSeeds,
+        isComplete: false,
+      },
+    };
+  }
+
+  /**
+   * Confirms manual capture on the highlighted capturable pit.
+   */
+  public confirmCapture(pitId: number): ActionResult<TurnStepResult> {
+    if (!this.turnContext || this.turnContext.isComplete) {
+      return { success: false, error: "No turn in progress to capture" };
+    }
+    if (this.turnContext.awaitingCapturePitId !== pitId) {
+      return {
+        success: false,
+        error: `Invalid capture pit ${pitId}; expected ${this.turnContext.awaitingCapturePitId}`,
+      };
+    }
+
+    this.turnContext.awaitingCapturePitId = null;
+    const captureResult = evaluateAndExecuteCapture(
+      this.state,
+      this.turnContext.lastDestinationPit
+    );
+
+    if (captureResult.capturedPitId !== null) {
+      this.turnContext.animationEvents.push({
+        type: "CAPTURE",
+        capturedPitId: captureResult.capturedPitId,
+        seedsCaptured: captureResult.capturedSeeds,
+        capturingPlayer: this.state.currentPlayer,
+        newStorageTotal:
+          this.state.currentPlayer === "PLAYER_1"
+            ? this.state.players.player1.storage
+            : this.state.players.player2.storage,
+      });
+    }
+
+    return this.finalizeTurn(captureResult);
+  }
+
+  /**
+   * Finalizes the current turn and handles round/match endings.
+   */
+  private finalizeTurn(captureResult: CaptureResult | null): ActionResult<TurnStepResult> {
+    if (!this.turnContext) {
+      return { success: false, error: "No active turn context to finalize" };
+    }
+
+    const nextOpenAfterEnd = getNextOpenPit(
+      this.turnContext.lastDestinationPit,
+      this.state.pits
+    );
+
+    const safeCaptureResult: CaptureResult = captureResult ?? {
       nextOpenPitId: nextOpenAfterEnd,
       capturedPitId: null,
       capturedSeeds: 0,
     };
 
-    if (nextOpenAfterEnd !== null) {
-      captureResult = evaluateAndExecuteCapture(
-        this.state,
-        this.turnContext.lastDestinationPit
-      );
-      if (captureResult.capturedPitId !== null) {
-        this.turnContext.animationEvents.push({
-          type: "CAPTURE",
-          capturedPitId: captureResult.capturedPitId,
-          seedsCaptured: captureResult.capturedSeeds,
-          capturingPlayer: this.state.currentPlayer,
-          newStorageTotal:
-            this.state.currentPlayer === "PLAYER_1"
-              ? this.state.players.player1.storage
-              : this.state.players.player2.storage,
-        });
-      }
-    }
-
-    // Step D: Turn Completion & Round Ending Check
     transitionTurnPhase(this.state, "TURN_END");
     let roundEnded = false;
     let roundSettlement: RoundSettlementResult | undefined;
@@ -386,7 +473,7 @@ export class ChannemaneGame {
     const turnResult: TurnResult = {
       pitSelected: this.turnContext.startPitId,
       sowResult,
-      captureResult,
+      captureResult: safeCaptureResult,
       roundEnded,
       roundSettlement,
       matchEnded,
@@ -402,7 +489,7 @@ export class ChannemaneGame {
       success: true,
       data: {
         type: "TURN_COMPLETED",
-        captureResult,
+        captureResult: safeCaptureResult,
         roundEnded,
         roundSettlement,
         matchEnded,
@@ -415,7 +502,21 @@ export class ChannemaneGame {
   }
 
   /**
-   * Selects a pit and executes the full turn to completion synchronously.
+   * Gets the pit currently awaiting continuation, if any.
+   */
+  public getAwaitingContinuationPit(): number | null {
+    return this.turnContext?.awaitingContinuationPitId ?? null;
+  }
+
+  /**
+   * Gets the pit currently awaiting capture confirmation, if any.
+   */
+  public getAwaitingCapturePit(): number | null {
+    return this.turnContext?.awaitingCapturePitId ?? null;
+  }
+
+  /**
+   * Selects a pit and executes the full turn to completion synchronously (auto-confirming any continuations/captures).
    */
   public selectPit(pitId: number): ActionResult<TurnResult> {
     const startRes = this.startTurn(pitId);
@@ -424,6 +525,16 @@ export class ChannemaneGame {
     }
 
     while (this.isTurnInProgress()) {
+      const awaitingCont = this.getAwaitingContinuationPit();
+      if (awaitingCont !== null) {
+        this.continueSowing(awaitingCont);
+        continue;
+      }
+      const awaitingCap = this.getAwaitingCapturePit();
+      if (awaitingCap !== null) {
+        this.confirmCapture(awaitingCap);
+        continue;
+      }
       const stepRes = this.stepTurn();
       if (!stepRes.success) {
         return { success: false, error: stepRes.error };

@@ -34,7 +34,7 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     await expect(p2Storage).toContainText("0");
   });
 
-  test("Positive 2: Valid pit selection executes turn and advances to Player 2", async ({
+  test("Positive 2: Valid pit selection executes turn, pauses for continuation, and advances on confirmation", async ({
     page,
   }) => {
     // Enable fast mode to run deterministically
@@ -46,12 +46,24 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     // Click P0
     await pit0.click();
 
-    // Seeds on P0 should have mutated from initial 5
-    await expect(pit0).not.toHaveAttribute("data-seeds", "5");
+    // Seeds on P0 dropped from initial 5 to 0
+    await expect(pit0).toHaveAttribute("data-seeds", "0");
 
-    // Turn indicator shifts to Player 2 (allow ample time for full multi-round continuous sowing animation)
+    // Pauses and prompts for continuation on Pit 6
     const turnIndicator = page.getByTestId("turn-indicator");
-    await expect(turnIndicator).toContainText("PLAYER 2'S TURN", { timeout: 15000 });
+    await expect(turnIndicator).toContainText(
+      "Choose the highlighted pit to continue sowing.",
+      { timeout: 10000 }
+    );
+
+    const pit6 = page.getByTestId("pit-6");
+    await expect(pit6).toHaveAttribute("data-continuation-target", "true");
+
+    // Click pit 6 to confirm continuation
+    await pit6.click();
+
+    // Pit 6 seeds are scooped
+    await expect(pit6).not.toHaveAttribute("data-continuation-target", "true");
   });
 
   test("Positive 3: Rules dialog opens, displays Channemane rules, and closes cleanly", async ({
@@ -76,7 +88,10 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
 
     // Play a turn
     await page.getByTestId("pit-0").click();
-    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 2'S TURN", { timeout: 15000 });
+    await expect(page.getByTestId("turn-indicator")).toContainText(
+      "Choose the highlighted pit to continue sowing.",
+      { timeout: 10000 }
+    );
 
     // Click New Game
     await page.getByTestId("restart-btn").click();

@@ -385,14 +385,68 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
   - `tests/storagePacking.test.ts`: 11 tests verifying containment, non-overlap, positive gap, and determinism across `0, 1, 5, 10, 20, 30, 40, 50, 60, 70`.
   - `tests/ui/storageBowl.test.tsx`: 8 UI tests verifying exact SVG seed element counts, test IDs, and Player 1 / Player 2 symmetry.
   - `tests/ui/orientation.test.tsx`: 4 tests validating mobile portrait blocking, mobile landscape gameplay, desktop bypass, and zero state corruption across rotation.
-- **Validation Results**:
-  - **Vitest**: 36 test files, 222 tests passed (0 failed, 0 skipped).
-  - **Playwright E2E**: 15 tests passed (0 failed, 0 skipped).
-  - **TypeScript**: `tsc --noEmit` passed with 0 errors.
-  - **Production Build**: `tsc && vite build` built cleanly in 4.03s (dist generated).
+## 17. Interactive Sowing, Manual Capture Confirmation, and Gesture-Based Bonus Collection
 
+### 17.1 Interaction Flow & State Machine Architecture
+1. **Explicit Interaction State Model**:
+   - `WAITING_FOR_START`: Normal idle state; current player's legal, open, non-empty pits are selectable.
+   - `SOWING_ANIMATION`: Active distribution batch dropping seeds one-by-one into pits at configured animation delay (Slow 450ms / Fast 140ms). Interaction locked during drop steps.
+   - `WAITING_FOR_CONTINUATION`: Traversal batch finishes with hand reaching 0 seeds and the next open pit containing seeds. Sowing pauses cleanly.
+   - `WAITING_FOR_CAPTURE`: Sowing batch concludes with an empty pit stopping condition and the following open pit containing seeds. Traversal pauses before transferring captured seeds.
+   - `TURN_COMPLETION`: Final turn-end checks, round-end validation, and player alternation.
+   - `ROUND_SETTLEMENT`: Round ended ($\text{total board seeds} < 4$); pre-settlement review snapshot preserved.
+   - `MATCH_COMPLETE`: Match concludes when either player has $< 5$ storage seeds after round settlement.
 
+2. **Manual Continuous Sowing**:
+   - The authoritative game engine calculates the exact next pit via `getNextOpenPit(lastDestinationPit, pits)`.
+   - The next pit is highlighted with a gentle green glow/pulse (`.continuation-target`, `data-continuation-target="true"`).
+   - Status prompt displayed outside the board: **"Choose the highlighted pit to continue sowing."**
+   - No seeds are scooped from the pit into hand prior to confirmation.
+   - Tapping the highlighted pit confirms continuation via `confirmContinuation(pitId)`, picking up seeds and launching the next batch.
+   - Invalid pit clicks (other pits, empty pits, closed pits) are rejected without altering seed counts, storage, or turn ownership.
 
+3. **Player-Confirmed Capture**:
+   - Authoritative capture detection implemented via `getCapturablePit(state, destinationPit)`.
+   - Exact capturable pit highlighted with a distinct amber/orange glow/pulse (`.capture-target`, `data-capture-target="true"`).
+   - Status prompt displayed outside the board: **"Tap the highlighted pit to collect its seeds."**
+   - Captured seeds remain visibly inside the pit before confirmation.
+   - Tapping the highlighted pit calls `confirmCapture(pitId)`, transferring seeds to the capturing player's storage and completing the turn.
+   - Duplicate clicks or taps on other pits are rejected.
 
+### 17.2 Gesture-Based Bonus Collection
+1. **Removal of Visible Claim Badges**:
+   - Completely removed visible `<button className="bonus-claim-badge">` from all pits per Requirement 18.
+   - Eligible pits (`seeds === 4 && bonusAvailable && !isClosed`) display a subtle gold outline and glow (`.has-bonus`).
+2. **Mobile / Touch Long-Press Interaction**:
+   - Unified pointer event handler (`onPointerDown`, `onPointerMove`, `onPointerUp`, `onPointerCancel`, `onPointerLeave`).
+   - Touch hold lasting $\ge 500\text{ms}$ awards the bonus via `onClaimBonus(pitId)`.
+   - Dynamic SVG progress ring (`.hold-progress-svg` and `.hold-progress-circle`) fills smoothly over 500ms.
+   - Moving pointer $> 10\text{px}$ or releasing before 500ms cancels the gesture immediately without awarding seeds.
+   - A successful long-press suppresses the subsequent click event to prevent accidental sowing selection.
+3. **Desktop Right-Click Interaction**:
+   - `onContextMenu` handler on pit button prevents the browser context menu and awards bonus if eligible.
+   - Game board container suppresses context menu globally across the board surface.
+4. **Ownership & Rule Integrity**:
+   - Bonus is unconditionally credited to `pit.owner` regardless of current turn player or who triggered the gesture.
+   - Pit seeds reset to 0, `bonusAvailable` set to false, duplicate claims rejected.
+   - Bonus claiming remains functional both during active sowing batches and after sowing pauses.
+   - Round-ending condition ($\text{board seeds} < 4$) is re-evaluated immediately upon claim.
 
+### 17.3 Visual Stability & Accessibility
+- Fixed pit dimensions (`aspect-ratio: 1/1; width: clamp(...)`) maintained without transform scaling, board shaking, or layout shifts.
+- Outline and box-shadow pulses used for green (continuation) and amber (capture) indicators.
+- Reduced-motion accessibility supported via `@media (prefers-reduced-motion: reduce)`.
+- Full keyboard support: focused bonus pits allow pressing 'B' to claim bonus.
 
+### 17.4 Test Verification
+- **Unit & Integration Tests**:
+  - `tests/engine/interactiveEngine.test.ts`: 4 tests verifying pause on continuation, seed retention prior to confirmation, capture confirmation, bonus ownership, and strict 70-seed conservation invariant.
+  - `tests/ui/interactiveGameplay.test.tsx`: 9 tests verifying UI states, green continuation highlight, amber capture highlight, 500ms long-press, move/release cancellation, right-click, and status prompts.
+  - `tests/ui/pit.test.tsx`: 6 tests verifying absence of Claim badge, long-press, and context menu.
+  - `tests/ui/bonusClaiming.test.tsx`: 2 tests verifying mid-sowing and post-sowing bonus gesture claiming.
+  - `tests/ui/boardStability.test.tsx`: 5 tests verifying geometric stability during manual continuation batches.
+- **E2E Tests (`tests/e2e/game.spec.ts`)**:
+  - 15 Playwright browser tests passed (34.3s).
+- **TypeScript & Build**:
+  - `npm run typecheck` passed with 0 errors.
+  - `npm run build` produced production bundle cleanly in 3.30s (`dist/index.html` generated).

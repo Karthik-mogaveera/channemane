@@ -13,6 +13,37 @@ export interface CaptureResult {
 }
 
 /**
+ * Inspects whether a capture opportunity exists after landing at finalDestinationPit,
+ * returning the ID of the capturable pit (or null if none/empty/closed).
+ * Pure inspection function: does not mutate state.
+ */
+export function getCapturablePit(
+  state: GameState,
+  finalDestinationPit: number
+): { nextOpenPitId: number | null; capturablePitId: number | null; seeds: number } {
+  const nextOpenId = getNextOpenPit(finalDestinationPit, state.pits);
+  if (nextOpenId === null || state.pits[nextOpenId].seeds > 0) {
+    return { nextOpenPitId: nextOpenId, capturablePitId: null, seeds: 0 };
+  }
+
+  const followingOpenId = getFollowingOpenPit(finalDestinationPit, state.pits);
+  if (followingOpenId === null) {
+    return { nextOpenPitId: nextOpenId, capturablePitId: null, seeds: 0 };
+  }
+
+  const followingPit = state.pits[followingOpenId];
+  if (followingPit.seeds > 0) {
+    return {
+      nextOpenPitId: nextOpenId,
+      capturablePitId: followingOpenId,
+      seeds: followingPit.seeds,
+    };
+  }
+
+  return { nextOpenPitId: nextOpenId, capturablePitId: null, seeds: 0 };
+}
+
+/**
  * Evaluates and executes capture after continuous sowing halts.
  *
  * Rules:

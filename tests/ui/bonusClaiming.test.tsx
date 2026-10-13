@@ -11,41 +11,50 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
     vi.useRealTimers();
   });
 
-  it("claims an eligible bonus after sowing finishes and immediately updates UI", () => {
+  it("claims an eligible bonus via gesture after sowing pauses or finishes and immediately updates UI", () => {
     render(<App />);
 
-    // In a normal game from initial state (5 seeds everywhere),
-    // let's play a turn and see if bonus occurs or setup a game.
-    // P0 has 5 seeds: sowing drops seeds into P1, P2, P3, P4, P5 (each has 6).
-    // Continuous scoop continues...
+    // Start sowing from P0
     act(() => {
       fireEvent.click(screen.getByTestId("pit-0"));
       vi.runAllTimers();
     });
 
-    // Check if any pit has a claimable bonus
-    const claimButtons = screen.queryAllByText(/CLAIM \+4/);
-    if (claimButtons.length > 0) {
-      const claimBtn = claimButtons[0];
-      const testId = claimBtn.getAttribute("data-testid")!;
-      const pitId = parseInt(testId.replace("claim-bonus-", ""), 10);
+    // Verification of Requirement 18: No Claim button rendered anywhere
+    expect(screen.queryAllByText(/CLAIM \+4/i)).toHaveLength(0);
+
+    // Look for pits with bonus class
+    const bonusPits = Array.from(document.querySelectorAll(".channemane-pit.has-bonus")) as HTMLElement[];
+    if (bonusPits.length > 0) {
+      const pitEl = bonusPits[0];
+      const pitId = parseInt(pitEl.getAttribute("data-pit-id")!, 10);
       const isP1 = pitId <= 6;
 
+      const p1Before = parseInt(screen.getByTestId("p1-captured-count").textContent || "0", 10);
+      const p2Before = parseInt(screen.getByTestId("p2-captured-count").textContent || "0", 10);
+
+      // Desktop Right-Click gesture to claim bonus
       act(() => {
-        fireEvent.click(claimBtn);
+        fireEvent.contextMenu(pitEl);
       });
 
-      // Claim button disappears
-      expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
       // Pit seeds become 0
-      expect(screen.getByTestId(`pit-${pitId}`)).toHaveAttribute("data-seeds", "0");
-      // Storage increased
-      const storageCount = screen.getByTestId(isP1 ? "p1-captured-count" : "p2-captured-count");
-      expect(parseInt(storageCount.textContent || "0", 10)).toBeGreaterThanOrEqual(4);
+      expect(pitEl).toHaveAttribute("data-seeds", "0");
+      // Pit loses has-bonus class
+      expect(pitEl).not.toHaveClass("has-bonus");
+
+      // Pit owner storage increases by 4
+      if (isP1) {
+        expect(screen.getByTestId("p1-captured-count")).toHaveTextContent(String(p1Before + 4));
+        expect(screen.getByTestId("p2-captured-count")).toHaveTextContent(String(p2Before));
+      } else {
+        expect(screen.getByTestId("p2-captured-count")).toHaveTextContent(String(p2Before + 4));
+        expect(screen.getByTestId("p1-captured-count")).toHaveTextContent(String(p1Before));
+      }
     }
   });
 
-  it("allows claiming a bonus during active sowing when pit reaches 4 seeds", () => {
+  it("allows claiming a bonus during active sowing when pit reaches 4 seeds via long-press", () => {
     render(<App />);
 
     // Player 1 clicks pit 0 to start sowing
@@ -53,31 +62,32 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
       fireEvent.click(screen.getByTestId("pit-0"));
     });
 
-    // Step through ticks until a pit has a bonus or turn completes
+    // Step through ticks until a pit has a bonus or first batch completes
     for (let step = 0; step < 50; step++) {
       act(() => {
         vi.advanceTimersByTime(450);
       });
 
-      const claimBtns = screen.queryAllByText(/CLAIM \+4/);
-      if (claimBtns.length > 0) {
-        const claimBtn = claimBtns[0];
-        const testId = claimBtn.getAttribute("data-testid")!;
-        const pitId = parseInt(testId.replace("claim-bonus-", ""), 10);
+      // Verify no Claim button is ever rendered during sowing
+      expect(screen.queryAllByText(/CLAIM \+4/i)).toHaveLength(0);
+
+      const bonusPits = Array.from(document.querySelectorAll(".channemane-pit.has-bonus")) as HTMLElement[];
+      if (bonusPits.length > 0) {
+        const pitEl = bonusPits[0];
+        const pitId = parseInt(pitEl.getAttribute("data-pit-id")!, 10);
         const isP1 = pitId <= 6;
 
         const p1Before = parseInt(screen.getByTestId("p1-captured-count").textContent || "0", 10);
         const p2Before = parseInt(screen.getByTestId("p2-captured-count").textContent || "0", 10);
 
-        // Click claim button MID-SOWING!
+        // Long-press MID-SOWING: pointerDown + 500ms
         act(() => {
-          fireEvent.click(claimBtn);
+          fireEvent.pointerDown(pitEl, { clientX: 100, clientY: 100, button: 0 });
+          vi.advanceTimersByTime(500);
         });
 
-        // Claim button must disappear immediately
-        expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
         // Pit seeds must be 0 immediately
-        expect(screen.getByTestId(`pit-${pitId}`)).toHaveAttribute("data-seeds", "0");
+        expect(pitEl).toHaveAttribute("data-seeds", "0");
 
         // Pit owner storage must increase immediately by 4
         if (isP1) {
@@ -91,11 +101,7 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
       }
     }
 
-    // Complete the rest of the turn animation safely without crash
-    act(() => {
-      vi.runAllTimers();
-    });
-
+    // Board remains stable and intact
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
   });
 });

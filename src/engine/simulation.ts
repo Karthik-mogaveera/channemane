@@ -25,6 +25,8 @@ import type {
   Player,
   SowStep,
   TurnAnimationEvent,
+  GameMode,
+  AIDifficulty,
 } from "./types";
 
 export type TurnStepType =
@@ -80,10 +82,15 @@ export class ChannemaneGame {
   private turnContext: InProgressTurnContext | null = null;
   private preSettlementState: GameState | null = null;
 
-  constructor(startingPlayer: Player = "PLAYER_1", initialState?: GameState) {
+  constructor(
+    startingPlayer: Player = "PLAYER_1",
+    initialState?: GameState,
+    gameMode: GameMode = "local",
+    aiDifficulty: AIDifficulty | null = null
+  ) {
     this.state = initialState
       ? cloneGameState(initialState)
-      : createInitialGame(startingPlayer);
+      : createInitialGame(startingPlayer, gameMode, aiDifficulty);
   }
 
   /**
@@ -91,6 +98,19 @@ export class ChannemaneGame {
    */
   public getState(): GameState {
     return cloneGameState(this.state);
+  }
+
+  public getGameMode(): GameMode {
+    return this.state.gameMode ?? "local";
+  }
+
+  public getAIDifficulty(): AIDifficulty | null {
+    return this.state.aiDifficulty ?? null;
+  }
+
+  public setGameMode(mode: GameMode, difficulty: AIDifficulty | null = null): void {
+    this.state.gameMode = mode;
+    this.state.aiDifficulty = difficulty;
   }
 
   public getCurrentPlayer(): Player {

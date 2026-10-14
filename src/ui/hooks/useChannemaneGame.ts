@@ -10,6 +10,8 @@ import type {
   GameState,
   Player,
   ActionResult,
+  GameMode,
+  AIDifficulty,
 } from "../../engine/types";
 import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
@@ -74,23 +76,46 @@ export interface UseChannemaneGameReturn {
   setAnimationSettings: (settings: AnimationSettings) => void;
   toggleAnimationSpeed: () => void;
 
+  // Game Mode & Difficulty
+  gameMode: GameMode;
+  aiDifficulty: AIDifficulty | null;
+  setGameMode: (mode: GameMode, difficulty?: AIDifficulty | null) => void;
+
   // Player Actions
   selectPit: (pitId: number) => ActionResult<TurnResult> | null;
   confirmContinuation: (pitId: number) => ActionResult<TurnStepResult>;
   confirmCapture: (pitId: number) => ActionResult<TurnStepResult>;
   claimBonus: (pitId: number) => ActionResult<ClaimBonusResult>;
   startNextRound: () => ActionResult<RoundSetupResult>;
-  restartMatch: (startingPlayer?: Player) => void;
+  restartMatch: (
+    startingPlayer?: Player,
+    mode?: GameMode,
+    difficulty?: AIDifficulty | null
+  ) => void;
   clearError: () => void;
 }
 
 export function useChannemaneGame(
   initialStartingPlayer: Player = "PLAYER_1",
   initialAnimationSettings?: Partial<AnimationSettings>,
-  initialGameState?: GameState
+  initialGameState?: GameState,
+  initialGameMode: GameMode = "local",
+  initialDifficulty: AIDifficulty | null = null
 ): UseChannemaneGameReturn {
+  const [gameMode, setGameModeState] = useState<GameMode>(
+    () => initialGameState?.gameMode ?? initialGameMode
+  );
+  const [aiDifficulty, setAiDifficultyState] = useState<AIDifficulty | null>(
+    () => initialGameState?.aiDifficulty ?? initialDifficulty
+  );
+
   const gameRef = useRef<ChannemaneGame>(
-    new ChannemaneGame(initialStartingPlayer, initialGameState)
+    new ChannemaneGame(
+      initialStartingPlayer,
+      initialGameState,
+      initialGameState?.gameMode ?? initialGameMode,
+      initialGameState?.aiDifficulty ?? initialDifficulty
+    )
   );
   const [gameState, setGameState] = useState<GameState>(() =>
     gameRef.current.getState()
@@ -664,27 +689,57 @@ export function useChannemaneGame(
   }, [clearError, gameState.phase]);
 
   /**
+   * Sets game mode and AI difficulty.
+   */
+  const setGameMode = useCallback(
+    (mode: GameMode, difficulty: AIDifficulty | null = null) => {
+      setGameModeState(mode);
+      setAiDifficultyState(difficulty);
+      gameRef.current.setGameMode(mode, difficulty);
+      setGameState(gameRef.current.getState());
+    },
+    []
+  );
+
+  /**
    * Restarts the match with a fresh board.
    */
-  const restartMatch = useCallback((startingPlayer: Player = "PLAYER_1") => {
-    animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
-    animationTimeoutsRef.current = [];
-    setIsAnimating(false);
-    setActiveDropPit(null);
-    setVisualHandSeeds(0);
-    setIsReviewingBoard(false);
-    setReviewBoardState(null);
-    setLastActionError(null);
-    setSettlementSummary(null);
-    lastSettlementRef.current = null;
-    setMatchSummary(null);
-    setHighlightedContinuationPit(null);
-    setHighlightedCapturePit(null);
-    setInteractionState("WAITING_FOR_START");
+  const restartMatch = useCallback(
+    (
+      startingPlayer: Player = "PLAYER_1",
+      mode?: GameMode,
+      difficulty?: AIDifficulty | null
+    ) => {
+      animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
+      animationTimeoutsRef.current = [];
+      setIsAnimating(false);
+      setActiveDropPit(null);
+      setVisualHandSeeds(0);
+      setIsReviewingBoard(false);
+      setReviewBoardState(null);
+      setLastActionError(null);
+      setSettlementSummary(null);
+      lastSettlementRef.current = null;
+      setMatchSummary(null);
+      setHighlightedContinuationPit(null);
+      setHighlightedCapturePit(null);
+      setInteractionState("WAITING_FOR_START");
 
-    gameRef.current = new ChannemaneGame(startingPlayer);
-    setGameState(gameRef.current.getState());
-  }, []);
+      const chosenMode = mode ?? gameMode;
+      const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
+      setGameModeState(chosenMode);
+      setAiDifficultyState(chosenDiff);
+
+      gameRef.current = new ChannemaneGame(
+        startingPlayer,
+        undefined,
+        chosenMode,
+        chosenDiff
+      );
+      setGameState(gameRef.current.getState());
+    },
+    [gameMode, aiDifficulty]
+  );
 
   const effectiveGameState: GameState = useMemo(() => {
     if (isReviewingBoard && reviewBoardState) {
@@ -713,6 +768,9 @@ export function useChannemaneGame(
   return {
     gameState: effectiveGameState,
     authoritativeGameState: gameState,
+    gameMode,
+    aiDifficulty,
+    setGameMode,
     isReviewingBoard,
     reviewBoardState,
     selectablePits,

@@ -74,7 +74,7 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
     // Phone in landscape: 844x390
     mockViewport(false, true, 844, 390);
 
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     expect(
       screen.queryByTestId("orientation-prompt-overlay")
@@ -86,7 +86,7 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
     // Desktop window resized narrow: 600x900, but NO touch (coarse=false, maxTouchPoints=0)
     mockViewport(true, false, 600, 900);
 
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     expect(
       screen.queryByTestId("orientation-prompt-overlay")
@@ -97,7 +97,7 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
   it("Test 4: Preserves complete game state across simulated orientation changes", () => {
     // Start in mobile landscape: play a move on P0
     mockViewport(false, true, 844, 390);
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     const pit0 = screen.getByTestId("pit-0");
     fireEvent.click(pit0);

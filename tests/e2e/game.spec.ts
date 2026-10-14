@@ -3,6 +3,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
+    const localBtn = page.getByTestId("menu-btn-local");
+    if (await localBtn.isVisible()) {
+      await localBtn.click();
+    }
     // Wait for board to be visible
     await expect(page.getByTestId("channemane-board")).toBeVisible();
   });
@@ -307,4 +311,92 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     }
   });
 });
+
+test.describe("Main Menu & Game Mode Selection E2E", () => {
+  test("E2E Scenario 1: Initial visit displays Main Menu with Play with AI, Local Multiplayer, and Rules", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Verify Main Menu is visible
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+    await expect(page.getByTestId("menu-btn-ai")).toBeVisible();
+    await expect(page.getByTestId("menu-btn-local")).toBeVisible();
+    await expect(page.getByTestId("menu-btn-rules")).toBeVisible();
+
+    // Verify board is NOT open initially
+    await expect(page.getByTestId("channemane-board")).not.toBeVisible();
+  });
+
+  test("E2E Scenario 2: Play with AI opens Difficulty selection with Beginner, Expert, Master, and Back", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-ai").click();
+    await expect(page.getByTestId("difficulty-select")).toBeVisible();
+
+    await expect(page.getByTestId("difficulty-btn-beginner")).toBeVisible();
+    await expect(page.getByTestId("difficulty-btn-expert")).toBeVisible();
+    await expect(page.getByTestId("difficulty-btn-master")).toBeVisible();
+    await expect(page.getByTestId("difficulty-btn-back")).toBeVisible();
+
+    // Test Back button
+    await page.getByTestId("difficulty-btn-back").click();
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+    await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
+  });
+
+  test("E2E Scenario 3: Selecting Master difficulty launches board with AI (MASTER) tag", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-ai").click();
+    await page.getByTestId("difficulty-btn-master").click();
+
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (MASTER)");
+  });
+
+  test("E2E Scenario 4: Local Multiplayer opens board directly without difficulty prompt", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-local").click();
+
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 2P");
+  });
+
+  test("E2E Scenario 5: Rules modal opens from Main Menu and closes back to Main Menu", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-rules").click();
+    await expect(page.getByTestId("rules-modal")).toBeVisible();
+
+    await page.getByTestId("rules-back-btn").click();
+    await expect(page.getByTestId("rules-modal")).not.toBeVisible();
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+  });
+
+  test("E2E Scenario 6: Returning to Main Menu from Game Header cleanly resets", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-local").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // Click Menu in Header
+    await page.getByTestId("main-menu-btn").click();
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+    await expect(page.getByTestId("channemane-board")).not.toBeVisible();
+  });
+});
+
 

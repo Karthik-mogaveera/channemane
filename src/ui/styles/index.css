@@ -985,3 +985,347 @@ body {
   }
 }
 
+/* ==========================================================================
+   Header Branding & Mode Tags
+   ========================================================================== */
+.header-branding-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.game-mode-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid var(--brass-gold);
+  color: var(--gold-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   Main Menu & Difficulty Selection Screens
+   Karnataka Royal Heritage Theme
+   ========================================================================== */
+.main-menu-container,
+.difficulty-select-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 48px);
+  padding: 16px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.main-menu-card,
+.difficulty-select-card {
+  width: 100%;
+  max-width: 560px;
+  background: radial-gradient(circle at 50% 10%, #2f180e 0%, #1c0e08 100%);
+  border: 2px solid rgba(212, 175, 55, 0.5);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px 24px;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.75),
+    inset 0 0 24px rgba(212, 175, 55, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative corner accents */
+.main-menu-card::before,
+.difficulty-select-card::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: calc(var(--radius-lg) - 4px);
+  pointer-events: none;
+}
+
+/* Menu Header */
+.main-menu-header,
+.difficulty-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.menu-emblem,
+.difficulty-badge-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(212, 175, 55, 0.3));
+}
+
+.menu-brand-title {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, #fff2cc 0%, var(--brass-gold) 60%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.menu-brand-kannada {
+  font-size: 1rem;
+  color: var(--brass-gold);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.menu-brand-subtitle,
+.difficulty-subtitle {
+  font-size: 0.85rem;
+  color: var(--gold-light);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.difficulty-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  background: linear-gradient(135deg, #fff2cc 0%, var(--brass-gold) 60%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+/* Divider */
+.menu-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--brass-gold);
+  opacity: 0.6;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass-gold), transparent);
+}
+
+.divider-diamond {
+  font-size: 0.75rem;
+  color: var(--brass-gold);
+}
+
+/* Menu Option Buttons */
+.main-menu-options,
+.difficulty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.menu-option-btn,
+.difficulty-option-btn {
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  min-height: 68px;
+  background: linear-gradient(135deg, rgba(58, 30, 18, 0.85) 0%, rgba(36, 18, 10, 0.95) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.22s ease-in-out;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-option-btn:hover,
+.difficulty-option-btn:hover {
+  background: linear-gradient(135deg, rgba(82, 42, 24, 0.95) 0%, rgba(48, 24, 14, 0.95) 100%);
+  border-color: var(--brass-gold);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 16px var(--gold-glow);
+  transform: translateY(-2px);
+}
+
+.menu-option-btn:active,
+.difficulty-option-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.menu-option-btn:focus-visible,
+.difficulty-option-btn:focus-visible {
+  outline: 3px solid var(--brass-gold);
+  outline-offset: 3px;
+}
+
+/* Icon / Indicator */
+.menu-btn-icon,
+.difficulty-level-indicator {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(22, 11, 6, 0.6);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Text Content */
+.menu-btn-content,
+.difficulty-btn-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.menu-btn-title,
+.difficulty-btn-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+}
+
+.menu-btn-desc,
+.difficulty-btn-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.menu-btn-arrow {
+  font-size: 1.3rem;
+  color: var(--brass-gold);
+  font-weight: 700;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.menu-option-btn:hover .menu-btn-arrow,
+.difficulty-option-btn:hover .menu-btn-arrow {
+  transform: translateX(4px);
+  color: #fff2cc;
+}
+
+/* Rules Option Highlight */
+.menu-option-rules {
+  background: linear-gradient(135deg, rgba(46, 26, 17, 0.75) 0%, rgba(28, 14, 8, 0.85) 100%);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* Difficulty Button Variants */
+.difficulty-beginner:hover {
+  border-color: #34d399;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.3);
+}
+
+.difficulty-expert:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+}
+
+.difficulty-master:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 16px rgba(248, 113, 113, 0.3);
+}
+
+/* Footers */
+.main-menu-footer,
+.difficulty-footer {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.main-menu-footer span {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+.difficulty-back-btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 48px;
+  font-size: 0.95rem;
+}
+
+/* Mobile Responsiveness for Menus */
+@media (max-width: 600px) {
+  .main-menu-card,
+  .difficulty-select-card {
+    padding: 22px 18px 18px;
+    gap: 16px;
+  }
+
+  .menu-brand-title {
+    font-size: 1.7rem;
+    letter-spacing: 2px;
+  }
+
+  .difficulty-title {
+    font-size: 1.4rem;
+  }
+
+  .menu-option-btn,
+  .difficulty-option-btn {
+    padding: 12px 14px;
+    min-height: 60px;
+    gap: 12px;
+  }
+
+  .menu-btn-icon,
+  .difficulty-level-indicator {
+    font-size: 1.5rem;
+    width: 38px;
+    height: 38px;
+  }
+
+  .menu-btn-title,
+  .difficulty-btn-title {
+    font-size: 1.05rem;
+  }
+
+  .menu-btn-desc,
+  .difficulty-btn-desc {
+    font-size: 0.75rem;
+  }
+}
+
+

@@ -12,7 +12,7 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
   });
 
   it("claims an eligible bonus via gesture after sowing pauses or finishes and immediately updates UI", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     // Start sowing from P0
     act(() => {
@@ -55,7 +55,7 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
   });
 
   it("allows claiming a bonus during active sowing when pit reaches 4 seeds via long-press", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     // Player 1 clicks pit 0 to start sowing
     act(() => {

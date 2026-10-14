@@ -9,13 +9,17 @@ import {
   INITIAL_SEEDS_PER_PIT,
   getPitOwner,
 } from "./constants";
-import type { GameState, Pit, Player } from "./types";
+import type { GameState, Pit, Player, GameMode, AIDifficulty } from "./types";
 
 /**
  * Creates the initial game state for Round 1.
  * All 14 pits are OPEN with 5 seeds each, both storages at 0, seedsInHand at 0.
  */
-export function createInitialGame(startingPlayer: Player = "PLAYER_1"): GameState {
+export function createInitialGame(
+  startingPlayer: Player = "PLAYER_1",
+  gameMode: GameMode = "local",
+  aiDifficulty: AIDifficulty | null = null
+): GameState {
   const pits: Pit[] = [];
 
   for (let i = 0; i < TOTAL_PITS; i++) {
@@ -56,6 +60,8 @@ export function createInitialGame(startingPlayer: Player = "PLAYER_1"): GameStat
     lastPit: null,
     winner: null,
     roundWinner: null,
+    gameMode,
+    aiDifficulty,
   };
 }
 

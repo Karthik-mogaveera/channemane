@@ -14,7 +14,7 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
 
   describe("Section 1: Manual Continuous Sowing Flow", () => {
     it("pauses on completion of first distribution batch, highlights exact pit with green glow, and shows prompt", () => {
-      render(<App />);
+      render(<App initialScreen="GAME" />);
 
       // Player 1 taps legal starting pit P0
       const pit0 = screen.getByTestId("pit-0");
@@ -110,7 +110,7 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
 
   describe("Section 3: Bonus Collection Gesture & Claim Button Removal", () => {
     it("Requirement 18: Never renders visible Claim buttons on bonus pits", () => {
-      render(<App />);
+      render(<App initialScreen="GAME" />);
       expect(screen.queryAllByText(/CLAIM \+4/i)).toHaveLength(0);
       expect(screen.queryAllByTestId(/^claim-bonus-/)).toHaveLength(0);
     });
@@ -250,7 +250,7 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
     });
 
     it("Requirement 33: Desktop right-click on bonus pit collects bonus without context menu", () => {
-      render(<App />);
+      render(<App initialScreen="GAME" />);
 
       const board = screen.getByTestId("channemane-board");
       const defaultPrevented = fireEvent.contextMenu(board);
@@ -260,7 +260,7 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
 
   describe("Section 7: Status Messages and Contextual Guidance", () => {
     it("displays player turn at start and continuation message when paused", () => {
-      render(<App />);
+      render(<App initialScreen="GAME" />);
       expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
 
       // Start sowing

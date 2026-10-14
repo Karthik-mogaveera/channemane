@@ -97,8 +97,29 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
           </ul>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
-          <button type="button" className="btn" onClick={onClose}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: "16px",
+            gap: "8px",
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onClose}
+            data-testid="rules-back-btn"
+          >
+            ← Back to Menu
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+            data-testid="rules-close-btn"
+          >
             Got it, Let's Play!
           </button>
         </div>

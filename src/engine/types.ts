@@ -7,6 +7,10 @@ export type Player = "PLAYER_1" | "PLAYER_2";
 
 export type PitStatus = "OPEN" | "CLOSED";
 
+export type GameMode = "local" | "ai";
+
+export type AIDifficulty = "beginner" | "expert" | "master";
+
 export type GamePhase =
   | "GAME_START"
   | "ROUND_SETUP"
@@ -72,6 +76,12 @@ export interface GameState {
 
   winner: Player | null;
   roundWinner: Player | null;
+
+  /**
+   * Selected game mode (local or AI) and difficulty if playing against AI
+   */
+  gameMode?: GameMode;
+  aiDifficulty?: AIDifficulty | null;
 }
 
 /**

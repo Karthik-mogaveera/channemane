@@ -450,3 +450,62 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
 - **TypeScript & Build**:
   - `npm run typecheck` passed with 0 errors.
   - `npm run build` produced production bundle cleanly in 3.30s (`dist/index.html` generated).
+
+---
+
+## 18. Main Menu and Game Mode Selection
+
+### 18.1 Implementation Summary
+1. **Initial Main Menu (`src/ui/components/MainMenu.tsx`)**:
+   - Created ornate landing screen adhering strictly to the Karnataka Royal Heritage theme (deep teak/rosewood gradients, brass inlay borders, gold glow effects, and Kannada cultural branding "ಪಾರಂಪರಿಕ ಚನ್ನೆಮಣೆ ಆಟ").
+   - Three clearly visible, mobile touch-friendly primary options:
+     - **Play with AI** (`data-testid="menu-btn-ai"`)
+     - **Local Multiplayer** (`data-testid="menu-btn-local"`)
+     - **Rules** (`data-testid="menu-btn-rules"`)
+   - Initial application state defaults to `currentScreen = "MAIN_MENU"`; the game board is never opened automatically upon initial load.
+   - Designed with generous touch targets (min-height $\ge 68\text{px}$ on desktop, $60\text{px}$ on mobile) with distinct icons, titles, and descriptive subtitles.
+
+2. **Play with AI Flow (`src/ui/components/DifficultySelect.tsx`)**:
+   - Displays a dedicated difficulty selection screen with exactly three options:
+     - **Beginner** (`data-testid="difficulty-btn-beginner"`)
+     - **Expert** (`data-testid="difficulty-btn-expert"`)
+     - **Master** (`data-testid="difficulty-btn-master"`)
+   - Includes **⬅️ Back to Main Menu** (`data-testid="difficulty-btn-back"`) to return seamlessly to `MAIN_MENU`.
+   - Selecting any difficulty initializes the game board, setting `gameMode: "ai"` and `aiDifficulty: "beginner" | "expert" | "master"` in the authoritative game state and UI state.
+   - Preserves all existing board rendering, interaction states, and sowing mechanics without altering AI algorithms (deferred to future AI implementation phase).
+
+3. **Local Multiplayer Flow**:
+   - Clicking **Local Multiplayer** launches the existing board directly without asking for an AI difficulty.
+   - Stores `gameMode: "local"` and `aiDifficulty: null` in state.
+
+4. **Rules Flow (`src/ui/components/RulesModal.tsx`)**:
+   - Reuses the existing `RulesModal` component without duplicating rules.
+   - Added a dedicated **← Back to Menu** button (`data-testid="rules-back-btn"`) alongside the close button to provide clear return navigation whether launched from the Main Menu or the in-game Header.
+
+5. **In-Game Navigation & State Management**:
+   - Header (`src/ui/components/Header.tsx`) enhanced with a **🏠 Menu** button (`data-testid="main-menu-btn"`), allowing users to return to the Main Menu cleanly at any time.
+   - Returning to the menu resets any in-progress game state cleanly, ensuring no stale timeouts or corrupted state remain.
+   - Header includes a dynamic mode badge (`data-testid="game-mode-tag"`), indicating `🤖 AI (BEGINNER|EXPERT|MASTER)` or `👥 LOCAL 2P`.
+   - Engine models updated in `src/engine/types.ts`, `src/engine/board.ts`, `src/engine/simulation.ts`, and `src/ui/hooks/useChannemaneGame.ts`.
+
+### 18.2 Test Verification
+- **Unit & Navigation Tests (`tests/ui/menuNavigation.test.tsx`)**:
+  - 8 automated tests passed verifying all 10 user requirements:
+    1. Main menu with 3 buttons rendered initially.
+    2. Board not opened automatically on initial load.
+    3. Play with AI displays Beginner, Expert, Master, and Back.
+    4. Back button returns to Main Menu.
+    5. Beginner selection launches board and records `gameMode: "ai"`, `aiDifficulty: "beginner"`.
+    6. Expert selection launches board and records `gameMode: "ai"`, `aiDifficulty: "expert"`.
+    7. Master selection launches board and records `gameMode: "ai"`, `aiDifficulty: "master"`.
+    8. Local Multiplayer launches board directly without difficulty prompt and records `gameMode: "local"`.
+    9. Rules opens existing modal from main menu and returns cleanly.
+    10. In-game menu button returns to main menu and resets game state.
+- **Full Vitest Test Suite**:
+  - 27 test files, 185 tests passed (100% pass rate).
+- **Playwright Browser E2E Suite (`tests/e2e/game.spec.ts`)**:
+  - 21 browser E2E tests passed (51.5s), including 6 dedicated end-to-end scenarios covering menu navigation, difficulty selection, local multiplayer, rules modal, and in-game return to menu.
+- **Typecheck & Production Build**:
+  - `npm run typecheck` passed (0 errors).
+  - `npm run build` produced clean production bundle in 2.98s (`dist/index.html` generated).
+

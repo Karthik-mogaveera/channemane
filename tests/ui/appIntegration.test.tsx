@@ -12,7 +12,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("renders full game UI with 14 pits, single storage bowls, and controls", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     // Branding and header
     expect(screen.getByText(/CHANNEMANE/)).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("allows selecting a legal pit, prompts continuation, and advances the turn", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     // Player 1 clicks their own pit P0
     const pit0 = screen.getByTestId("pit-0");
@@ -78,7 +78,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("shows real-time seed-by-seed animation increments", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     const pit0 = screen.getByTestId("pit-0");
 
@@ -112,7 +112,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("toggles between Slow Mode and Fast Mode (Issue 3)", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     const toggleBtn = screen.getByTestId("toggle-animation-btn");
     // Default is Slow Mode (450ms)
@@ -132,7 +132,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("opens and closes the Rules modal", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     expect(screen.queryByTestId("rules-modal")).not.toBeInTheDocument();
 
@@ -148,7 +148,7 @@ describe("App Integration with Channemane Engine", () => {
   });
 
   it("resets the board when New Game is clicked", () => {
-    render(<App />);
+    render(<App initialScreen="GAME" />);
 
     // Play a move
     act(() => {

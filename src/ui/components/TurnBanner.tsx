@@ -38,11 +38,11 @@ export const TurnBanner: React.FC<TurnBannerProps> = ({
   if (interactionState === "WAITING_FOR_CONTINUATION") {
     statusText = "Choose the highlighted pit to continue sowing.";
     playerClass = "continuation-prompt";
-    indicatorDotColor = "#22c55e";
+    indicatorDotColor = "var(--indicator-continuation, #f59e0b)";
   } else if (interactionState === "WAITING_FOR_CAPTURE") {
     statusText = "Tap the highlighted pit to collect its seeds.";
     playerClass = "capture-prompt";
-    indicatorDotColor = "#f97316";
+    indicatorDotColor = "var(--indicator-capture-light, #fb923c)";
   } else if (isAnimating) {
     statusText = `${playerText} IS SOWING...`;
   } else if (gamePhase === "ROUND_SETTLEMENT") {

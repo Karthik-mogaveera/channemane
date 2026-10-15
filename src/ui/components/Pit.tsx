@@ -26,7 +26,7 @@ export interface PitProps {
   onClaimBonus: (pitId: number) => void;
 }
 
-export const Pit: React.FC<PitProps> = ({
+export const Pit: React.FC<PitProps> = React.memo(({
   pitId,
   owner,
   seeds,
@@ -326,4 +326,6 @@ export const Pit: React.FC<PitProps> = ({
       )}
     </div>
   );
-};
+});
+
+Pit.displayName = "Pit";

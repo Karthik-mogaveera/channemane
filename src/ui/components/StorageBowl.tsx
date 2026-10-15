@@ -15,7 +15,7 @@ export interface StorageBowlProps {
   className?: string;
 }
 
-export const StorageBowl: React.FC<StorageBowlProps> = ({
+export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   player,
   storageSeeds,
   className = "",
@@ -106,4 +106,6 @@ export const StorageBowl: React.FC<StorageBowlProps> = ({
       <span className="storage-pill">Captured</span>
     </div>
   );
-};
+});
+
+StorageBowl.displayName = "StorageBowl";

@@ -44,14 +44,6 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           <h2 id="settlement-title" className="modal-title">
             Round Settled
           </h2>
-          <button
-            type="button"
-            className="close-btn"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            ×
-          </button>
         </div>
 
         <div className="modal-body">

@@ -43,6 +43,22 @@
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
+
+  /* Gameplay Indicator Design Tokens (Issue 3: Theme-Compatible Karnataka Royal Palette) */
+  --indicator-selected: #fff2cc;
+  --indicator-selected-glow: rgba(255, 242, 204, 0.85);
+
+  --indicator-continuation: #f59e0b; /* Warm honey amber (replaces mismatched neon green) */
+  --indicator-continuation-light: #fcd34d;
+  --indicator-continuation-glow: rgba(245, 158, 11, 0.45);
+
+  --indicator-capture: #c2410c; /* Deep burnished terracotta bronze / rust */
+  --indicator-capture-light: #fb923c;
+  --indicator-capture-glow: rgba(194, 65, 12, 0.45);
+
+  --indicator-bonus: #d4af37; /* Radiant royal brass gold */
+  --indicator-bonus-light: #fbbf24;
+  --indicator-bonus-glow: rgba(212, 175, 55, 0.55);
 }
 
 * {
@@ -87,6 +103,8 @@ body {
   flex-wrap: wrap;
   gap: 12px;
   padding: 10px 16px;
+  min-height: 80px;
+  box-sizing: border-box;
   background: rgba(36, 19, 11, 0.85);
   border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: var(--radius-md);
@@ -97,6 +115,7 @@ body {
 .brand-title {
   font-family: var(--font-heading);
   font-size: 1.5rem;
+  line-height: 1.2;
   font-weight: 900;
   letter-spacing: 1.5px;
   background: linear-gradient(135deg, #fff2cc 0%, var(--brass-gold) 60%, #b8860b 100%);
@@ -201,11 +220,11 @@ body {
 }
 
 .continuation-prompt {
-  color: #4ade80;
+  color: var(--indicator-continuation-light);
 }
 
 .capture-prompt {
-  color: #fb923c;
+  color: var(--indicator-capture-light);
 }
 
 .bonus-hint-pill {
@@ -518,34 +537,34 @@ body {
 }
 
 .channemane-pit.selectable:hover:not(:disabled) {
-  border-color: #fff2cc;
+  border-color: var(--indicator-selected);
   box-shadow:
     inset 0 4px 10px rgba(0, 0, 0, 0.8),
-    0 0 20px rgba(212, 175, 55, 0.7);
+    0 0 20px var(--indicator-selected-glow);
 }
 
 .channemane-pit.active-drop {
   border-color: #ffffff !important;
   box-shadow:
     inset 0 0 20px rgba(255, 255, 255, 0.6),
-    0 0 24px rgba(255, 243, 204, 0.95) !important;
+    0 0 24px var(--indicator-selected-glow) !important;
 }
 
 .channemane-pit.has-bonus {
-  outline: 2.5px solid #eab308 !important;
-  border-color: #fbbf24 !important;
+  outline: 2.5px solid var(--indicator-bonus-light) !important;
+  border-color: var(--indicator-bonus) !important;
   box-shadow:
-    inset 0 0 10px rgba(234, 179, 8, 0.3),
-    0 0 16px rgba(234, 179, 8, 0.65) !important;
+    inset 0 0 10px rgba(212, 175, 55, 0.35),
+    0 0 18px var(--indicator-bonus-glow) !important;
   animation: bonusGlow 1.4s infinite alternate ease-in-out;
 }
 
 .channemane-pit.continuation-target {
-  outline: 3px solid #22c55e !important;
-  border-color: #4ade80 !important;
+  outline: 3px dashed var(--indicator-continuation-light) !important;
+  border-color: var(--indicator-continuation) !important;
   box-shadow:
-    inset 0 0 14px rgba(34, 197, 94, 0.35),
-    0 0 20px rgba(34, 197, 94, 0.85) !important;
+    inset 0 0 14px rgba(245, 158, 11, 0.35),
+    0 0 20px var(--indicator-continuation-glow) !important;
   animation: pulseContinuation 1.4s infinite ease-in-out;
   cursor: pointer;
 }
@@ -553,22 +572,22 @@ body {
 @keyframes pulseContinuation {
   0%, 100% {
     box-shadow:
-      inset 0 0 10px rgba(34, 197, 94, 0.3),
-      0 0 12px rgba(34, 197, 94, 0.6);
+      inset 0 0 10px rgba(245, 158, 11, 0.25),
+      0 0 12px rgba(245, 158, 11, 0.45);
   }
   50% {
     box-shadow:
-      inset 0 0 18px rgba(34, 197, 94, 0.5),
-      0 0 24px rgba(34, 197, 94, 1);
+      inset 0 0 18px rgba(245, 158, 11, 0.5),
+      0 0 24px rgba(245, 158, 11, 0.9);
   }
 }
 
 .channemane-pit.capture-target {
-  outline: 3px solid #f97316 !important;
-  border-color: #fb923c !important;
+  outline: 3px double var(--indicator-capture-light) !important;
+  border-color: var(--indicator-capture) !important;
   box-shadow:
-    inset 0 0 14px rgba(249, 115, 22, 0.35),
-    0 0 20px rgba(249, 115, 22, 0.85) !important;
+    inset 0 0 14px rgba(194, 65, 12, 0.35),
+    0 0 20px var(--indicator-capture-glow) !important;
   animation: pulseCapture 1.4s infinite ease-in-out;
   cursor: pointer;
 }
@@ -576,13 +595,13 @@ body {
 @keyframes pulseCapture {
   0%, 100% {
     box-shadow:
-      inset 0 0 10px rgba(249, 115, 22, 0.3),
-      0 0 12px rgba(249, 115, 22, 0.65);
+      inset 0 0 10px rgba(194, 65, 12, 0.25),
+      0 0 12px rgba(194, 65, 12, 0.45);
   }
   50% {
     box-shadow:
-      inset 0 0 18px rgba(249, 115, 22, 0.55),
-      0 0 26px rgba(249, 115, 22, 1);
+      inset 0 0 18px rgba(194, 65, 12, 0.55),
+      0 0 26px rgba(194, 65, 12, 0.95);
   }
 }
 
@@ -711,6 +730,9 @@ body {
   padding: 24px;
   max-width: 500px;
   width: 100%;
+  box-sizing: border-box;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
   box-shadow:
     0 20px 48px rgba(0, 0, 0, 0.85),
     0 0 20px var(--gold-glow);
@@ -1033,6 +1055,9 @@ body {
 .difficulty-select-card {
   width: 100%;
   max-width: 560px;
+  box-sizing: border-box;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
   background: radial-gradient(circle at 50% 10%, #2f180e 0%, #1c0e08 100%);
   border: 2px solid rgba(212, 175, 55, 0.5);
   border-radius: var(--radius-lg);
@@ -1327,5 +1352,273 @@ body {
     font-size: 0.75rem;
   }
 }
+
+/* ==========================================================================
+   Mobile Landscape Modal & Setup Card Optimization (Issue 2)
+   Ensures all dialogs, setup screens, and game modals fit on short landscape
+   screens (e.g. mobile 320px-480px height) without requiring vertical scroll.
+   ========================================================================== */
+@media (orientation: landscape) and (max-height: 540px) {
+  /* Overlay containers */
+  .modal-overlay,
+  .main-menu-container,
+  .difficulty-select-container {
+    padding: 8px 12px;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+  }
+
+  /* Base Modal Content in Landscape */
+  .modal-content {
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 10px 18px;
+    gap: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding-bottom: 6px;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+  }
+
+  .modal-body {
+    max-height: calc(100dvh - 96px);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    padding-right: 4px;
+    overflow-y: auto;
+  }
+
+  /* Settlement Modal in Landscape */
+  .winner-banner {
+    padding: 4px 10px;
+    font-size: 0.9rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .settlement-score-grid {
+    margin: 4px 0;
+    gap: 8px;
+  }
+
+  .score-box {
+    padding: 4px 8px;
+  }
+
+  .score-box h5 {
+    font-size: 0.72rem;
+    margin-bottom: 1px;
+  }
+
+  .score-box .score-val {
+    font-size: 1.25rem;
+  }
+
+  .score-box small {
+    font-size: 0.68rem;
+  }
+
+  /* Match End Modal in Landscape */
+  div[data-testid="match-end-modal"] .modal-content {
+    max-width: 440px;
+    padding: 12px 18px;
+    gap: 8px;
+  }
+
+  div[data-testid="match-end-modal"] .winner-banner {
+    padding: 6px 12px !important;
+    font-size: 1.05rem !important;
+  }
+
+  /* Rules Modal in Landscape: 2-Column Responsive Reading */
+  div[data-testid="rules-modal"] .modal-content {
+    max-width: 680px;
+    padding: 10px 16px;
+    gap: 6px;
+  }
+
+  div[data-testid="rules-modal"] .modal-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 14px;
+    max-height: calc(100dvh - 92px);
+    overflow-y: auto;
+  }
+
+  div[data-testid="rules-modal"] .modal-body h4 {
+    margin: 4px 0 2px;
+    font-size: 0.82rem;
+  }
+
+  div[data-testid="rules-modal"] .modal-body p,
+  div[data-testid="rules-modal"] .modal-body ul {
+    font-size: 0.73rem;
+    line-height: 1.25;
+    margin-bottom: 2px;
+  }
+
+  /* Main Menu in Landscape: Horizontal Side-by-Side Grid */
+  .main-menu-card {
+    max-width: 680px;
+    width: 96%;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    grid-template-areas: "header options";
+    align-items: center;
+    gap: 12px 24px;
+    padding: 12px 20px;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .main-menu-header {
+    grid-area: header;
+    text-align: left;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .menu-emblem {
+    font-size: 1.8rem;
+  }
+
+  .menu-brand-title {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+  }
+
+  .menu-brand-kannada {
+    font-size: 0.8rem;
+  }
+
+  .menu-brand-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+
+  .main-menu-card .menu-divider,
+  .main-menu-footer {
+    display: none;
+  }
+
+  .main-menu-options {
+    grid-area: options;
+    gap: 8px;
+  }
+
+  .menu-option-btn {
+    min-height: 44px;
+    padding: 6px 14px;
+    gap: 10px;
+  }
+
+  .menu-btn-icon {
+    font-size: 1.25rem;
+    width: 32px;
+    height: 32px;
+  }
+
+  .menu-btn-title {
+    font-size: 0.95rem;
+  }
+
+  .menu-btn-desc {
+    display: none;
+  }
+
+  .menu-btn-arrow {
+    font-size: 1.1rem;
+  }
+
+  /* Difficulty Selection in Landscape: 2-Column Grid */
+  .difficulty-select-card {
+    max-width: 680px;
+    width: 96%;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    grid-template-areas:
+      "header options"
+      "footer options";
+    align-items: center;
+    gap: 8px 24px;
+    padding: 12px 20px;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .difficulty-header {
+    grid-area: header;
+    text-align: left;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .difficulty-badge-icon {
+    font-size: 1.8rem;
+  }
+
+  .difficulty-title {
+    font-size: 1.35rem;
+    letter-spacing: 1px;
+  }
+
+  .difficulty-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+
+  .difficulty-select-card .menu-divider {
+    display: none;
+  }
+
+  .difficulty-options {
+    grid-area: options;
+    gap: 8px;
+  }
+
+  .difficulty-option-btn {
+    min-height: 44px;
+    padding: 6px 14px;
+    gap: 10px;
+  }
+
+  .difficulty-level-indicator {
+    font-size: 1.25rem;
+    width: 32px;
+    height: 32px;
+  }
+
+  .difficulty-btn-title {
+    font-size: 0.95rem;
+  }
+
+  .difficulty-btn-desc {
+    display: none;
+  }
+
+  .difficulty-footer {
+    grid-area: footer;
+    margin-top: 0;
+  }
+
+  .difficulty-back-btn {
+    min-height: 38px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+  }
+}
+
 
 

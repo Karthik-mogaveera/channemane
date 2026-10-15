@@ -15,7 +15,7 @@ export interface PlayerPanelsProps {
   player2: PlayerState;
 }
 
-export const PlayerPanels: React.FC<PlayerPanelsProps> = ({
+export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
   currentPlayer,
   player1,
   player2,
@@ -53,4 +53,6 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = ({
       </div>
     </div>
   );
-};
+});
+
+PlayerPanels.displayName = "PlayerPanels";

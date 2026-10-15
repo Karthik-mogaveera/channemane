@@ -9,13 +9,12 @@ import type { MatchEndResult } from "../../engine/matchEnd";
 export interface MatchEndModalProps {
   matchResult: MatchEndResult;
   onNewMatch: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export const MatchEndModal: React.FC<MatchEndModalProps> = ({
   matchResult,
   onNewMatch,
-  onClose,
 }) => {
   const isP1Winner = matchResult.winner === "PLAYER_1";
   const winnerTitle = isP1Winner ? "Player 1 Wins the Match!" : "Player 2 Wins the Match!";
@@ -33,14 +32,6 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
           <h2 id="match-end-title" className="modal-title">
             Match Finished
           </h2>
-          <button
-            type="button"
-            className="close-btn"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            ×
-          </button>
         </div>
 
         <div className="modal-body">

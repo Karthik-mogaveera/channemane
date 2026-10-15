@@ -213,10 +213,10 @@ export const App: React.FC<AppProps> = ({
               isAnimating={isAnimating}
               highlightedContinuationPit={highlightedContinuationPit}
               highlightedCapturePit={highlightedCapturePit}
-              onSelectPit={(pitId) => selectPit(pitId)}
-              onConfirmContinuation={(pitId) => confirmContinuation(pitId)}
-              onConfirmCapture={(pitId) => confirmCapture(pitId)}
-              onClaimBonus={(pitId) => claimBonus(pitId)}
+              onSelectPit={selectPit}
+              onConfirmContinuation={confirmContinuation}
+              onConfirmCapture={confirmCapture}
+              onClaimBonus={claimBonus}
             />
           </main>
 

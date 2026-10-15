@@ -205,8 +205,16 @@ export function useChannemaneGame(
    */
   const scheduleSowingSteps = useCallback(
     (delay: number) => {
+      // Clear any lingering pending timeouts before starting a new sequence
+      animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
+      animationTimeoutsRef.current = [];
+
       const scheduleNext = () => {
-        const timeout = setTimeout(() => {
+        let timeout: ReturnType<typeof setTimeout>;
+        timeout = setTimeout(() => {
+          // Remove executed timeout reference
+          animationTimeoutsRef.current = animationTimeoutsRef.current.filter((t) => t !== timeout);
+
           if (!gameRef.current.isTurnInProgress()) {
             setIsAnimating(false);
             setActiveDropPit(null);

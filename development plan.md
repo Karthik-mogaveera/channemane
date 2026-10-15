@@ -509,3 +509,72 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
   - `npm run typecheck` passed (0 errors).
   - `npm run build` produced clean production bundle in 2.98s (`dist/index.html` generated).
 
+---
+
+## 19. Modal, Theme Colors, and Animation Performance Fixes
+
+### 19.1 Issue 1: Removal of Close (X) Icon from End-Game Modals
+- **Target Components**:
+  - `src/ui/components/SettlementModal.tsx` (Round end and multi-round settlement dialog).
+  - `src/ui/components/MatchEndModal.tsx` (Match end victor dialog).
+- **Changes**:
+  - Removed the `modal-close-btn` ("✕") button element and its click listener from both modals.
+  - Eliminated any leftover empty clickable areas in the header.
+  - Preserved all required state transitions and action buttons:
+    - `SettlementModal`: "Review Board" (`data-testid="settlement-review-btn"`) and "Start Next Round →" (`data-testid="settlement-next-round-btn"`).
+    - `MatchEndModal`: "Play Again 🔄" (`data-testid="match-end-play-again-btn"`).
+  - Made `onClose` optional in `MatchEndModalProps` to ensure TypeScript safety without orphaned handlers.
+  - Retained the close button on `RulesModal` where dismissal without state alteration is intentional.
+
+### 19.2 Issue 2: Mobile Landscape Modal Fit Without Scrolling
+- **Viewport Constraints**:
+  - Standardized all modal overlays and cards (`.modal-content`, `.main-menu-card`, `.difficulty-select-card`) with:
+    - `box-sizing: border-box;`
+    - `max-height: calc(100vh - 16px);`
+    - `max-height: calc(100dvh - 16px);` (modern dynamic viewport height with fallback).
+- **Responsive Landscape Layouts (`@media (orientation: landscape) and (max-height: 540px)`)**:
+  - **Main Menu**: Transformed from a tall vertical stack into a compact 2-column side-by-side grid (`grid-template-areas: "header options"`). Header on left, 3 menu buttons on right. Overall card height reduced to $< 200\text{px}$, fitting inside 320px–380px landscape phone screens with zero vertical scrolling.
+  - **Difficulty Selection**: Transformed into a 2-column grid with header on left, difficulty options & back button in a 2x2 grid on right. Card height $< 200\text{px}$ without vertical scrolling.
+  - **Rules Modal**: Grid layout with rules in 2 side-by-side columns; max height set to $92\text{dvh}$ with compact padding.
+  - **Settlement & Match-End Modals**: Compact score card layout with reduced margins, 12px padding, and inline action buttons to guarantee all content fits without scrolling on any mobile landscape screen.
+
+### 19.3 Issue 3: Theme-Compatible Gameplay Indicator Palette
+- **Centralized Design Tokens in `:root`**:
+  - `--indicator-selected: #fff2cc;` (warm ivory pearl glow for active pit selection).
+  - `--indicator-continuation: #f59e0b;` (warm amber/muted gold, replacing neon green `#22c55e`).
+  - `--indicator-capture: #c2410c;` (deep burnished terracotta bronze for capture confirmation).
+  - `--indicator-bonus: #d4af37;` (radiant royal brass gold aura for bonus-eligible pits).
+- **Accessibility & Distinct Treatment**:
+  - Beyond color differences, distinct border styles are applied for color-vision accessibility:
+    - Continuation target: `3px dashed #fcd34d` outline with amber glow pulse.
+    - Capture target: `3px double #fb923c` outline with terracotta glow pulse.
+    - Bonus pit: Continuous pulsing gold ring aura (`#d4af37`).
+  - Updated `TurnBanner.tsx` and interactive prompt badges (`.continuation-prompt`, `.capture-prompt`) to consume the centralized CSS variables.
+
+### 19.4 Issue 4: Animation Smoothness & Rendering Optimization
+- **Eliminated Redundant Component Re-renders**:
+  - Wrapped `Pit.tsx`, `StorageBowl.tsx`, `PlayerPanels.tsx`, and `GameBoard.tsx` in `React.memo`.
+  - During sowing steps, pits whose seed count or highlight state do not change are skipped by React's reconciliation engine, preventing 14 full SVG re-layouts per animation step.
+- **Stabilized Callback References**:
+  - Refactored `src/App.tsx` to pass stable callbacks (`selectPit`, `confirmContinuation`, `confirmCapture`, `claimBonus`) directly to `GameBoard`, eliminating inline arrow functions that broke child memoization on every render.
+- **Timer and Callback Cleanup**:
+  - In `src/ui/hooks/useChannemaneGame.ts`, added automatic filtering to `animationTimeoutsRef.current` upon timer completion to prevent unbounded array growth during extended gameplay.
+  - Ensured all active timeouts are cleared before starting new sowing sequences or resetting the game.
+- **Eliminated Board Layout Shift**:
+  - Stabilized `.game-header` with `min-height: 80px; box-sizing: border-box;` and `.brand-title` with `line-height: 1.2;`, preventing 3px vertical layout shifts when web fonts finish loading asynchronously.
+
+### 19.5 Automated Test Verification
+- **TypeScript Static Analysis**:
+  - `npm run typecheck` passed with 0 errors.
+- **Unit & Component Tests (`npx vitest run`)**:
+  - 39 test files passed (245 tests total, 0 failures).
+  - Includes modal tests asserting absence of Close (X) button on end-game modals and presence on Rules modal.
+  - Includes turn banner indicator tests asserting theme color variables.
+  - Includes bonus scenario drain helpers resolving interactive continuation/capture pauses.
+- **Playwright End-to-End Browser Tests (`npx playwright test`)**:
+  - 21 tests passed (36.8s, 100% pass rate).
+  - Verified board geometry stability throughout sowing at desktop and mobile landscape viewports without shaking or shifting.
+- **Production Build (`npm run build`)**:
+  - Built successfully in 3.12s (`dist/index.html` 0.98 kB, `dist/assets/index-*.js` 282.97 kB).
+
+

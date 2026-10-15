@@ -32,6 +32,12 @@ describe("Game Modals", () => {
 
     fireEvent.click(screen.getByTestId("start-next-round-btn"));
     expect(handleNext).toHaveBeenCalledTimes(1);
+
+    // Requirement 1: Verify Close (X) icon is completely removed from SettlementModal
+    expect(screen.queryByTestId("close-settlement-btn")).toBeNull();
+    const buttons = screen.getAllByRole("button");
+    const hasCloseX = buttons.some((btn) => btn.textContent?.trim() === "×");
+    expect(hasCloseX).toBe(false);
   });
 
   it("triggers onClose when Review Board button is clicked (Issue 8)", () => {
@@ -59,7 +65,7 @@ describe("Game Modals", () => {
     expect(handleNext).not.toHaveBeenCalled();
   });
 
-  it("renders MatchEndModal with final winner and restart button", () => {
+  it("renders MatchEndModal with final winner and restart button without Close (X) icon", () => {
     const handleNewMatch = vi.fn();
     const handleClose = vi.fn();
 
@@ -80,6 +86,12 @@ describe("Game Modals", () => {
     expect(screen.getByTestId("match-winner-banner")).toHaveTextContent(
       "Player 2 Wins the Match!"
     );
+
+    // Requirement 1: Verify Close (X) icon is completely removed from MatchEndModal
+    expect(screen.queryByTestId("close-match-btn")).toBeNull();
+    const buttons = screen.getAllByRole("button");
+    const hasCloseX = buttons.some((btn) => btn.textContent?.trim() === "×");
+    expect(hasCloseX).toBe(false);
 
     fireEvent.click(screen.getByTestId("new-match-btn"));
     expect(handleNewMatch).toHaveBeenCalledTimes(1);

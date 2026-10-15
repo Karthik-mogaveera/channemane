@@ -24,7 +24,11 @@ export interface GameBoardProps {
   onClaimBonus: (pitId: number) => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({
+// Authoritative physical layout constants
+const TOP_ROW_PIT_IDS = [0, 1, 2, 3, 4, 5, 6];
+const BOTTOM_ROW_PIT_IDS = [13, 12, 11, 10, 9, 8, 7];
+
+export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   gameState,
   selectablePits,
   activeDropPit,
@@ -36,9 +40,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onConfirmCapture,
   onClaimBonus,
 }) => {
-  // Authoritative physical layout
-  const topRowPitIds = [0, 1, 2, 3, 4, 5, 6];
-  const bottomRowPitIds = [13, 12, 11, 10, 9, 8, 7];
 
   return (
     <div className="board-wrapper">
@@ -62,7 +63,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             Player 1 Side
           </div>
           <div className="pits-row top-row" role="row" aria-label="Player 1 pits row">
-            {topRowPitIds.map((pitId) => {
+            {TOP_ROW_PIT_IDS.map((pitId) => {
               const pit = gameState.pits[pitId]!;
               return (
                 <Pit
@@ -87,7 +88,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </div>
 
           <div className="pits-row bottom-row" role="row" aria-label="Player 2 pits row">
-            {bottomRowPitIds.map((pitId) => {
+            {BOTTOM_ROW_PIT_IDS.map((pitId) => {
               const pit = gameState.pits[pitId]!;
               return (
                 <Pit
@@ -124,4 +125,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       </div>
     </div>
   );
-};
+});
+
+GameBoard.displayName = "GameBoard";

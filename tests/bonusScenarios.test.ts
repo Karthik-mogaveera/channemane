@@ -11,6 +11,23 @@ function assertSuccess<T>(res: ActionResult<T>): T {
   return res.data;
 }
 
+function drainTurn(game: ChannemaneGame): void {
+  while (game.isTurnInProgress()) {
+    const awaitingCont = game.getAwaitingContinuationPit();
+    if (awaitingCont !== null) {
+      game.continueSowing(awaitingCont);
+      continue;
+    }
+    const awaitingCap = game.getAwaitingCapturePit();
+    if (awaitingCap !== null) {
+      game.confirmCapture(awaitingCap);
+      continue;
+    }
+    const res = game.stepTurn();
+    if (!res.success) break;
+  }
+}
+
 describe("Mandatory Seven-Scenario Test Matrix (Critical Bonus Claim)", () => {
   it("Scenario 1a: Player 1 is sowing; Player 1 pit reaches 4 seeds; Claim clicked immediately", () => {
     const initialState = createInitialGame("PLAYER_1");
@@ -69,9 +86,7 @@ describe("Mandatory Seven-Scenario Test Matrix (Critical Bonus Claim)", () => {
     expect(verifySeedConservation(game.getState())).toBe(true);
 
     // Continue stepping turn to completion
-    while (game.isTurnInProgress()) {
-      game.stepTurn();
-    }
+    drainTurn(game);
     expect(verifySeedConservation(game.getState())).toBe(true);
   });
 
@@ -120,9 +135,7 @@ describe("Mandatory Seven-Scenario Test Matrix (Critical Bonus Claim)", () => {
     expect(verifySeedConservation(game.getState())).toBe(true);
 
     // Complete turn
-    while (game.isTurnInProgress()) {
-      game.stepTurn();
-    }
+    drainTurn(game);
     expect(verifySeedConservation(game.getState())).toBe(true);
   });
 

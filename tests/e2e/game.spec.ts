@@ -7,8 +7,9 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     if (await localBtn.isVisible()) {
       await localBtn.click();
     }
-    // Wait for board to be visible
+    // Wait for board to be visible and web fonts to settle
     await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
   });
 
   test("Positive 1: Game loads with full board, 14 pits, 5 seeds each, and Player 1 turn", async ({

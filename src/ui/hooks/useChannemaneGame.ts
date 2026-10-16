@@ -17,7 +17,11 @@ import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
 import type { RoundSetupResult } from "../../engine/roundSetup";
 import type { RoundSettlementResult } from "../../engine/settlement";
-import type { MatchEndResult } from "../../engine/matchEnd";
+import {
+  isMatchOver,
+  checkAndHandleMatchEnd,
+  type MatchEndResult,
+} from "../../engine/matchEnd";
 import type { TurnStepResult } from "../../engine/simulation";
 
 export type AnimationSpeed = "SLOW" | "FAST";
@@ -126,7 +130,9 @@ export function useChannemaneGame(
 
   const [interactionState, setInteractionState] = useState<InteractionState>(() => {
     const s = gameRef.current.getState();
-    if (s.phase === "MATCH_END") return "MATCH_COMPLETE";
+    if (s.phase === "MATCH_END" || (s.phase === "ROUND_SETTLEMENT" && isMatchOver(s))) {
+      return "MATCH_COMPLETE";
+    }
     if (s.phase === "ROUND_SETTLEMENT") return "ROUND_SETTLEMENT";
     return "WAITING_FOR_START";
   });
@@ -143,7 +149,13 @@ export function useChannemaneGame(
     useState<RoundSettlementResult | null>(null);
   const lastSettlementRef = useRef<RoundSettlementResult | null>(null);
 
-  const [matchSummary, setMatchSummary] = useState<MatchEndResult | null>(null);
+  const [matchSummary, setMatchSummary] = useState<MatchEndResult | null>(() => {
+    const s = gameRef.current.getState();
+    if (s.phase === "MATCH_END" || (s.phase === "ROUND_SETTLEMENT" && isMatchOver(s))) {
+      return checkAndHandleMatchEnd(s);
+    }
+    return null;
+  });
   const [isRulesOpen, setIsRulesOpen] = useState<boolean>(false);
 
   const [animationSettings, setAnimationSettings] = useState<AnimationSettings>(
@@ -173,18 +185,36 @@ export function useChannemaneGame(
   }, []);
 
   const dismissSettlementModal = useCallback(() => {
+    const currentState = gameRef.current.getState();
+    if (
+      gameState.phase === "MATCH_END" ||
+      currentState.phase === "MATCH_END" ||
+      isMatchOver(currentState) ||
+      matchSummary !== null
+    ) {
+      return;
+    }
     setSettlementSummary(null);
     setIsReviewingBoard(true);
-  }, []);
+  }, [gameState.phase, matchSummary]);
 
   const reopenSettlementModal = useCallback(() => {
+    const currentState = gameRef.current.getState();
+    if (
+      gameState.phase === "MATCH_END" ||
+      currentState.phase === "MATCH_END" ||
+      isMatchOver(currentState) ||
+      matchSummary !== null
+    ) {
+      return;
+    }
     if (lastSettlementRef.current) {
       setSettlementSummary(lastSettlementRef.current);
     }
-  }, []);
+  }, [gameState.phase, matchSummary]);
 
   const dismissMatchModal = useCallback(() => {
-    setMatchSummary(null);
+    // When match is ended, dismiss is prevented so user stays on victor screen until Play Again
   }, []);
 
   const toggleAnimationSpeed = useCallback(() => {
@@ -198,6 +228,82 @@ export function useChannemaneGame(
       };
     });
   }, []);
+
+  /**
+   * Centralized Gameplay Completion Handler
+   * Strictly enforces priority:
+   * 1. Update authoritative game state.
+   * 2. If match has ended, transition to MATCH_COMPLETE, set matchSummary,
+   *    and clear/suppress settlementSummary so modals never compete.
+   * 3. Else if round has settled, transition to ROUND_SETTLEMENT and set settlementSummary.
+   * 4. Otherwise return to WAITING_FOR_START.
+   */
+  const handleGameplayCompletion = useCallback(
+    (outcome?: {
+      roundEnded?: boolean;
+      roundSettlement?: RoundSettlementResult;
+      matchEnded?: boolean;
+      matchResult?: MatchEndResult;
+    }) => {
+      setIsAnimating(false);
+      setActiveDropPit(null);
+      setVisualHandSeeds(0);
+      setHighlightedContinuationPit(null);
+      setHighlightedCapturePit(null);
+
+      const currentState = gameRef.current.getState();
+
+      if (outcome?.roundSettlement) {
+        lastSettlementRef.current = outcome.roundSettlement;
+        setReviewBoardState(outcome.roundSettlement.preSettlementState ?? null);
+      }
+
+      const isMatchCompleted =
+        Boolean(outcome?.matchEnded) ||
+        Boolean(outcome?.matchResult?.isMatchEnd) ||
+        currentState.phase === "MATCH_END" ||
+        ((outcome?.roundEnded || currentState.phase === "ROUND_SETTLEMENT") &&
+          isMatchOver(currentState));
+
+      if (isMatchCompleted) {
+        const finalMatchResult: MatchEndResult =
+          outcome?.matchResult?.isMatchEnd
+            ? outcome.matchResult
+            : checkAndHandleMatchEnd(currentState);
+
+        currentState.phase = "MATCH_END";
+        if (finalMatchResult.winner) {
+          currentState.winner = finalMatchResult.winner;
+        }
+        setGameState({ ...currentState });
+
+        setMatchSummary(finalMatchResult);
+        setSettlementSummary(null);
+        setInteractionState("MATCH_COMPLETE");
+        return;
+      }
+
+      const isRoundSettled =
+        Boolean(outcome?.roundEnded) ||
+        Boolean(outcome?.roundSettlement) ||
+        currentState.phase === "ROUND_SETTLEMENT";
+
+      if (isRoundSettled && (outcome?.roundSettlement || lastSettlementRef.current)) {
+        const settlement = outcome?.roundSettlement ?? lastSettlementRef.current!;
+        setGameState(currentState);
+        setSettlementSummary(settlement);
+        setMatchSummary(null);
+        setInteractionState("ROUND_SETTLEMENT");
+        return;
+      }
+
+      setGameState(currentState);
+      setSettlementSummary(null);
+      setMatchSummary(null);
+      setInteractionState("WAITING_FOR_START");
+    },
+    []
+  );
 
   /**
    * Schedules recursive stepping through the active distribution batch.
@@ -216,23 +322,8 @@ export function useChannemaneGame(
           animationTimeoutsRef.current = animationTimeoutsRef.current.filter((t) => t !== timeout);
 
           if (!gameRef.current.isTurnInProgress()) {
-            setIsAnimating(false);
-            setActiveDropPit(null);
-            setVisualHandSeeds(0);
-            const finalState = gameRef.current.getState();
-            setGameState(finalState);
             const lastTurnRes = gameRef.current.getLastTurnResult();
-            if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
-              lastSettlementRef.current = lastTurnRes.roundSettlement;
-              setSettlementSummary(lastTurnRes.roundSettlement);
-              setReviewBoardState(lastTurnRes.roundSettlement.preSettlementState ?? null);
-              setInteractionState("ROUND_SETTLEMENT");
-            } else if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
-              setMatchSummary(lastTurnRes.matchResult);
-              setInteractionState("MATCH_COMPLETE");
-            } else {
-              setInteractionState("WAITING_FOR_START");
-            }
+            handleGameplayCompletion(lastTurnRes ?? undefined);
             return;
           }
 
@@ -273,20 +364,7 @@ export function useChannemaneGame(
           }
 
           if (stepRes.data.isComplete) {
-            setIsAnimating(false);
-            setActiveDropPit(null);
-            setVisualHandSeeds(0);
-            if (stepRes.data.roundEnded && stepRes.data.roundSettlement) {
-              lastSettlementRef.current = stepRes.data.roundSettlement;
-              setSettlementSummary(stepRes.data.roundSettlement);
-              setReviewBoardState(stepRes.data.roundSettlement.preSettlementState ?? null);
-              setInteractionState("ROUND_SETTLEMENT");
-            } else if (stepRes.data.matchEnded && stepRes.data.matchResult) {
-              setMatchSummary(stepRes.data.matchResult);
-              setInteractionState("MATCH_COMPLETE");
-            } else {
-              setInteractionState("WAITING_FOR_START");
-            }
+            handleGameplayCompletion(stepRes.data);
           } else {
             scheduleNext();
           }
@@ -442,22 +520,8 @@ export function useChannemaneGame(
           }
         }
 
-        const finalState = gameRef.current.getState();
-        setGameState(finalState);
-        setActiveDropPit(null);
-        setVisualHandSeeds(0);
         const lastTurnRes = gameRef.current.getLastTurnResult();
-        if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
-          lastSettlementRef.current = lastTurnRes.roundSettlement;
-          setSettlementSummary(lastTurnRes.roundSettlement);
-          setReviewBoardState(lastTurnRes.roundSettlement.preSettlementState ?? null);
-          setInteractionState("ROUND_SETTLEMENT");
-        } else if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
-          setMatchSummary(lastTurnRes.matchResult);
-          setInteractionState("MATCH_COMPLETE");
-        } else {
-          setInteractionState("WAITING_FOR_START");
-        }
+        handleGameplayCompletion(lastTurnRes ?? undefined);
         return { success: true, data: lastTurnRes! };
       }
 
@@ -553,22 +617,8 @@ export function useChannemaneGame(
             return res;
           }
         }
-        const finalState = gameRef.current.getState();
-        setGameState(finalState);
-        setActiveDropPit(null);
-        setVisualHandSeeds(0);
         const lastTurnRes = gameRef.current.getLastTurnResult();
-        if (lastTurnRes?.roundEnded && lastTurnRes.roundSettlement) {
-          lastSettlementRef.current = lastTurnRes.roundSettlement;
-          setSettlementSummary(lastTurnRes.roundSettlement);
-          setReviewBoardState(lastTurnRes.roundSettlement.preSettlementState ?? null);
-          setInteractionState("ROUND_SETTLEMENT");
-        } else if (lastTurnRes?.matchEnded && lastTurnRes.matchResult) {
-          setMatchSummary(lastTurnRes.matchResult);
-          setInteractionState("MATCH_COMPLETE");
-        } else {
-          setInteractionState("WAITING_FOR_START");
-        }
+        handleGameplayCompletion(lastTurnRes ?? undefined);
         return res;
       }
 
@@ -603,24 +653,7 @@ export function useChannemaneGame(
       }
 
       setHighlightedCapturePit(null);
-      const finalState = gameRef.current.getState();
-      setGameState(finalState);
-      setIsAnimating(false);
-      setActiveDropPit(null);
-      setVisualHandSeeds(0);
-
-      if (res.data.roundEnded && res.data.roundSettlement) {
-        lastSettlementRef.current = res.data.roundSettlement;
-        setSettlementSummary(res.data.roundSettlement);
-        setReviewBoardState(res.data.roundSettlement.preSettlementState ?? null);
-        setInteractionState("ROUND_SETTLEMENT");
-      } else if (res.data.matchEnded && res.data.matchResult) {
-        setMatchSummary(res.data.matchResult);
-        setInteractionState("MATCH_COMPLETE");
-      } else {
-        setInteractionState("WAITING_FOR_START");
-      }
-
+      handleGameplayCompletion(res.data);
       return res;
     },
     [interactionState, clearError]
@@ -644,16 +677,10 @@ export function useChannemaneGame(
       if (!res.success) {
         setLastActionError(res.error);
       } else {
-        const finalState = gameRef.current.getState();
-        setGameState(finalState);
-
-        if (res.data.roundEnded && res.data.roundSettlement) {
-          lastSettlementRef.current = res.data.roundSettlement;
-          setSettlementSummary(res.data.roundSettlement);
-          setReviewBoardState(res.data.roundSettlement.preSettlementState ?? null);
-        }
-        if (res.data.matchEnded && res.data.matchResult) {
-          setMatchSummary(res.data.matchResult);
+        if (res.data.roundEnded || res.data.matchEnded) {
+          handleGameplayCompletion(res.data);
+        } else {
+          setGameState(gameRef.current.getState());
         }
       }
       return res;
@@ -666,11 +693,34 @@ export function useChannemaneGame(
    * Guards against duplicate invocations.
    */
   const startNextRound = useCallback((): ActionResult<RoundSetupResult> => {
-    if (gameState.phase !== "ROUND_SETTLEMENT") {
+    const currentState = gameRef.current.getState();
+    if (
+      gameState.phase === "MATCH_END" ||
+      currentState.phase === "MATCH_END" ||
+      (currentState.phase === "ROUND_SETTLEMENT" && isMatchOver(currentState)) ||
+      matchSummary !== null
+    ) {
+      const errorMsg = "Cannot start next round: match is already completed.";
+      setLastActionError(errorMsg);
       return {
         success: false,
-        error: `Cannot start next round: game is in phase ${gameState.phase}, expected ROUND_SETTLEMENT`,
+        error: errorMsg,
       };
+    }
+    if (gameState.phase !== "ROUND_SETTLEMENT" && currentState.phase !== "ROUND_SETTLEMENT") {
+      const errorMsg = `Cannot start next round: game is in phase ${gameState.phase}, expected ROUND_SETTLEMENT`;
+      setLastActionError(errorMsg);
+      return {
+        success: false,
+        error: errorMsg,
+      };
+    }
+
+    clearError();
+    const res = gameRef.current.startNextRound();
+    if (!res.success) {
+      setLastActionError(res.error);
+      return res;
     }
 
     animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
@@ -683,18 +733,12 @@ export function useChannemaneGame(
     setSettlementSummary(null);
     lastSettlementRef.current = null;
 
-    clearError();
-    const res = gameRef.current.startNextRound();
-    if (!res.success) {
-      setLastActionError(res.error);
-    } else {
-      setGameState(gameRef.current.getState());
-      setInteractionState("WAITING_FOR_START");
-      setHighlightedContinuationPit(null);
-      setHighlightedCapturePit(null);
-    }
+    setGameState(gameRef.current.getState());
+    setInteractionState("WAITING_FOR_START");
+    setHighlightedContinuationPit(null);
+    setHighlightedCapturePit(null);
     return res;
-  }, [clearError, gameState.phase]);
+  }, [clearError, gameState.phase, matchSummary]);
 
   /**
    * Sets game mode and AI difficulty.
@@ -761,6 +805,7 @@ export function useChannemaneGame(
       isAnimating ||
       isReviewingBoard ||
       gameState.phase === "ROUND_SETTLEMENT" ||
+      gameState.phase === "MATCH_END" ||
       interactionState !== "WAITING_FOR_START"
     ) {
       return [];
@@ -769,7 +814,12 @@ export function useChannemaneGame(
   }, [isAnimating, isReviewingBoard, gameState, interactionState]);
 
   const claimableBonuses = useMemo(() => {
-    if (isReviewingBoard || gameState.phase === "ROUND_SETTLEMENT") return [];
+    if (
+      isReviewingBoard ||
+      gameState.phase === "ROUND_SETTLEMENT" ||
+      gameState.phase === "MATCH_END"
+    )
+      return [];
     return gameRef.current.getClaimableBonuses();
   }, [isReviewingBoard, gameState]);
 

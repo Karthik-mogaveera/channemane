@@ -125,9 +125,9 @@ export function claimBonus(
     const settlementOutcome = executeRoundSettlement(state);
     if (settlementOutcome.success) {
       roundSettlement = settlementOutcome.data;
+      matchResult = checkAndHandleMatchEnd(state);
+      matchEnded = matchResult.isMatchEnd;
     }
-    matchResult = checkAndHandleMatchEnd(state);
-    matchEnded = matchResult.isMatchEnd;
   } else {
     // If active player now has no valid moves because of bonus claim, check auto-pass
     if (!hasAnyValidMove(state, state.currentPlayer)) {

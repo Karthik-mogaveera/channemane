@@ -13,7 +13,11 @@ import { evaluateAndExecuteCapture, getCapturablePit, type CaptureResult } from 
 import { transitionTurnPhase } from "./turnStateMachine";
 import { shouldEndRound } from "./roundEnd";
 import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
-import { checkAndHandleMatchEnd, type MatchEndResult } from "./matchEnd";
+import {
+  checkAndHandleMatchEnd,
+  isMatchOver,
+  type MatchEndResult,
+} from "./matchEnd";
 import { hasAnyValidMove } from "./selection";
 import { playTurn, type TurnResult } from "./game";
 import { claimBonus, getClaimableBonusPits, type ClaimBonusResult } from "./bonus";
@@ -91,6 +95,10 @@ export class ChannemaneGame {
     this.state = initialState
       ? cloneGameState(initialState)
       : createInitialGame(startingPlayer, gameMode, aiDifficulty);
+    if (this.state.phase === "ROUND_SETTLEMENT" && isMatchOver(this.state)) {
+      this.state.phase = "MATCH_END";
+      checkAndHandleMatchEnd(this.state);
+    }
   }
 
   /**
@@ -122,12 +130,16 @@ export class ChannemaneGame {
   }
 
   public isGameOver(): boolean {
-    return this.state.phase === "MATCH_END";
+    return (
+      this.state.phase === "MATCH_END" ||
+      (this.state.phase === "ROUND_SETTLEMENT" && isMatchOver(this.state))
+    );
   }
 
   public isRoundOver(): boolean {
     return (
-      this.state.phase === "ROUND_SETTLEMENT" || this.state.phase === "MATCH_END"
+      this.state.phase === "ROUND_SETTLEMENT" ||
+      this.state.phase === "MATCH_END"
     );
   }
 
@@ -462,9 +474,9 @@ export class ChannemaneGame {
       if (settlementOutcome.success) {
         roundSettlement = settlementOutcome.data;
         this.preSettlementState = settlementOutcome.data.preSettlementState ?? null;
+        matchResult = checkAndHandleMatchEnd(this.state);
+        matchEnded = matchResult.isMatchEnd;
       }
-      matchResult = checkAndHandleMatchEnd(this.state);
-      matchEnded = matchResult.isMatchEnd;
     } else {
       const opponent: Player =
         this.state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
@@ -598,14 +610,23 @@ export class ChannemaneGame {
    * Advances to the next round if the current round has settled and match is not over.
    */
   public startNextRound(): ActionResult<RoundSetupResult> {
+    if (this.state.phase === "MATCH_END" || isMatchOver(this.state)) {
+      return {
+        success: false,
+        error: `Cannot start next round: match is already over (P1 storage: ${this.state.players.player1.storage}, P2 storage: ${this.state.players.player2.storage})`,
+      };
+    }
     if (this.state.phase !== "ROUND_SETTLEMENT") {
       return {
         success: false,
         error: `Cannot start next round: current phase is ${this.state.phase}, expected ROUND_SETTLEMENT`,
       };
     }
-    this.preSettlementState = null;
-    return setupNextRound(this.state);
+    const setupResult = setupNextRound(this.state);
+    if (setupResult.success) {
+      this.preSettlementState = null;
+    }
+    return setupResult;
   }
 }
 

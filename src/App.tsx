@@ -24,12 +24,16 @@ export interface AppProps {
   initialScreen?: AppScreen;
   initialGameMode?: GameMode;
   initialDifficulty?: AIDifficulty | null;
+  initialGameState?: import("./engine/types").GameState;
+  initialAnimationSettings?: Partial<import("./ui/hooks/useChannemaneGame").AnimationSettings>;
 }
 
 export const App: React.FC<AppProps> = ({
   initialScreen = "MAIN_MENU",
   initialGameMode = "local",
   initialDifficulty = null,
+  initialGameState,
+  initialAnimationSettings,
 }) => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>(initialScreen);
   const { isPortraitBlocked } = useOrientation();
@@ -67,15 +71,18 @@ export const App: React.FC<AppProps> = ({
     toggleAnimationSpeed,
   } = useChannemaneGame(
     "PLAYER_1",
-    undefined,
-    undefined,
+    initialAnimationSettings,
+    initialGameState,
     initialGameMode,
     initialDifficulty
   );
 
   const isRoundSettled =
-    authoritativeGameState.phase === "ROUND_SETTLEMENT" ||
-    gameState.phase === "ROUND_SETTLEMENT";
+    (authoritativeGameState.phase === "ROUND_SETTLEMENT" ||
+      gameState.phase === "ROUND_SETTLEMENT") &&
+    authoritativeGameState.phase !== "MATCH_END" &&
+    gameState.phase !== "MATCH_END" &&
+    !matchSummary;
 
   // Navigation handlers
   const handlePlayAI = () => {
@@ -221,7 +228,7 @@ export const App: React.FC<AppProps> = ({
           </main>
 
           {/* Settlement Modal (End of Round) */}
-          {settlementSummary && (
+          {settlementSummary && !matchSummary && (
             <SettlementModal
               settlement={settlementSummary}
               onStartNextRound={startNextRound}

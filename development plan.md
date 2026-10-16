@@ -577,4 +577,50 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
 - **Production Build (`npm run build`)**:
   - Built successfully in 3.12s (`dist/index.html` 0.98 kB, `dist/assets/index-*.js` 282.97 kB).
 
+---
+
+## 20. Intermittent Match-End Detection and UI Handling Fixes
+
+### 20.1 Root Cause Analysis
+- **Inverted Evaluation Priority in UI Hook**: In `src/ui/hooks/useChannemaneGame.ts`, multiple completion sites evaluated `if (result.roundEnded && result.roundSettlement)` before `else if (result.matchEnded && result.matchResult)`. When a round ended and its settlement caused either player to have fewer than 5 seeds in storage (e.g., the reported 66 / 4 case), both `roundEnded` and `matchEnded` were true on the result. The `else if` branch was bypassed, populating `settlementSummary` instead of `matchSummary`.
+- **Modals and Review Controls Conflict**: `SettlementModal` was displayed with an actionable "Start Next Round →" button despite the match being finished. When clicked, the engine rejected the next-round transition because the authoritative phase was already `MATCH_END`, leaving the player stuck on a broken state with no way to progress or view the victory screen.
+- **Fragmented Completion Logic**: Turn completion logic was duplicated across six separate code paths (animated turn finish, step completion, immediate sowing, immediate continuation, capture confirmation, and manual bonus claiming).
+
+### 20.2 Changes Implemented
+1. **Centralized Completion Handler (`handleGameplayCompletion`)**:
+   - Consolidated completion logic into a single authoritative handler in `src/ui/hooks/useChannemaneGame.ts`.
+   - **Enforced Priority Order**:
+     1. Evaluates match end first: checks `outcome.matchEnded`, `outcome.matchResult?.isMatchEnd`, `currentState.phase === "MATCH_END"`, or settled storage $< 5$ via `isMatchOver(currentState)`.
+     2. If match is completed, sets `matchSummary` from the authoritative result, transitions `interactionState` to `"MATCH_COMPLETE"`, sets `currentState.phase = "MATCH_END"`, and clears/suppresses `settlementSummary` so the two modals never compete.
+     3. If match is not completed and the round has settled, sets `settlementSummary`, preserves the pre-settlement board snapshot for Review Board, and transitions to `"ROUND_SETTLEMENT"`.
+     4. Otherwise returns to normal `"WAITING_FOR_START"`.
+   - Applied `handleGameplayCompletion` across all six turn-completion paths.
+
+2. **Guarded Next-Round Transitions (`startNextRound`)**:
+   - In `ChannemaneGame.startNextRound()` (`src/engine/simulation.ts`): Rejects immediately if `this.state.phase === "MATCH_END"` or `isMatchOver(this.state)`. Ensures `preSettlementState` is not cleared unless round setup succeeds.
+   - In `useChannemaneGame.ts`: Rejects immediately if `gameState.phase === "MATCH_END"`, `currentState.phase === "MATCH_END"`, `isMatchOver(currentState)`, or `matchSummary !== null`. Prevents clearing settlement state or modal summaries on rejected calls.
+   - In `SettlementModal.tsx`: Hides the "Start Next Round →" button if `openPairs === 0`.
+   - In `App.tsx`: Guards `isRoundSettled` so it evaluates to `false` when `phase === "MATCH_END"` or `matchSummary !== null`, hiding the settlement review bar and preventing modal collisions (`settlementSummary && !matchSummary`).
+
+3. **Phase-Scoped Match Eligibility Evaluation**:
+   - Ensured `isMatchOver` is only checked during or after round settlement (`ROUND_SETTLEMENT` / `MATCH_END`), preventing false positive match completions during the `PLAYING` phase when players' storage is legitimately 0 after opening pits.
+
+### 20.3 Test Verification
+- **Authoritative Boundary Test Cases (`tests/matchEnd.test.ts`)**:
+  - Tested all required storage totals: 66/4, 67/3, 68/2, 69/1, 70/0, 4/66, 3/67, 35/35, 34/36, 36/34.
+  - Verified 70-seed conservation invariant and winner declaration for each case.
+- **Dedicated Integration Test Suite (`tests/ui/matchEndIntegration.test.tsx`)**:
+  - Verified the exact reported 66 / 4 scenario: MatchEndModal displays with Player 1 victory, SettlementModal is suppressed, and no Start Next Round button is visible.
+  - Verified reversed 4 / 66 scenario: Player 2 victory displayed cleanly.
+  - Verified normal round settlements (42 / 28) correctly display SettlementModal and allow starting the next round.
+  - Verified that calling `startNextRound()` when match has ended returns an error without clearing match summary or dismissing the modal.
+  - Verified match completion via animated sowing queue and immediate / non-animated sowing.
+  - Verified restart match resets state cleanly to initial game.
+- **Full Test Suite Results**:
+  - `npm run typecheck`: Passed with 0 errors.
+  - `npx vitest run`: All 40 test files passed (260 tests, 0 failures).
+  - `npx playwright test`: All 21 E2E browser tests passed (58.4s).
+  - `npm run build`: Production bundle compiled cleanly in 4.91s (`dist/index.html` 0.98 kB).
+
+
 

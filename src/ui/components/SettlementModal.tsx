@@ -85,14 +85,16 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           >
             Review Board
           </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={onStartNextRound}
-            data-testid="start-next-round-btn"
-          >
-            Start Next Round →
-          </button>
+          {openPairs > 0 && (
+            <button
+              type="button"
+              className="btn"
+              onClick={onStartNextRound}
+              data-testid="start-next-round-btn"
+            >
+              Start Next Round →
+            </button>
+          )}
         </div>
       </div>
     </div>

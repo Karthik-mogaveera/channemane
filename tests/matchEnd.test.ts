@@ -3,65 +3,52 @@ import { checkAndHandleMatchEnd, isMatchOver } from "../src/engine/matchEnd";
 import { createInitialGame } from "../src/engine/board";
 
 describe("TASK-13: Match-End Detection (Sections 45, 54)", () => {
-  it("Test 5 (Section 54): should end match when Player 2 has 4 seeds (66 / 4)", () => {
-    const game = createInitialGame();
-    game.phase = "ROUND_SETTLEMENT";
-    game.players.player1.storage = 66;
-    game.players.player2.storage = 4;
+  it.each([
+    { p1: 66, p2: 4, expectedEnd: true, winner: "PLAYER_1", loser: "PLAYER_2" },
+    { p1: 67, p2: 3, expectedEnd: true, winner: "PLAYER_1", loser: "PLAYER_2" },
+    { p1: 68, p2: 2, expectedEnd: true, winner: "PLAYER_1", loser: "PLAYER_2" },
+    { p1: 69, p2: 1, expectedEnd: true, winner: "PLAYER_1", loser: "PLAYER_2" },
+    { p1: 70, p2: 0, expectedEnd: true, winner: "PLAYER_1", loser: "PLAYER_2" },
+    { p1: 4, p2: 66, expectedEnd: true, winner: "PLAYER_2", loser: "PLAYER_1" },
+    { p1: 3, p2: 67, expectedEnd: true, winner: "PLAYER_2", loser: "PLAYER_1" },
+    { p1: 35, p2: 35, expectedEnd: false, winner: null, loser: null },
+    { p1: 34, p2: 36, expectedEnd: false, winner: null, loser: null },
+    { p1: 36, p2: 34, expectedEnd: false, winner: null, loser: null },
+  ])(
+    "boundary case: P1=$p1, P2=$p2 -> expectedEnd=$expectedEnd, winner=$winner",
+    ({ p1, p2, expectedEnd, winner, loser }) => {
+      const game = createInitialGame();
+      // In settled state, all board pits have 0 seeds
+      for (const pit of game.pits) {
+        pit.seeds = 0;
+        pit.bonusAvailable = false;
+      }
+      game.players.player1.storage = p1;
+      game.players.player2.storage = p2;
+      game.phase = "ROUND_SETTLEMENT";
 
-    expect(isMatchOver(game)).toBe(true);
+      // Verify 70-seed conservation invariant
+      const totalSeeds =
+        game.players.player1.storage +
+        game.players.player2.storage +
+        game.seedsInHand +
+        game.pits.reduce((acc, pit) => acc + pit.seeds, 0);
+      expect(totalSeeds).toBe(70);
 
-    const result = checkAndHandleMatchEnd(game);
-    expect(result.isMatchEnd).toBe(true);
-    expect(result.winner).toBe("PLAYER_1");
-    expect(result.loser).toBe("PLAYER_2");
-    expect(game.phase).toBe("MATCH_END");
-    expect(game.winner).toBe("PLAYER_1");
-  });
+      expect(isMatchOver(game)).toBe(expectedEnd);
 
-  it("Test 6 (Section 54): should end match when Player 2 has 3 seeds (67 / 3)", () => {
-    const game = createInitialGame();
-    game.phase = "ROUND_SETTLEMENT";
-    game.players.player1.storage = 67;
-    game.players.player2.storage = 3;
+      const result = checkAndHandleMatchEnd(game);
+      expect(result.isMatchEnd).toBe(expectedEnd);
+      expect(result.winner).toBe(winner);
+      expect(result.loser).toBe(loser);
 
-    expect(isMatchOver(game)).toBe(true);
-
-    const result = checkAndHandleMatchEnd(game);
-    expect(result.isMatchEnd).toBe(true);
-    expect(result.winner).toBe("PLAYER_1");
-    expect(result.loser).toBe("PLAYER_2");
-    expect(game.phase).toBe("MATCH_END");
-    expect(game.winner).toBe("PLAYER_1");
-  });
-
-  it("should end match when Player 1 has fewer than 5 seeds (4 / 66)", () => {
-    const game = createInitialGame();
-    game.phase = "ROUND_SETTLEMENT";
-    game.players.player1.storage = 4;
-    game.players.player2.storage = 66;
-
-    expect(isMatchOver(game)).toBe(true);
-
-    const result = checkAndHandleMatchEnd(game);
-    expect(result.isMatchEnd).toBe(true);
-    expect(result.winner).toBe("PLAYER_2");
-    expect(result.loser).toBe("PLAYER_1");
-    expect(game.phase).toBe("MATCH_END");
-    expect(game.winner).toBe("PLAYER_2");
-  });
-
-  it("should NOT end match when both players have at least 5 seeds in storage", () => {
-    const game = createInitialGame();
-    game.phase = "ROUND_SETTLEMENT";
-    game.players.player1.storage = 35;
-    game.players.player2.storage = 35;
-
-    expect(isMatchOver(game)).toBe(false);
-
-    const result = checkAndHandleMatchEnd(game);
-    expect(result.isMatchEnd).toBe(false);
-    expect(result.winner).toBeNull();
-    expect(game.phase).toBe("ROUND_SETTLEMENT");
-  });
+      if (expectedEnd) {
+        expect(game.phase).toBe("MATCH_END");
+        expect(game.winner).toBe(winner);
+      } else {
+        expect(game.phase).toBe("ROUND_SETTLEMENT");
+        expect(game.winner).toBeNull();
+      }
+    }
+  );
 });

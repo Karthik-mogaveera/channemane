@@ -622,5 +622,59 @@ Implemented in [`tests/roundEndCondition.test.ts`](file:///c:/Users/karth/OneDri
   - `npx playwright test`: All 21 E2E browser tests passed (58.4s).
   - `npm run build`: Production bundle compiled cleanly in 4.91s (`dist/index.html` 0.98 kB).
 
+---
+
+## 21. Beginner AI Difficulty Implementation
+
+### 21.1 Architecture & Separation of Concerns
+Following the project's strict architecture, the AI implementation was constructed in a dedicated, isolated engine module (`src/engine/ai/`):
+- **Single Source of Truth**: The existing game engine (`src/engine/`) remains authoritative for all rules, transitions, and state management. The AI never bypasses engine checks or invents rules.
+- **Move Generation**: Uses existing engine helper `getSelectablePits(state)` strictly filtered for the AI player (`state.aiPlayer || "PLAYER_2"`). Empty pits, closed pits, and human-owned pits are strictly excluded.
+- **Candidate Evaluation (`src/engine/ai/beginner.ts`)**:
+  - Clones game state in complete isolation (`JSON.parse(JSON.stringify(gameState))`).
+  - Simulates the entire move execution via engine's `playTurn(simState, pitId)`.
+  - Calculates immediate outcome metrics:
+    - Net seeds captured (`simState.players[aiPlayer].storage - currentState.players[aiPlayer].storage`).
+    - Eligible bonus opportunities: detects newly formed 4-seed pits owned by AI (`pit.seeds === 4 && pit.owner === aiPlayer`).
+    - Opponent bonus risk: penalizes candidate moves that leave an opponent pit at 4 seeds (`pit.seeds === 4 && pit.owner !== aiPlayer`).
+    - Match victory (`simState.phase === "MATCH_END"` where AI is the winner).
+    - Round victory (`simState.phase === "ROUND_SETTLEMENT"` where AI holds majority storage).
+  - Verifies zero mutation to live state.
+- **Evaluation Scoring**:
+  - Configurable weight structure (`AIEvaluationWeights`):
+    - `captureWeight: 10.0`
+    - `bonusOpportunityWeight: 8.0`
+    - `opponentBonusPenaltyWeight: 4.0`
+    - `roundWinWeight: 25.0`
+    - `matchWinWeight: 100.0`
+- **Balanced Capture Strategy & Controlled Randomness**:
+  - Default selection probability: $P_{\text{best}} = 0.75$ (75% probability to pick highest scoring move, 25% to pick another legal move).
+  - Unconditional single-move guarantee: If only 1 legal starting pit exists, selects it immediately with zero random override.
+  - Injectable RNG parameter (`rng?: () => number`) for deterministic unit and integration testing.
+
+### 21.2 Asynchronous Gameplay & Animation Coordination
+Integrated seamlessly into `src/ui/hooks/useChannemaneGame.ts`:
+- **AI Turn Guarding**: AI execution triggers only when `gameMode === "ai"`, `aiDifficulty === "beginner"`, `gameState.phase === "PLAYING"`, `gameState.currentPlayer === aiPlayer`, and `!isAnimating`.
+- **Natural Thinking Pause**: 500ms presentation delay before selecting starting pit, cancelable on unmount, match restart, menu navigation, or phase change.
+- **Automated Continuation & Capture**:
+  - While human players retain full manual continuation clicking and capture confirmation, AI turns automatically proceed after a brief delay (350ms) to ensure animations complete smoothly.
+  - Automatically invokes `confirmContinuation()` and `confirmCapture()`.
+- **Bonus Handling**:
+  - AI auto-claims its own eligible bonuses (`pit.owner === aiPlayer && pit.seeds === 4`).
+  - Never auto-claims human-owned bonuses; human bonus ownership and manual gesture claiming remain fully preserved.
+- **Local Multiplayer Protection**:
+  - Local multiplayer mode remains 100% human-controlled with no AI state leaks.
+
+### 21.3 Test Verification
+- **Unit Tests (`tests/ai/beginner.test.ts`)**: 15 tests covering legal move generation, candidate simulation without mutation, capture weighting, bonus opportunities, round/match win scoring, deterministic RNG selection, and statistical 75/25 distribution over 1,000 trials.
+- **UI Integration Tests (`tests/ui/aiIntegration.test.tsx`)**: 6 integration tests verifying Local Multiplayer isolation, human manual continuation in AI mode, automatic AI turn execution, automated continuation & capture confirmation, selective bonus claiming, and timer cancellation on menu navigation.
+- **E2E Playwright Suite (`tests/e2e/game.spec.ts`)**: Added Scenario 7 verifying full browser interaction against Beginner AI with automated response turns.
+- **Full Test Suite Results**:
+  - `npm run typecheck`: Passed with 0 errors.
+  - `npx vitest run`: All 42 test files passed (281 tests, 0 failures).
+  - `npx playwright test`: All 22 E2E browser tests passed.
+  - `npm run build`: Production bundle compiled cleanly with 0 errors.
+
+
 
 

@@ -82,6 +82,10 @@ export interface GameState {
    */
   gameMode?: GameMode;
   aiDifficulty?: AIDifficulty | null;
+  /**
+   * Controlled AI player identity when gameMode === "ai" (defaults to "PLAYER_2")
+   */
+  aiPlayer?: Player;
 }
 
 /**

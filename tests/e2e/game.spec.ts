@@ -398,6 +398,67 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await expect(page.getByTestId("main-menu")).toBeVisible();
     await expect(page.getByTestId("channemane-board")).not.toBeVisible();
   });
+
+  test("E2E Scenario 7: Beginner AI plays against human with automated response turn", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Navigate: Main Menu -> Difficulty Select -> Beginner
+    await page.getByTestId("menu-btn-ai").click();
+    await page.getByTestId("difficulty-btn-beginner").click();
+
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");
+
+    // Switch to Fast Mode for rapid animation stepping
+    await page.getByTestId("toggle-animation-btn").click();
+
+    // Verify initial Player 1 turn
+    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 1'S TURN");
+
+    // Human clicks pit 0
+    await page.getByTestId("pit-0").click();
+
+    // Wait for continuation prompt
+    await expect(page.getByTestId("turn-indicator")).toContainText(
+      "Choose the highlighted pit to continue sowing.",
+      { timeout: 10000 }
+    );
+
+    // Loop until human turn completes and turn passes to Player 2 (AI)
+    const startTime = Date.now();
+    while (Date.now() - startTime < 35000) {
+      const bannerText = await page.getByTestId("turn-banner").innerText().catch(() => "");
+      if (bannerText.includes("PLAYER 2")) {
+        break;
+      }
+
+      const continuationTarget = page.locator('[data-continuation-target="true"]');
+      const captureTarget = page.locator('[data-capture-target="true"]');
+
+      if (await continuationTarget.isVisible().catch(() => false)) {
+        await continuationTarget.click();
+        await page.waitForTimeout(400);
+      } else if (await captureTarget.isVisible().catch(() => false)) {
+        await captureTarget.click();
+        await page.waitForTimeout(400);
+      } else {
+        await page.waitForTimeout(300);
+      }
+    }
+
+    // Verify turn successfully reached Player 2 (AI)
+    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 2", {
+      timeout: 10000,
+    });
+
+    // The Beginner AI automatically takes its turn without human clicking
+    // Verify turn returns to Player 1!
+    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 1'S TURN", {
+      timeout: 30000,
+    });
+  });
 });
 
 

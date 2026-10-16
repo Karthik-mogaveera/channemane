@@ -90,11 +90,12 @@ export class ChannemaneGame {
     startingPlayer: Player = "PLAYER_1",
     initialState?: GameState,
     gameMode: GameMode = "local",
-    aiDifficulty: AIDifficulty | null = null
+    aiDifficulty: AIDifficulty | null = null,
+    aiPlayer: Player = "PLAYER_2"
   ) {
     this.state = initialState
       ? cloneGameState(initialState)
-      : createInitialGame(startingPlayer, gameMode, aiDifficulty);
+      : createInitialGame(startingPlayer, gameMode, aiDifficulty, aiPlayer);
     if (this.state.phase === "ROUND_SETTLEMENT" && isMatchOver(this.state)) {
       this.state.phase = "MATCH_END";
       checkAndHandleMatchEnd(this.state);
@@ -116,9 +117,18 @@ export class ChannemaneGame {
     return this.state.aiDifficulty ?? null;
   }
 
-  public setGameMode(mode: GameMode, difficulty: AIDifficulty | null = null): void {
+  public getAIPlayer(): Player {
+    return this.state.aiPlayer ?? "PLAYER_2";
+  }
+
+  public setGameMode(
+    mode: GameMode,
+    difficulty: AIDifficulty | null = null,
+    aiPlayer: Player = "PLAYER_2"
+  ): void {
     this.state.gameMode = mode;
     this.state.aiDifficulty = difficulty;
+    this.state.aiPlayer = mode === "ai" ? aiPlayer : undefined;
   }
 
   public getCurrentPlayer(): Player {

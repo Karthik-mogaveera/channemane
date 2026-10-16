@@ -18,7 +18,8 @@ import type { GameState, Pit, Player, GameMode, AIDifficulty } from "./types";
 export function createInitialGame(
   startingPlayer: Player = "PLAYER_1",
   gameMode: GameMode = "local",
-  aiDifficulty: AIDifficulty | null = null
+  aiDifficulty: AIDifficulty | null = null,
+  aiPlayer: Player = "PLAYER_2"
 ): GameState {
   const pits: Pit[] = [];
 
@@ -62,6 +63,7 @@ export function createInitialGame(
     roundWinner: null,
     gameMode,
     aiDifficulty,
+    aiPlayer: gameMode === "ai" ? aiPlayer : undefined,
   };
 }
 

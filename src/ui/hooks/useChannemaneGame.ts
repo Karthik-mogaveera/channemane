@@ -13,6 +13,7 @@ import type {
   GameMode,
   AIDifficulty,
 } from "../../engine/types";
+import { selectBeginnerMove } from "../../engine/ai";
 import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
 import type { RoundSetupResult } from "../../engine/roundSetup";
@@ -83,7 +84,13 @@ export interface UseChannemaneGameReturn {
   // Game Mode & Difficulty
   gameMode: GameMode;
   aiDifficulty: AIDifficulty | null;
-  setGameMode: (mode: GameMode, difficulty?: AIDifficulty | null) => void;
+  aiPlayer: Player;
+  setGameMode: (
+    mode: GameMode,
+    difficulty?: AIDifficulty | null,
+    aiPlayer?: Player
+  ) => void;
+  setAiPlayer: (player: Player) => void;
 
   // Player Actions
   selectPit: (pitId: number) => ActionResult<TurnResult> | null;
@@ -94,7 +101,8 @@ export interface UseChannemaneGameReturn {
   restartMatch: (
     startingPlayer?: Player,
     mode?: GameMode,
-    difficulty?: AIDifficulty | null
+    difficulty?: AIDifficulty | null,
+    aiPlayer?: Player
   ) => void;
   clearError: () => void;
 }
@@ -104,7 +112,8 @@ export function useChannemaneGame(
   initialAnimationSettings?: Partial<AnimationSettings>,
   initialGameState?: GameState,
   initialGameMode: GameMode = "local",
-  initialDifficulty: AIDifficulty | null = null
+  initialDifficulty: AIDifficulty | null = null,
+  initialAIPlayer: Player = "PLAYER_2"
 ): UseChannemaneGameReturn {
   const [gameMode, setGameModeState] = useState<GameMode>(
     () => initialGameState?.gameMode ?? initialGameMode
@@ -112,13 +121,17 @@ export function useChannemaneGame(
   const [aiDifficulty, setAiDifficultyState] = useState<AIDifficulty | null>(
     () => initialGameState?.aiDifficulty ?? initialDifficulty
   );
+  const [aiPlayer, setAiPlayerState] = useState<Player>(
+    () => initialGameState?.aiPlayer ?? initialAIPlayer
+  );
 
   const gameRef = useRef<ChannemaneGame>(
     new ChannemaneGame(
       initialStartingPlayer,
       initialGameState,
       initialGameState?.gameMode ?? initialGameMode,
-      initialGameState?.aiDifficulty ?? initialDifficulty
+      initialGameState?.aiDifficulty ?? initialDifficulty,
+      initialGameState?.aiPlayer ?? initialAIPlayer
     )
   );
   const [gameState, setGameState] = useState<GameState>(() =>
@@ -171,12 +184,17 @@ export function useChannemaneGame(
   );
 
   const animationTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear pending animation timers on unmount
+  // Clear pending animation and AI timers on unmount
   useEffect(() => {
     return () => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
       animationTimeoutsRef.current = [];
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -725,6 +743,10 @@ export function useChannemaneGame(
 
     animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
     animationTimeoutsRef.current = [];
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
+    }
     setIsAnimating(false);
     setActiveDropPit(null);
     setVisualHandSeeds(0);
@@ -744,14 +766,31 @@ export function useChannemaneGame(
    * Sets game mode and AI difficulty.
    */
   const setGameMode = useCallback(
-    (mode: GameMode, difficulty: AIDifficulty | null = null) => {
+    (
+      mode: GameMode,
+      difficulty: AIDifficulty | null = null,
+      newAiPlayer: Player = "PLAYER_2"
+    ) => {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
       setGameModeState(mode);
       setAiDifficultyState(difficulty);
-      gameRef.current.setGameMode(mode, difficulty);
+      setAiPlayerState(newAiPlayer);
+      gameRef.current.setGameMode(mode, difficulty, newAiPlayer);
       setGameState(gameRef.current.getState());
     },
     []
   );
+
+  const setAiPlayer = useCallback((player: Player) => {
+    setAiPlayerState(player);
+    const currentMode = gameRef.current.getGameMode();
+    const currentDiff = gameRef.current.getAIDifficulty();
+    gameRef.current.setGameMode(currentMode, currentDiff, player);
+    setGameState(gameRef.current.getState());
+  }, []);
 
   /**
    * Restarts the match with a fresh board.
@@ -760,10 +799,15 @@ export function useChannemaneGame(
     (
       startingPlayer: Player = "PLAYER_1",
       mode?: GameMode,
-      difficulty?: AIDifficulty | null
+      difficulty?: AIDifficulty | null,
+      newAiPlayer?: Player
     ) => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
       animationTimeoutsRef.current = [];
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
       setIsAnimating(false);
       setActiveDropPit(null);
       setVisualHandSeeds(0);
@@ -779,18 +823,21 @@ export function useChannemaneGame(
 
       const chosenMode = mode ?? gameMode;
       const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
+      const chosenAiPlayer = newAiPlayer ?? aiPlayer;
       setGameModeState(chosenMode);
       setAiDifficultyState(chosenDiff);
+      setAiPlayerState(chosenAiPlayer);
 
       gameRef.current = new ChannemaneGame(
         startingPlayer,
         undefined,
         chosenMode,
-        chosenDiff
+        chosenDiff,
+        chosenAiPlayer
       );
       setGameState(gameRef.current.getState());
     },
-    [gameMode, aiDifficulty]
+    [gameMode, aiDifficulty, aiPlayer]
   );
 
   const effectiveGameState: GameState = useMemo(() => {
@@ -799,6 +846,115 @@ export function useChannemaneGame(
     }
     return gameState;
   }, [isReviewingBoard, reviewBoardState, gameState]);
+
+  /**
+   * Beginner AI Turn Orchestration Effect
+   * Seamlessly coordinates AI turns:
+   * 1. Confirms gameMode === "ai", aiDifficulty === "beginner", and phase === "PLAYING".
+   * 2. Confirms active turn belongs to AI player.
+   * 3. Automatically claims AI-owned bonuses (never human bonuses).
+   * 4. Selects legal starting pits after a brief thinking pause.
+   * 5. Automatically confirms continuation and capture when paused.
+   * 6. Cleanly cancels pending timers on unmount, mode switch, or match completion.
+   */
+  useEffect(() => {
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
+    }
+
+    if (
+      gameMode !== "ai" ||
+      aiDifficulty !== "beginner" ||
+      gameState.phase !== "PLAYING" ||
+      isAnimating ||
+      isReviewingBoard
+    ) {
+      return;
+    }
+
+    const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
+    if (gameState.currentPlayer !== currentAI) {
+      return;
+    }
+
+    // A. AI Starting Pit Selection
+    if (interactionState === "WAITING_FOR_START") {
+      // Check if AI has any claimable bonus on its own pits
+      const aiBonuses = gameRef.current
+        .getClaimableBonuses()
+        .filter((id) => gameState.pits[id]?.owner === currentAI);
+
+      if (aiBonuses.length > 0) {
+        const bonusDelay = animationSettings.enabled ? 300 : 0;
+        aiTimeoutRef.current = setTimeout(() => {
+          aiTimeoutRef.current = null;
+          claimBonus(aiBonuses[0]);
+        }, bonusDelay);
+        return;
+      }
+
+      const chosenPit = selectBeginnerMove(gameState, currentAI);
+      if (chosenPit === null) {
+        return;
+      }
+
+      const thinkingDelay = animationSettings.enabled ? 500 : 0;
+      aiTimeoutRef.current = setTimeout(() => {
+        aiTimeoutRef.current = null;
+        const current = gameRef.current.getState();
+        if (
+          current.phase === "PLAYING" &&
+          current.currentPlayer === currentAI &&
+          !gameRef.current.isTurnInProgress()
+        ) {
+          selectPit(chosenPit);
+        }
+      }, thinkingDelay);
+      return;
+    }
+
+    // B. AI Continuous Sowing Confirmation
+    if (
+      interactionState === "WAITING_FOR_CONTINUATION" &&
+      highlightedContinuationPit !== null
+    ) {
+      const continuationDelay = animationSettings.enabled ? 350 : 0;
+      aiTimeoutRef.current = setTimeout(() => {
+        aiTimeoutRef.current = null;
+        confirmContinuation(highlightedContinuationPit);
+      }, continuationDelay);
+      return;
+    }
+
+    // C. AI Capture Confirmation
+    if (
+      interactionState === "WAITING_FOR_CAPTURE" &&
+      highlightedCapturePit !== null
+    ) {
+      const captureDelay = animationSettings.enabled ? 350 : 0;
+      aiTimeoutRef.current = setTimeout(() => {
+        aiTimeoutRef.current = null;
+        confirmCapture(highlightedCapturePit);
+      }, captureDelay);
+      return;
+    }
+  }, [
+    gameMode,
+    aiDifficulty,
+    aiPlayer,
+    gameState,
+    interactionState,
+    isAnimating,
+    isReviewingBoard,
+    highlightedContinuationPit,
+    highlightedCapturePit,
+    animationSettings.enabled,
+    selectPit,
+    confirmContinuation,
+    confirmCapture,
+    claimBonus,
+  ]);
 
   const selectablePits = useMemo(() => {
     if (
@@ -810,8 +966,12 @@ export function useChannemaneGame(
     ) {
       return [];
     }
+    const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
+    if (gameMode === "ai" && gameState.currentPlayer === currentAI) {
+      return [];
+    }
     return gameRef.current.getSelectablePits();
-  }, [isAnimating, isReviewingBoard, gameState, interactionState]);
+  }, [isAnimating, isReviewingBoard, gameState, interactionState, gameMode, aiPlayer]);
 
   const claimableBonuses = useMemo(() => {
     if (
@@ -828,7 +988,9 @@ export function useChannemaneGame(
     authoritativeGameState: gameState,
     gameMode,
     aiDifficulty,
+    aiPlayer,
     setGameMode,
+    setAiPlayer,
     isReviewingBoard,
     reviewBoardState,
     selectablePits,

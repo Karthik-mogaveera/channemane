@@ -324,16 +324,33 @@ export function useChannemaneGame(
         return;
       }
 
+      if (outcome?.roundSettlement) {
+        lastSettlementRef.current = outcome.roundSettlement;
+      }
+
       const isRoundSettled =
         Boolean(outcome?.roundEnded) ||
         Boolean(outcome?.roundSettlement) ||
         currentState.phase === "ROUND_SETTLEMENT";
 
-      if (isRoundSettled && (outcome?.roundSettlement || lastSettlementRef.current)) {
-        const settlement = outcome?.roundSettlement ?? lastSettlementRef.current!;
+      if (isRoundSettled) {
+        const settlement =
+          outcome?.roundSettlement ??
+          lastSettlementRef.current ??
+          gameRef.current.getLastTurnResult()?.roundSettlement ??
+          null;
+
+        if (settlement) {
+          lastSettlementRef.current = settlement;
+          setGameState(currentState);
+          setSettlementSummary(settlement);
+          setMatchSummary(null);
+          setInteractionState("ROUND_SETTLEMENT");
+          return;
+        }
+
+        // Even if summary is missing, keep interaction state in ROUND_SETTLEMENT
         setGameState(currentState);
-        setSettlementSummary(settlement);
-        setMatchSummary(null);
         setInteractionState("ROUND_SETTLEMENT");
         return;
       }
@@ -720,6 +737,11 @@ export function useChannemaneGame(
         setLastActionError(res.error);
       } else {
         if (res.data.roundEnded || res.data.matchEnded) {
+          animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
+          animationTimeoutsRef.current = [];
+          setIsAnimating(false);
+          setActiveDropPit(null);
+          setVisualHandSeeds(0);
           handleGameplayCompletion(res.data);
         } else {
           setGameState(gameRef.current.getState());
@@ -1026,7 +1048,10 @@ export function useChannemaneGame(
           current.currentPlayer === currentAI &&
           !gameRef.current.isTurnInProgress()
         ) {
-          selectPit(chosenPit);
+          const pitToPlay = selectBeginnerMove(current, currentAI) ?? chosenPit;
+          if (pitToPlay !== null) {
+            selectPit(pitToPlay);
+          }
         }
       }, thinkingDelay);
       return;

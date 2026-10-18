@@ -249,6 +249,7 @@ export class ChannemaneGame {
         data: {
           type: "TURN_COMPLETED",
           roundEnded: true,
+          roundSettlement: this.turnContext.turnResult?.roundSettlement,
           matchEnded: this.state.phase === "MATCH_END",
           isComplete: true,
         },
@@ -603,8 +604,13 @@ export class ChannemaneGame {
     player?: Player
   ): ActionResult<ClaimBonusResult> {
     const res = claimBonus(this.state, pitId, player);
-    if (res.success && res.data.roundEnded && res.data.roundSettlement) {
-      this.preSettlementState = res.data.roundSettlement.preSettlementState ?? null;
+    if (res.success && res.data.roundEnded) {
+      if (this.turnContext) {
+        this.turnContext.isComplete = true;
+      }
+      if (res.data.roundSettlement) {
+        this.preSettlementState = res.data.roundSettlement.preSettlementState ?? null;
+      }
     }
     return res;
   }
@@ -617,10 +623,17 @@ export class ChannemaneGame {
   }
 
   /**
+   * Explicitly clears any in-progress turn context and resets transient turn state.
+   */
+  public resetTurnContext(): void {
+    this.turnContext = null;
+  }
+
+  /**
    * Advances to the next round if the current round has settled and match is not over.
    */
   public startNextRound(): ActionResult<RoundSetupResult> {
-    if (this.state.phase === "MATCH_END" || isMatchOver(this.state)) {
+    if (this.state.phase === "MATCH_END") {
       return {
         success: false,
         error: `Cannot start next round: match is already over (P1 storage: ${this.state.players.player1.storage}, P2 storage: ${this.state.players.player2.storage})`,
@@ -632,8 +645,15 @@ export class ChannemaneGame {
         error: `Cannot start next round: current phase is ${this.state.phase}, expected ROUND_SETTLEMENT`,
       };
     }
+    if (isMatchOver(this.state)) {
+      return {
+        success: false,
+        error: `Cannot start next round: match is already over (P1 storage: ${this.state.players.player1.storage}, P2 storage: ${this.state.players.player2.storage})`,
+      };
+    }
     const setupResult = setupNextRound(this.state);
     if (setupResult.success) {
+      this.turnContext = null;
       this.preSettlementState = null;
     }
     return setupResult;

@@ -743,6 +743,64 @@ Integrated seamlessly into `src/ui/hooks/useChannemaneGame.ts`:
   - `npx playwright test`: All 22 E2E browser tests passed.
   - `npm run build`: Production bundle compiled cleanly in 3.14s.
 
+## 23. Next-Round Input and AI Turn Failure Permanent Fix
+
+### 23.1 Observed Failure & Symptoms
+- After a round ended and was settled, starting the next round intermittently caused either:
+  1. The human player being unable to click or tap any eligible open pit to begin sowing (all pits disabled or clicks silently dropped).
+  2. The AI player being unable to start sowing in the next round when assigned to move first (game permanently paused at WAITING_FOR_START).
+
+### 23.2 Root Cause Analysis
+Code inspection revealed the exact failure mechanisms:
+1. **Lingering Incomplete `turnContext` in `ChannemaneGame`**:
+   - In `ChannemaneGame.startNextRound()`, `this.turnContext` was never reset to `null`.
+   - When a round ended via a bonus claim (e.g. board seeds dropping below 4 mid-turn) or if a turn was settled before normal completion, `turnContext.isComplete` remained `false`.
+   - Consequently, `game.isTurnInProgress()` evaluated to `true` at the start of the next round.
+   - For the human player, `useChannemaneGame`'s `selectPit` checks `if (gameRef.current.isTurnInProgress()) return null;`, causing clicks to be dropped.
+   - For the AI player, the orchestration effect checks `if (!gameRef.current.isTurnInProgress()) { selectPit(chosenPit); }`, preventing the AI from taking its turn.
+2. **Phase check order in `ChannemaneGame.startNextRound()`**:
+   - `startNextRound()` evaluated `if (this.state.phase === "MATCH_END" || isMatchOver(this.state))` before checking `if (this.state.phase !== "ROUND_SETTLEMENT")`.
+   - Because `isMatchOver()` checks whether storage is under 5 (which is normal during `PLAYING` phase after seeds have been placed on pits), calling or double-invoking next round falsely triggered match termination errors.
+3. **Transient `seedsInHand` not reset in settlement and setup**:
+   - Neither `executeRoundSettlement` nor `setupNextRound` explicitly reset `state.seedsInHand = 0`, allowing transient hand seeds to survive across round boundaries.
+4. **Animation and Settlement Synchronization in UI**:
+   - In `claimBonus()`, if a claim ended the round, pending sowing animation timeouts were not cleared, allowing orphaned step callbacks to run during settlement review.
+   - In `handleGameplayCompletion()`, if `roundSettlement` summary was not immediately attached, `interactionState` was incorrectly falling through to `"WAITING_FOR_START"` while `state.phase` remained `"ROUND_SETTLEMENT"`.
+5. **AI Move Evaluation Synchronization**:
+   - Inside the 500ms AI thinking timer, the AI now re-verifies legal moves against the current authoritative state rather than using potentially stale closure state.
+
+### 23.3 Files Changed
+- `src/engine/simulation.ts`:
+  - Reset `this.turnContext = null` in `startNextRound()`.
+  - Added public `resetTurnContext()` helper.
+  - In `claimBonus()`, mark `this.turnContext.isComplete = true` when bonus collection ends the round.
+  - In `stepTurn()`, return `roundSettlement` if the turn completed due to round settlement.
+  - Evaluated phase check order in `startNextRound()` before `isMatchOver()`.
+- `src/engine/roundSetup.ts`:
+  - Explicitly reset `state.seedsInHand = 0` during `setupNextRound()`.
+- `src/engine/settlement.ts`:
+  - Explicitly reset `state.seedsInHand = 0` during `executeRoundSettlement()`.
+- `src/ui/hooks/useChannemaneGame.ts`:
+  - In `claimBonus()`, immediately clear pending animation timeouts and reset visual hand/drop states when bonus ends the round.
+  - In `handleGameplayCompletion()`, preserve and fall back to cached settlement summary, ensuring `interactionState` stays in `"ROUND_SETTLEMENT"` during settlement.
+  - In AI turn orchestration effect, re-evaluate legal moves from the authoritative state when the thinking delay finishes.
+
+### 23.4 Regression Tests Added
+- `tests/ui/nextRoundTransitionBug.test.tsx`:
+  - **Scenario A**: Human starts next round -> verifies playable phase, pit selectable, click invokes sowing.
+  - **Scenario B**: AI starts next round -> verifies AI turn scheduled, legally selects pit, executes without lockup.
+  - **Scenario C**: Repeated consecutive round transitions (Round 1 -> 2 -> 3) with alternating winners remain fully playable.
+  - **Scenario D**: Mid-turn bonus claim ending round cleanly cancels animation and clears `turnContext`.
+  - **Scenario E**: Duplicate invocation of `startNextRound` is safely rejected and preserves game state idempotently.
+  - **Scenario F**: Match termination (66/4 and 4/66) takes precedence and blocks next round.
+  - **Scenario G**: Verifies 70-seed conservation, correct pit ownership, and round-win counts across transitions.
+
+### 23.5 Verification Results
+- **TypeScript Typecheck (`npm run typecheck`)**: Passed with 0 errors.
+- **Unit & Integration Suite (`npx vitest run`)**: All 46 test files passed (306/306 tests, 0 failures).
+- **Production Build (`npm run build`)**: Compiled successfully with Vite in 3.14s.
+
+
 
 
 

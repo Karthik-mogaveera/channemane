@@ -108,6 +108,7 @@ export function setupNextRound(state: GameState): ActionResult<RoundSetupResult>
   state.players.player2.roundCaptured = 0;
   state.selectedPit = null;
   state.lastPit = null;
+  state.seedsInHand = 0;
 
   state.round += 1;
   state.phase = "PLAYING";

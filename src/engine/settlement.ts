@@ -66,6 +66,7 @@ export function executeRoundSettlement(
   }
 
   state.roundWinner = roundWinner;
+  state.seedsInHand = 0;
   state.phase = "ROUND_SETTLEMENT";
   state.turnPhase = "TURN_END";
 

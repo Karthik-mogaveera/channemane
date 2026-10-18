@@ -48,15 +48,18 @@
   --indicator-selected: #fff2cc;
   --indicator-selected-glow: rgba(255, 242, 204, 0.85);
 
-  --indicator-continuation: #f59e0b; /* Warm honey amber (replaces mismatched neon green) */
+  --indicator-continuation: #f59e0b;
+  /* Warm honey amber (replaces mismatched neon green) */
   --indicator-continuation-light: #fcd34d;
   --indicator-continuation-glow: rgba(245, 158, 11, 0.45);
 
-  --indicator-capture: #c2410c; /* Deep burnished terracotta bronze / rust */
+  --indicator-capture: #c2410c;
+  /* Deep burnished terracotta bronze / rust */
   --indicator-capture-light: #fb923c;
   --indicator-capture-glow: rgba(194, 65, 12, 0.45);
 
-  --indicator-bonus: #d4af37; /* Radiant royal brass gold */
+  --indicator-bonus: #d4af37;
+  /* Radiant royal brass gold */
   --indicator-bonus-light: #fbbf24;
   --indicator-bonus-glow: rgba(212, 175, 55, 0.55);
 }
@@ -570,11 +573,14 @@ body {
 }
 
 @keyframes pulseContinuation {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow:
       inset 0 0 10px rgba(245, 158, 11, 0.25),
       0 0 12px rgba(245, 158, 11, 0.45);
   }
+
   50% {
     box-shadow:
       inset 0 0 18px rgba(245, 158, 11, 0.5),
@@ -593,11 +599,14 @@ body {
 }
 
 @keyframes pulseCapture {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow:
       inset 0 0 10px rgba(194, 65, 12, 0.25),
       0 0 12px rgba(194, 65, 12, 0.45);
   }
+
   50% {
     box-shadow:
       inset 0 0 18px rgba(194, 65, 12, 0.55),
@@ -630,6 +639,7 @@ body {
   from {
     stroke-dashoffset: 119.38;
   }
+
   to {
     stroke-dashoffset: 0;
   }
@@ -833,33 +843,71 @@ body {
 
 /* Animations */
 @keyframes pulseDot {
-  0%, 100% { opacity: 0.6; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
 
 @keyframes pulseHand {
-  0% { box-shadow: 0 0 4px var(--gold-glow); }
-  100% { box-shadow: 0 0 14px var(--gold-glow); }
+  0% {
+    box-shadow: 0 0 4px var(--gold-glow);
+  }
+
+  100% {
+    box-shadow: 0 0 14px var(--gold-glow);
+  }
 }
 
 @keyframes bonusGlow {
-  0% { box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.9), 0 0 8px rgba(251, 191, 36, 0.5); }
-  100% { box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.9), 0 0 22px rgba(251, 191, 36, 0.95); }
+  0% {
+    box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.9), 0 0 8px rgba(251, 191, 36, 0.5);
+  }
+
+  100% {
+    box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.9), 0 0 22px rgba(251, 191, 36, 0.95);
+  }
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalPop {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Orientation Blocking Prompt Overlay (Requirement 2) */
@@ -903,10 +951,21 @@ body {
 }
 
 @keyframes rotatePhone {
-  0% { transform: rotate(0deg); }
-  35% { transform: rotate(-90deg); }
-  65% { transform: rotate(-90deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  35% {
+    transform: rotate(-90deg);
+  }
+
+  65% {
+    transform: rotate(-90deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 .orientation-title {
@@ -992,6 +1051,7 @@ body {
 
 /* Accessibility: Respect Reduced Motion Preferences */
 @media (prefers-reduced-motion: reduce) {
+
   .channemane-pit.continuation-target,
   .channemane-pit.capture-target,
   .channemane-pit.has-bonus,
@@ -1313,6 +1373,7 @@ body {
 
 /* Mobile Responsiveness for Menus */
 @media (max-width: 600px) {
+
   .main-menu-card,
   .difficulty-select-card {
     padding: 22px 18px 18px;
@@ -1359,6 +1420,7 @@ body {
    screens (e.g. mobile 320px-480px height) without requiring vertical scroll.
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 540px) {
+
   /* Overlay containers */
   .modal-overlay,
   .main-menu-container,
@@ -1754,7 +1816,7 @@ body {
   transform: translate(-50%, -50%);
   z-index: 1200;
   pointer-events: none;
-  animation: turnPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: turnPopIn 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .turn-notification-pill {
@@ -1797,6 +1859,7 @@ body {
     opacity: 0;
     transform: translate(-50%, -70%) scale(0.85);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -1805,6 +1868,7 @@ body {
 
 /* Mobile Landscape Optimizations */
 @media screen and (max-height: 500px) and (orientation: landscape) {
+
   .first-player-card,
   .coming-soon-card {
     max-height: calc(100vh - 16px);
@@ -1859,7 +1923,3 @@ body {
     font-size: 1.1rem;
   }
 }
-
-
-
-

@@ -57,6 +57,11 @@ describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)
       />
     );
 
+    // Advance past initial turn notification (800ms) so human input becomes active
+    act(() => {
+      vi.advanceTimersByTime(900);
+    });
+
     // Select pit 0
     const pit0 = screen.getByTestId("pit-0");
     await act(async () => {
@@ -114,7 +119,11 @@ describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)
     // Initial check: PLAYER_2 (AI) turn
     expect(screen.getByTestId("turn-banner")).toHaveTextContent("PLAYER 2'S TURN");
 
-    // Advance timers for AI thinking pause (500ms) and automatic continuation (350ms)
+    // Advance past turn notification (800ms), AI thinking pause (500ms), and continuation (350ms)
+    await act(async () => {
+      vi.advanceTimersByTime(900); // Clear Turn Notification
+    });
+
     await act(async () => {
       vi.advanceTimersByTime(600); // Trigger selectPit
     });
@@ -155,6 +164,11 @@ describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)
     );
 
     expect(screen.getByTestId("turn-banner")).toHaveTextContent("PLAYER 2'S TURN");
+
+    // Advance past turn notification (800ms)
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+    });
 
     // Advance AI thinking time
     await act(async () => {
@@ -200,7 +214,10 @@ describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)
       />
     );
 
-    // Advance time for AI to auto-claim its bonus on pit 7
+    // Advance past turn notification (800ms) and bonus auto-claim timeout (250ms)
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+    });
     await act(async () => {
       vi.advanceTimersByTime(400);
     });

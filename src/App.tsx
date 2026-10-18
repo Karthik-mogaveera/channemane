@@ -16,7 +16,10 @@ import { RulesModal } from "./ui/components/RulesModal";
 import { OrientationPrompt } from "./ui/components/OrientationPrompt";
 import { MainMenu } from "./ui/components/MainMenu";
 import { DifficultySelect } from "./ui/components/DifficultySelect";
-import type { GameMode, AIDifficulty } from "./engine/types";
+import { FirstPlayerModal } from "./ui/components/FirstPlayerModal";
+import { ComingSoonModal } from "./ui/components/ComingSoonModal";
+import { TurnNotification } from "./ui/components/TurnNotification";
+import type { GameMode, AIDifficulty, Player } from "./engine/types";
 
 export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "GAME";
 
@@ -36,6 +39,14 @@ export const App: React.FC<AppProps> = ({
   initialAnimationSettings,
 }) => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>(initialScreen);
+  const [selectedDifficultyForFirstPlayer, setSelectedDifficultyForFirstPlayer] =
+    useState<AIDifficulty | null>(null);
+  const [comingSoonNotice, setComingSoonNotice] = useState<{
+    difficulty: AIDifficulty;
+    selectedFirstPlayer: "player" | "ai";
+  } | null>(null);
+  const [chosenStartingPlayer, setChosenStartingPlayer] =
+    useState<Player>("PLAYER_1");
   const { isPortraitBlocked } = useOrientation();
 
   const {
@@ -55,6 +66,7 @@ export const App: React.FC<AppProps> = ({
     lastActionError,
     settlementSummary,
     matchSummary,
+    turnNotification,
     isRulesOpen,
     setIsRulesOpen,
     animationSettings,
@@ -86,22 +98,68 @@ export const App: React.FC<AppProps> = ({
 
   // Navigation handlers
   const handlePlayAI = () => {
+    setSelectedDifficultyForFirstPlayer(null);
+    setComingSoonNotice(null);
     setCurrentScreen("DIFFICULTY_SELECT");
   };
 
   const handleSelectDifficulty = (difficulty: AIDifficulty) => {
-    setGameMode("ai", difficulty);
-    restartMatch("PLAYER_1", "ai", difficulty);
+    setSelectedDifficultyForFirstPlayer(difficulty);
+  };
+
+  const handleSelectFirstPlayer = (firstPlayer: "player" | "ai") => {
+    const startingPlayer: Player = firstPlayer === "player" ? "PLAYER_1" : "PLAYER_2";
+    setChosenStartingPlayer(startingPlayer);
+
+    if (selectedDifficultyForFirstPlayer === "beginner") {
+      setGameMode("ai", "beginner", "PLAYER_2");
+      restartMatch(startingPlayer, "ai", "beginner", "PLAYER_2");
+      setSelectedDifficultyForFirstPlayer(null);
+      setCurrentScreen("GAME");
+    } else if (selectedDifficultyForFirstPlayer) {
+      setComingSoonNotice({
+        difficulty: selectedDifficultyForFirstPlayer,
+        selectedFirstPlayer: firstPlayer,
+      });
+      setSelectedDifficultyForFirstPlayer(null);
+    }
+  };
+
+  const handlePlayBeginnerFromComingSoon = () => {
+    const startingPlayer: Player =
+      comingSoonNotice?.selectedFirstPlayer === "player" ? "PLAYER_1" : "PLAYER_2";
+    setChosenStartingPlayer(startingPlayer);
+    setGameMode("ai", "beginner", "PLAYER_2");
+    restartMatch(startingPlayer, "ai", "beginner", "PLAYER_2");
+    setComingSoonNotice(null);
     setCurrentScreen("GAME");
   };
 
+  const handleBackToMenuFromComingSoon = () => {
+    setComingSoonNotice(null);
+    setSelectedDifficultyForFirstPlayer(null);
+    restartMatch("PLAYER_1");
+    setCurrentScreen("MAIN_MENU");
+  };
+
+  const handleChangeDifficultyFromComingSoon = () => {
+    setComingSoonNotice(null);
+    setSelectedDifficultyForFirstPlayer(null);
+    setCurrentScreen("DIFFICULTY_SELECT");
+  };
+
   const handlePlayLocal = () => {
+    setChosenStartingPlayer("PLAYER_1");
+    setSelectedDifficultyForFirstPlayer(null);
+    setComingSoonNotice(null);
     setGameMode("local", null);
     restartMatch("PLAYER_1", "local", null);
     setCurrentScreen("GAME");
   };
 
   const handleReturnToMenu = () => {
+    setSelectedDifficultyForFirstPlayer(null);
+    setComingSoonNotice(null);
     restartMatch("PLAYER_1");
     setCurrentScreen("MAIN_MENU");
   };
@@ -122,18 +180,43 @@ export const App: React.FC<AppProps> = ({
 
       {/* Screen 2: AI Difficulty Selection */}
       {currentScreen === "DIFFICULTY_SELECT" && (
-        <DifficultySelect
-          onSelectDifficulty={handleSelectDifficulty}
-          onBack={handleReturnToMenu}
-        />
+        <>
+          <DifficultySelect
+            onSelectDifficulty={handleSelectDifficulty}
+            onBack={handleReturnToMenu}
+          />
+
+          {/* "Who will Play first" Dialog (Feature 2) */}
+          {selectedDifficultyForFirstPlayer && (
+            <FirstPlayerModal
+              difficulty={selectedDifficultyForFirstPlayer}
+              onSelectFirstPlayer={handleSelectFirstPlayer}
+              onBack={() => setSelectedDifficultyForFirstPlayer(null)}
+            />
+          )}
+
+          {/* Expert & Master Safeguard "Coming Soon" Modal */}
+          {comingSoonNotice && (
+            <ComingSoonModal
+              difficulty={comingSoonNotice.difficulty}
+              selectedFirstPlayer={comingSoonNotice.selectedFirstPlayer}
+              onPlayBeginner={handlePlayBeginnerFromComingSoon}
+              onBackToMenu={handleBackToMenuFromComingSoon}
+              onChangeDifficulty={handleChangeDifficultyFromComingSoon}
+            />
+          )}
+        </>
       )}
 
       {/* Screen 3: Existing Game Board & Controls */}
       {currentScreen === "GAME" && (
         <>
+          {/* Turn-Start Notification Popup (Feature 3) */}
+          <TurnNotification notification={turnNotification} />
+
           {/* Top Header with Return to Menu & Mode Badge */}
           <Header
-            onRestart={() => restartMatch("PLAYER_1", gameMode, aiDifficulty)}
+            onRestart={() => restartMatch(chosenStartingPlayer, gameMode, aiDifficulty)}
             onOpenRules={() => setIsRulesOpen(true)}
             animationSettings={animationSettings}
             onToggleAnimation={toggleAnimationSpeed}
@@ -240,7 +323,7 @@ export const App: React.FC<AppProps> = ({
           {matchSummary && (
             <MatchEndModal
               matchResult={matchSummary}
-              onNewMatch={() => restartMatch("PLAYER_1", gameMode, aiDifficulty)}
+              onNewMatch={() => restartMatch(chosenStartingPlayer, gameMode, aiDifficulty)}
               onClose={dismissMatchModal}
             />
           )}

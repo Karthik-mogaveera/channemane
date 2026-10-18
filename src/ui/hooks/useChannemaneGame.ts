@@ -74,6 +74,9 @@ export interface UseChannemaneGameReturn {
   reopenSettlementModal: () => void;
   dismissMatchModal: () => void;
 
+  // Turn-Start Notification (Feature 3)
+  turnNotification: string | null;
+
   // Modals & Controls
   isRulesOpen: boolean;
   setIsRulesOpen: (open: boolean) => void;
@@ -183,10 +186,16 @@ export function useChannemaneGame(
     })
   );
 
+  const [turnNotification, setTurnNotification] = useState<string | null>(null);
+  const turnNotificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [turnCount, setTurnCount] = useState<number>(1);
+  const lastNotifiedTurnIdRef = useRef<number>(0);
+
   const animationTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const aiBonusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear pending animation and AI timers on unmount
+  // Clear pending animation, AI, and notification timers on unmount
   useEffect(() => {
     return () => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
@@ -194,6 +203,14 @@ export function useChannemaneGame(
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
+      }
+      if (aiBonusTimeoutRef.current) {
+        clearTimeout(aiBonusTimeoutRef.current);
+        aiBonusTimeoutRef.current = null;
+      }
+      if (turnNotificationTimeoutRef.current) {
+        clearTimeout(turnNotificationTimeoutRef.current);
+        turnNotificationTimeoutRef.current = null;
       }
     };
   }, []);
@@ -269,6 +286,12 @@ export function useChannemaneGame(
       setHighlightedContinuationPit(null);
       setHighlightedCapturePit(null);
 
+      if (turnNotificationTimeoutRef.current) {
+        clearTimeout(turnNotificationTimeoutRef.current);
+        turnNotificationTimeoutRef.current = null;
+      }
+      setTurnNotification(null);
+
       const currentState = gameRef.current.getState();
 
       if (outcome?.roundSettlement) {
@@ -315,6 +338,7 @@ export function useChannemaneGame(
         return;
       }
 
+      setTurnCount((c) => c + 1);
       setGameState(currentState);
       setSettlementSummary(null);
       setMatchSummary(null);
@@ -747,6 +771,17 @@ export function useChannemaneGame(
       clearTimeout(aiTimeoutRef.current);
       aiTimeoutRef.current = null;
     }
+    if (aiBonusTimeoutRef.current) {
+      clearTimeout(aiBonusTimeoutRef.current);
+      aiBonusTimeoutRef.current = null;
+    }
+    if (turnNotificationTimeoutRef.current) {
+      clearTimeout(turnNotificationTimeoutRef.current);
+      turnNotificationTimeoutRef.current = null;
+    }
+    setTurnNotification(null);
+    setTurnCount((c) => c + 1);
+
     setIsAnimating(false);
     setActiveDropPit(null);
     setVisualHandSeeds(0);
@@ -775,6 +810,18 @@ export function useChannemaneGame(
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
       }
+      if (aiBonusTimeoutRef.current) {
+        clearTimeout(aiBonusTimeoutRef.current);
+        aiBonusTimeoutRef.current = null;
+      }
+      if (turnNotificationTimeoutRef.current) {
+        clearTimeout(turnNotificationTimeoutRef.current);
+        turnNotificationTimeoutRef.current = null;
+      }
+      setTurnNotification(null);
+      setTurnCount((c) => c + 1);
+      lastNotifiedTurnIdRef.current = 0;
+
       setGameModeState(mode);
       setAiDifficultyState(difficulty);
       setAiPlayerState(newAiPlayer);
@@ -808,6 +855,18 @@ export function useChannemaneGame(
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
       }
+      if (aiBonusTimeoutRef.current) {
+        clearTimeout(aiBonusTimeoutRef.current);
+        aiBonusTimeoutRef.current = null;
+      }
+      if (turnNotificationTimeoutRef.current) {
+        clearTimeout(turnNotificationTimeoutRef.current);
+        turnNotificationTimeoutRef.current = null;
+      }
+      setTurnNotification(null);
+      setTurnCount((c) => c + 1);
+      lastNotifiedTurnIdRef.current = 0;
+
       setIsAnimating(false);
       setActiveDropPit(null);
       setVisualHandSeeds(0);
@@ -848,11 +907,63 @@ export function useChannemaneGame(
   }, [isReviewingBoard, reviewBoardState, gameState]);
 
   /**
-   * Beginner AI Turn Orchestration Effect
+   * Turn-Start Notification Effect (Feature 3)
+   * Displays "Your turn" or "AI turn" transient popup before each player's turn begins.
+   * Disables player interactions and delays AI decision-making for ~800ms.
+   */
+  useEffect(() => {
+    if (
+      gameMode !== "ai" ||
+      gameState.phase !== "PLAYING" ||
+      interactionState !== "WAITING_FOR_START" ||
+      isAnimating ||
+      isReviewingBoard ||
+      settlementSummary !== null ||
+      matchSummary !== null
+    ) {
+      return;
+    }
+
+    if (lastNotifiedTurnIdRef.current === turnCount) {
+      return;
+    }
+
+    lastNotifiedTurnIdRef.current = turnCount;
+    const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
+    const notificationText =
+      gameState.currentPlayer === currentAI ? "AI turn" : "Your turn";
+
+    setTurnNotification(notificationText);
+
+    if (turnNotificationTimeoutRef.current) {
+      clearTimeout(turnNotificationTimeoutRef.current);
+    }
+
+    const duration = 800;
+    turnNotificationTimeoutRef.current = setTimeout(() => {
+      turnNotificationTimeoutRef.current = null;
+      setTurnNotification(null);
+    }, duration);
+  }, [
+    gameMode,
+    gameState.phase,
+    gameState.currentPlayer,
+    gameState.aiPlayer,
+    aiPlayer,
+    interactionState,
+    isAnimating,
+    isReviewingBoard,
+    settlementSummary,
+    matchSummary,
+    turnCount,
+  ]);
+
+  /**
+   * Beginner AI Turn Orchestration & Auto-Bonus Effect (Features 1 & 3)
    * Seamlessly coordinates AI turns:
    * 1. Confirms gameMode === "ai", aiDifficulty === "beginner", and phase === "PLAYING".
-   * 2. Confirms active turn belongs to AI player.
-   * 3. Automatically claims AI-owned bonuses (never human bonuses).
+   * 2. Automatically claims AI-owned bonuses (never human bonuses), during both AI & human turns.
+   * 3. Waits until any active turn-notification finishes before initiating moves.
    * 4. Selects legal starting pits after a brief thinking pause.
    * 5. Automatically confirms continuation and capture when paused.
    * 6. Cleanly cancels pending timers on unmount, mode switch, or match completion.
@@ -862,38 +973,45 @@ export function useChannemaneGame(
       clearTimeout(aiTimeoutRef.current);
       aiTimeoutRef.current = null;
     }
+    if (aiBonusTimeoutRef.current) {
+      clearTimeout(aiBonusTimeoutRef.current);
+      aiBonusTimeoutRef.current = null;
+    }
 
     if (
       gameMode !== "ai" ||
       aiDifficulty !== "beginner" ||
       gameState.phase !== "PLAYING" ||
       isAnimating ||
-      isReviewingBoard
+      isReviewingBoard ||
+      turnNotification !== null
     ) {
       return;
     }
 
     const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
+
+    // Feature 1: AI Auto-Collect Bonuses that belong to AI
+    const aiBonuses = gameRef.current
+      .getClaimableBonuses(currentAI)
+      .filter((id) => gameState.pits[id]?.owner === currentAI);
+
+    if (aiBonuses.length > 0) {
+      const bonusDelay = animationSettings.enabled ? 250 : 0;
+      aiBonusTimeoutRef.current = setTimeout(() => {
+        aiBonusTimeoutRef.current = null;
+        claimBonus(aiBonuses[0]);
+      }, bonusDelay);
+      return;
+    }
+
+    // AI Turn actions require active turn to belong to AI player
     if (gameState.currentPlayer !== currentAI) {
       return;
     }
 
     // A. AI Starting Pit Selection
     if (interactionState === "WAITING_FOR_START") {
-      // Check if AI has any claimable bonus on its own pits
-      const aiBonuses = gameRef.current
-        .getClaimableBonuses()
-        .filter((id) => gameState.pits[id]?.owner === currentAI);
-
-      if (aiBonuses.length > 0) {
-        const bonusDelay = animationSettings.enabled ? 300 : 0;
-        aiTimeoutRef.current = setTimeout(() => {
-          aiTimeoutRef.current = null;
-          claimBonus(aiBonuses[0]);
-        }, bonusDelay);
-        return;
-      }
-
       const chosenPit = selectBeginnerMove(gameState, currentAI);
       if (chosenPit === null) {
         return;
@@ -947,6 +1065,7 @@ export function useChannemaneGame(
     interactionState,
     isAnimating,
     isReviewingBoard,
+    turnNotification,
     highlightedContinuationPit,
     highlightedCapturePit,
     animationSettings.enabled,
@@ -962,7 +1081,8 @@ export function useChannemaneGame(
       isReviewingBoard ||
       gameState.phase === "ROUND_SETTLEMENT" ||
       gameState.phase === "MATCH_END" ||
-      interactionState !== "WAITING_FOR_START"
+      interactionState !== "WAITING_FOR_START" ||
+      turnNotification !== null
     ) {
       return [];
     }
@@ -971,7 +1091,7 @@ export function useChannemaneGame(
       return [];
     }
     return gameRef.current.getSelectablePits();
-  }, [isAnimating, isReviewingBoard, gameState, interactionState, gameMode, aiPlayer]);
+  }, [isAnimating, isReviewingBoard, gameState, interactionState, gameMode, aiPlayer, turnNotification]);
 
   const claimableBonuses = useMemo(() => {
     if (
@@ -989,6 +1109,7 @@ export function useChannemaneGame(
     gameMode,
     aiDifficulty,
     aiPlayer,
+    turnNotification,
     setGameMode,
     setAiPlayer,
     isReviewingBoard,

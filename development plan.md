@@ -675,6 +675,75 @@ Integrated seamlessly into `src/ui/hooks/useChannemaneGame.ts`:
   - `npx playwright test`: All 22 E2E browser tests passed.
   - `npm run build`: Production bundle compiled cleanly with 0 errors.
 
+---
+
+## 22. AI Bonus Auto-Collection, First-Turn Selection, and Turn Notifications
+
+### 22.1 Feature 1 — Automatically Collect AI-Owned Bonuses
+- **Authoritative Engine Grounding**:
+  - Automatically claims bonuses belonging strictly to the AI player (`pit.owner === aiPlayer && pit.seeds === 4 && pit.bonusAvailable === true && !pit.isClosed`).
+  - Utilizes existing authoritative `claimBonus(pitId)` engine action; never directly mutates pit seeds or storage numbers outside the engine.
+  - Credits 4 seeds directly to AI storage and zeroes the bonus pit with `bonusAvailable = false`.
+- **Strict Ownership Preservation**:
+  - Human-owned bonuses are NEVER auto-claimed on the human's behalf.
+  - Sowing into an opponent's pit does not re-assign bonus ownership; bonuses belong to the pit's permanent owner.
+  - Expired, unavailable, or already claimed bonuses are rejected.
+  - 70-seed conservation invariant verified throughout.
+- **Turn & Animation Coordination**:
+  - Auto-claim triggers in `useChannemaneGame.ts` whenever `!isAnimating`, `turnNotification === null`, and game is in active playable state.
+  - Runs during both AI turns and human turns (e.g., when a human sows the 4th seed into an AI pit, AI auto-claims without requiring human clicks).
+  - Protected by a 250ms debounce and active state checks to prevent duplicate claims across multiple React render cycles.
+
+### 22.2 Feature 2 — "Who will Play first" Dialog
+- **Modal Component (`src/ui/components/FirstPlayerModal.tsx`)**:
+  - Displays when the player selects **Beginner**, **Expert**, or **Master** from Play with AI.
+  - Title: **"Who will Play first"** with two clear options:
+    - **Player** (`data-testid="first-player-player-btn"`)
+    - **AI** (`data-testid="first-player-ai-btn"`)
+  - Includes a Back button returning to difficulty selection.
+- **Starting Player Flow**:
+  - When **Player** is chosen: game starts with Player 1 taking turn 1, displaying "Your turn" notification.
+  - When **AI** is chosen: game starts with Player 2 (AI) taking turn 1, displaying "AI turn" notification.
+  - Authoritative starting player is passed to `createInitialGame` and preserved on match restart (`onRestart` / `onNewMatch`).
+- **Expert & Master Safeguard (`src/ui/components/ComingSoonModal.tsx`)**:
+  - Expert and Master options open the first-player dialog as required, but upon selection display a clear, friendly "Coming Soon" modal.
+  - Prevents accidentally launching unfinished AI logic or silently substituting Beginner AI.
+  - Provides direct actions: "Play Beginner AI", "Change Difficulty", and "Back to Menu".
+- **Local Multiplayer Isolation**:
+  - Local Multiplayer mode opens directly without showing the first-player dialog.
+
+### 22.3 Feature 3 — Turn-Start Notifications
+- **Notification Component (`src/ui/components/TurnNotification.tsx`)**:
+  - Displays a short, elegant modal pill before each turn begins:
+    - Human turn: **"Your turn"** (`data-testid="turn-notification-popup"`)
+    - AI turn: **"AI turn"** (`data-testid="turn-notification-popup"`)
+  - Styled to match the royal Channemane Karnataka heritage theme (gold borders, dark wooden glow, responsive mobile landscape layout).
+- **Display Triggers & Lifecycle**:
+  - Appears on initial game start matching the selected starting player.
+  - Appears on turn handover after each completed turn.
+  - Appears on next-round start after round settlement.
+  - Display duration: exactly 800ms.
+  - Input prevention: during the 800ms display, human pit selection is disabled (`selectablePits` is empty).
+  - AI thinking coordination: AI decision-making is paused until `turnNotification === null`.
+  - Suppressed during active sowing, continuous sowing confirmation, capture confirmation, round settlement, and match completion.
+  - Canceled on restart, menu navigation, or unmount to avoid memory leaks or stale state updates.
+
+### 22.4 Automated Test Verification
+- **New Test Suites**:
+  - `tests/ui/firstPlayerDialog.test.tsx`: 9 unit/integration tests verifying modal visibility, Player selection, AI selection, Expert/Master safeguards, and Local Multiplayer exclusion.
+  - `tests/ui/turnNotification.test.tsx`: 4 integration tests verifying popup text, 800ms duration, input lockout, and clean cancellation on restart.
+  - `tests/ui/aiBonusAutoCollection.test.tsx`: 5 integration tests verifying AI bonus auto-collection, 4 seeds credited to AI storage, human bonus exclusion, seed conservation, and auto-collection during human moves.
+- **Regression & Integration Tests**:
+  - `tests/ui/aiIntegration.test.tsx`: 6 tests verifying AI turn orchestration with notification coordination and bonus auto-collection.
+  - `tests/ui/menuNavigation.test.tsx`: 8 tests updated to handle FirstPlayerModal and ComingSoonModal flows.
+  - `tests/e2e/game.spec.ts`: 22 Playwright browser tests updated and passing (100% pass rate).
+- **Full Test Suite Results**:
+  - `npm run typecheck`: Passed with 0 errors.
+  - `npx vitest run`: All 45 test files passed (299 tests, 0 failures).
+  - `npx playwright test`: All 22 E2E browser tests passed.
+  - `npm run build`: Production bundle compiled cleanly in 3.14s.
+
+
 
 
 

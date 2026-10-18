@@ -1620,5 +1620,246 @@ body {
   }
 }
 
+/* ==========================================================================
+   First Player Selection Modal ("Who will Play first") (Feature 2)
+   ========================================================================== */
+.first-player-card {
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  background: radial-gradient(circle at 50% 20%, #2a1a10 0%, #170d07 100%);
+  border: 2px solid #8b5a2b;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(212, 175, 55, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: modalEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.first-player-subtitle {
+  font-size: 0.95rem;
+  color: #d2b48c;
+  margin: 6px 0 0 0;
+}
+
+.first-player-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.first-player-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: rgba(45, 27, 14, 0.7);
+  border: 1.5px solid #6b4423;
+  border-radius: var(--radius-md);
+  color: #f5deb3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.first-player-option-btn:hover {
+  background: rgba(70, 42, 20, 0.9);
+  border-color: #d4af37;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(212, 175, 55, 0.3);
+}
+
+.first-player-icon {
+  font-size: 1.8rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.first-player-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.first-player-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+}
+
+.first-player-desc {
+  font-size: 0.85rem;
+  color: #c9b097;
+}
+
+.first-player-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* ==========================================================================
+   Coming Soon Modal (Expert & Master Safeguard)
+   ========================================================================== */
+.coming-soon-card {
+  max-width: 460px;
+  width: 90%;
+  background: radial-gradient(circle at 50% 20%, #2a1a10 0%, #170d07 100%);
+  border: 2px solid #8b5a2b;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.coming-soon-subtitle {
+  color: #e6c280;
+  margin-top: 4px;
+}
+
+.coming-soon-body {
+  color: #ddd;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.coming-soon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Turn-Start Notification Popup ("Your turn" / "AI turn") (Feature 3)
+   ========================================================================== */
+.turn-notification-overlay {
+  position: fixed;
+  top: 15%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1200;
+  pointer-events: none;
+  animation: turnPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.turn-notification-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(212, 175, 55, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.turn-notification-human {
+  background: linear-gradient(135deg, rgba(30, 80, 50, 0.95) 0%, rgba(15, 45, 28, 0.95) 100%);
+  border: 2px solid #4ade80;
+  color: #f0fdf4;
+}
+
+.turn-notification-ai {
+  background: linear-gradient(135deg, rgba(35, 40, 85, 0.95) 0%, rgba(18, 20, 50, 0.95) 100%);
+  border: 2px solid #60a5fa;
+  color: #eff6ff;
+}
+
+.turn-notification-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.turn-notification-text {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes turnPopIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Mobile Landscape Optimizations */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .first-player-card,
+  .coming-soon-card {
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 12px 18px;
+    gap: 8px;
+  }
+
+  .first-player-options {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .first-player-option-btn {
+    flex: 1;
+    padding: 8px 12px;
+    min-height: 48px;
+    gap: 8px;
+  }
+
+  .first-player-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+
+  .first-player-desc {
+    display: none;
+  }
+
+  .coming-soon-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .turn-notification-overlay {
+    top: 18%;
+  }
+
+  .turn-notification-pill {
+    padding: 8px 20px;
+    gap: 8px;
+  }
+
+  .turn-notification-icon {
+    font-size: 1.25rem;
+  }
+
+  .turn-notification-text {
+    font-size: 1.1rem;
+  }
+}
+
+
 
 

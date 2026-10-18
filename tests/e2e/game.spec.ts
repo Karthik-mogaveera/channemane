@@ -348,7 +348,7 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
   });
 
-  test("E2E Scenario 3: Selecting Master difficulty launches board with AI (MASTER) tag", async ({
+  test("E2E Scenario 3: Selecting Master difficulty prompts for first player and displays coming soon safeguard", async ({
     page,
   }) => {
     await page.goto("/");
@@ -356,8 +356,18 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await page.getByTestId("menu-btn-ai").click();
     await page.getByTestId("difficulty-btn-master").click();
 
+    // First player dialog appears
+    await expect(page.getByTestId("first-player-modal")).toBeVisible();
+    await page.getByTestId("first-player-player-btn").click();
+
+    // Coming soon modal appears as safeguard
+    await expect(page.getByTestId("coming-soon-modal")).toBeVisible();
+    await expect(page.getByTestId("coming-soon-modal")).toContainText("Coming Soon");
+
+    // Click "Play Beginner AI" from coming soon safeguard
+    await page.getByTestId("coming-soon-play-beginner-btn").click();
     await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (MASTER)");
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");
   });
 
   test("E2E Scenario 4: Local Multiplayer opens board directly without difficulty prompt", async ({
@@ -407,6 +417,10 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     // Navigate: Main Menu -> Difficulty Select -> Beginner
     await page.getByTestId("menu-btn-ai").click();
     await page.getByTestId("difficulty-btn-beginner").click();
+
+    // First player dialog appears -> Select Player
+    await expect(page.getByTestId("first-player-modal")).toBeVisible();
+    await page.getByTestId("first-player-player-btn").click();
 
     await expect(page.getByTestId("channemane-board")).toBeVisible();
     await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");

@@ -1004,7 +1004,7 @@ export function useChannemaneGame(
 
     if (
       gameMode !== "ai" ||
-      (aiDifficulty !== "beginner" && aiDifficulty !== "expert") ||
+      (aiDifficulty !== "beginner" && aiDifficulty !== "expert" && aiDifficulty !== "master") ||
       gameState.phase !== "PLAYING" ||
       isAnimating ||
       isReviewingBoard ||
@@ -1072,6 +1072,36 @@ export function useChannemaneGame(
           ) {
             try {
               const result = await expertAIClient.requestDecision(current, currentAI);
+              const pitToPlay = result.pitId;
+              const freshState = gameRef.current.getState();
+              if (
+                pitToPlay !== null &&
+                freshState.phase === "PLAYING" &&
+                freshState.currentPlayer === currentAI &&
+                !gameRef.current.isTurnInProgress()
+              ) {
+                selectPit(pitToPlay);
+              }
+            } catch {
+              // Ignore canceled search requests
+            }
+          }
+        }, thinkingDelay);
+        return;
+      }
+
+      if (aiDifficulty === "master") {
+        const thinkingDelay = animationSettings.enabled ? 300 : 0;
+        aiTimeoutRef.current = setTimeout(async () => {
+          aiTimeoutRef.current = null;
+          const current = gameRef.current.getState();
+          if (
+            current.phase === "PLAYING" &&
+            current.currentPlayer === currentAI &&
+            !gameRef.current.isTurnInProgress()
+          ) {
+            try {
+              const result = await expertAIClient.requestMasterDecision(current, currentAI);
               const pitToPlay = result.pitId;
               const freshState = gameRef.current.getState();
               if (

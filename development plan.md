@@ -865,6 +865,82 @@ The Expert AI difficulty is engineered as an authoritative, high-performance dec
 - **Unit & Integration Suite (`npx vitest run`)**: All 49 test files passed (334/334 tests, 0 failures).
 - **Production Build (`npm run build`)**: Compiled successfully with Vite in 2.33s including Web Worker bundle (`expertWorker-*.js`).
 
+---
+
+## 25. Master AI Difficulty Implementation (Section 25)
+
+### 25.1 Architecture & Design
+The Master difficulty is engineered as an elite-level AI opponent for Channemane:
+1. **Shared AI Search Architecture**:
+   - Reuses authoritative game engine (`playTurn`, `cloneGameState`, `isMatchOver`, `calculateOpenPairs`) without duplicating rule mechanics.
+   - Distinct Master profile with deep iterative deepening (depth up to 8), adaptive search budget (up to 500ms), and 2-ply selective tactical search extensions.
+   - Transposition table (TT) caching with complete state serialization keys (`r:round|p:phase|tp:turnPhase|c:player|s:p1_p2|pits...`).
+   - Move ordering prioritizing TT suggested moves, capture consequences, and bonus creation/denial.
+   - Deterministic, elite move selection (`variationProbability = 0.0` by default).
+
+2. **Calibrated Master Position Evaluator (`evaluateMasterPosition`)**:
+   - **Tier 1: Terminal Match Outcome**: Guaranteed match wins evaluated at `+1,000,000 - depth`; forced losses evaluated at `-1,000,000 + depth`. Includes foresight during the `PLAYING` phase that detects when an opponent's storage plus all remaining board seeds is $< 5$ (mathematically guaranteeing match elimination).
+   - **Tier 2: Round Outcome**: Values round victory (`+25,000`), future open pit pairs after settlement (`+1,200` per pair difference), and seed reserves.
+   - **Tier 3: Storage & Seed Balance**: Weights storage difference (`storageWeight = 120`), friendly board seeds (`boardSeedWeight = 20`), and endgame seed differential (`endgameSeedAdvantage = 50`).
+   - **Tier 4: Tactical Control & Aggressive Opponent Denial**: Evaluates claimable bonuses (`+150` plus 4 seeds in storage), heavily penalizes opponent bonus opportunities (`-180`), rewards 3-seed bonus setup opportunities (`+45`), penalizes opponent 3-seed bonus threats (`-60`), and evaluates pit vulnerability/defense (`+30`).
+   - **Tier 5: Positional Quality**: Evaluates legal candidate mobility (`+35` per move) and defense against opponent scooping.
+
+3. **Hybrid Exact Endgame Solver (`src/engine/ai/endgameSolver.ts`)**:
+   - **Tractability Detection (`isEndgameTractable`)**: Dynamically evaluates total board seeds, number of active pits, and branch complexity (e.g. $\le 4$ board seeds, or $\le 6$ seeds with $\le 3$ active pits).
+   - **Exact Minimax Search**: Explores the state space using the authoritative `playTurn` engine, with cycle detection via ancestor path tracking and memoization.
+   - **Strict Resource Bounds**: Hard node limit (12,000 nodes), time limit (250ms), and depth horizon limits.
+   - **Graceful Fallback**: If the solver cannot prove an exact result within its resource limits, it safely returns `null` so Master falls back to bounded iterative deepening search (never claiming exactness on an incomplete solve).
+
+4. **Web Worker & Client Coordination**:
+   - Web Worker (`src/engine/ai/expertWorker.ts`) handles both `EVALUATE_EXPERT_MOVE` and `EVALUATE_MASTER_MOVE` off the UI thread.
+   - Client (`src/engine/ai/expertClient.ts`) coordinates requests via `requestMasterDecision` with cancellation token tracking and synchronous fallback for Node/Vitest test environments.
+
+### 25.2 UI & Gameplay Integration
+- **Menu & Difficulty Flow**:
+  - In `src/App.tsx`, selecting "Play with AI" -> "Master" displays the "Who will Play first" dialog and launches the game directly with `gameMode = "ai"`, `aiDifficulty = "master"`.
+  - Removed the "Coming Soon" modal for Master difficulty.
+- **Turn Orchestration**:
+  - In `src/ui/hooks/useChannemaneGame.ts`, integrated Master AI turn execution into the AI turn orchestration effect.
+  - Automatically claims AI-owned bonuses with standard delay without human intervention.
+  - Cancels pending search requests cleanly on match restart, navigation back to main menu, or component unmount.
+- **Regression Isolation**:
+  - Beginner, Expert, and Local Multiplayer modes remain 100% isolated and unchanged.
+
+### 25.3 Files Changed & Created
+- **Created**:
+  - `src/engine/ai/master.ts`: Master evaluation, minimax search, and move selection.
+  - `src/engine/ai/endgameSolver.ts`: Hybrid exact endgame solver.
+  - `tests/ai/master.test.ts`: Comprehensive Master AI search, tactical, endgame, and regression test suite (20 tests).
+  - `tests/ui/masterIntegration.test.tsx`: UI integration and turn orchestration test suite (4 tests).
+- **Modified**:
+  - `src/engine/ai/types.ts`: Added Master evaluation weights, search configuration, diagnostics, and endgame solver types.
+  - `src/engine/ai/expertWorker.ts`: Added support for `EVALUATE_MASTER_MOVE` and `MASTER_MOVE_RESULT`.
+  - `src/engine/ai/expertClient.ts`: Added `requestMasterDecision` and Master response handling.
+  - `src/engine/ai/index.ts`: Exported Master and Endgame Solver symbols.
+  - `src/App.tsx`: Enabled Master difficulty launch in `handleSelectFirstPlayer`.
+  - `src/ui/hooks/useChannemaneGame.ts`: Added Master AI turn selection and difficulty gating.
+  - `tests/ai/tournament.test.ts`: Added Master vs Expert tournament simulation with alternating player seats.
+  - `tests/ui/firstPlayerDialog.test.tsx`: Updated Test 7 to assert Master launches game.
+  - `tests/ui/menuNavigation.test.tsx`: Updated Scenario 7 to assert Master launches board.
+  - `tests/ui/expertIntegration.test.tsx`: Updated Master test to assert game launch.
+
+### 25.4 Benchmark & Tournament Verification Results
+1. **Master AI vs Expert AI Tournament (8 matches, alternating seats)**:
+   - Games Played: 8
+   - Master Wins: 8 (100.0% win rate)
+   - Expert Wins: 0 (0.0%)
+   - Draws: 0
+   - Exact Endgame Solves: 18 solves
+   - Average Decision Latency: 1.15 - 2.17 ms/turn
+   - Zero invalid moves or state invariant violations.
+2. **Full Project Test Suite**:
+   - `npm test`: 51 test files passed, 359/359 tests passed (100% pass rate).
+3. **TypeScript Static Analysis**:
+   - `npm run typecheck`: Passed with 0 errors.
+4. **Production Build**:
+   - `npm run build`: Compiled production bundle in 3.37s with Vite and TypeScript.
+
+
 
 
 

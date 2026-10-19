@@ -1,24 +1,32 @@
 /**
- * Client coordinator for Expert AI decision requests.
+ * Client coordinator for Expert & Master AI decision requests.
  * Transparently manages Web Worker dispatch with synchronous fallback for test/node environments,
  * cancellation token tracking, and invalidation of obsolete searches.
  */
 
 import { selectExpertMove } from "./expert";
+import { selectMasterMove } from "./master";
 import type { GameState, Player } from "../types";
-import type { ExpertSearchConfig, ExpertSearchDiagnostics } from "./types";
 import type {
-  WorkerExpertRequest,
-  WorkerExpertResponse,
+  ExpertSearchConfig,
+  ExpertSearchDiagnostics,
+  MasterSearchConfig,
+  MasterSearchDiagnostics,
+} from "./types";
+import type {
+  WorkerAIRequest,
+  WorkerAIResponse,
 } from "./expertWorker";
+
+export type AIResponsePayload =
+  | { pitId: number | null; diagnostics: ExpertSearchDiagnostics }
+  | { pitId: number | null; diagnostics: MasterSearchDiagnostics };
 
 class ExpertAIClient {
   private worker: Worker | null = null;
   private workerFailed = false;
   private activeRequestId = 0;
-  private pendingResolver:
-    | ((result: { pitId: number | null; diagnostics: ExpertSearchDiagnostics }) => void)
-    | null = null;
+  private pendingResolver: ((result: any) => void) | null = null;
   private pendingRejecter: ((reason?: unknown) => void) | null = null;
 
   constructor() {
@@ -26,7 +34,6 @@ class ExpertAIClient {
   }
 
   private initWorker(): void {
-    // Check if running in browser with Worker support
     if (
       typeof window === "undefined" ||
       typeof Worker === "undefined" ||
@@ -42,11 +49,9 @@ class ExpertAIClient {
         { type: "module" }
       );
 
-      this.worker.onmessage = (event: MessageEvent<WorkerExpertResponse>) => {
+      this.worker.onmessage = (event: MessageEvent<WorkerAIResponse>) => {
         const data = event.data;
-        if (!data || data.type !== "EXPERT_MOVE_RESULT") {
-          return;
-        }
+        if (!data) return;
 
         // Drop responses for canceled or superseded requests
         if (data.requestId !== this.activeRequestId) {
@@ -65,7 +70,6 @@ class ExpertAIClient {
       };
 
       this.worker.onerror = () => {
-        // Fallback safely to synchronous calculation if Worker encounters an error
         this.workerFailed = true;
         this.worker = null;
       };
@@ -94,7 +98,7 @@ class ExpertAIClient {
         this.pendingResolver = resolve;
         this.pendingRejecter = reject;
 
-        const request: WorkerExpertRequest = {
+        const request: WorkerAIRequest = {
           type: "EVALUATE_EXPERT_MOVE",
           requestId: currentId,
           state,
@@ -109,6 +113,44 @@ class ExpertAIClient {
     // Synchronous execution fallback (e.g. Node, Vitest JSDOM)
     return new Promise((resolve) => {
       const result = selectExpertMove(state, player, config);
+      resolve(result);
+    });
+  }
+
+  /**
+   * Dispatches a Master AI search request.
+   * Uses Web Worker if available, otherwise executes synchronously.
+   */
+  public requestMasterDecision(
+    state: GameState,
+    player: Player,
+    config?: MasterSearchConfig
+  ): Promise<{ pitId: number | null; diagnostics: MasterSearchDiagnostics }> {
+    this.cancelPendingSearch();
+
+    this.activeRequestId++;
+    const currentId = this.activeRequestId;
+
+    if (this.worker && !this.workerFailed) {
+      return new Promise((resolve, reject) => {
+        this.pendingResolver = resolve;
+        this.pendingRejecter = reject;
+
+        const request: WorkerAIRequest = {
+          type: "EVALUATE_MASTER_MOVE",
+          requestId: currentId,
+          state,
+          player,
+          config,
+        };
+
+        this.worker?.postMessage(request);
+      });
+    }
+
+    // Synchronous execution fallback (e.g. Node, Vitest JSDOM)
+    return new Promise((resolve) => {
+      const result = selectMasterMove(state, player, config);
       resolve(result);
     });
   }

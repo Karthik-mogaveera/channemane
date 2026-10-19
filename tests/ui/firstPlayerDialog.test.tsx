@@ -101,22 +101,16 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 1's Turn/i);
   });
 
-  it("Test 7: Master difficulty displays Coming Soon notice and offers Play Beginner instead", () => {
+  it("Test 7: Master difficulty launches Master AI game with chosen opening player", () => {
     render(<App />);
 
     fireEvent.click(screen.getByTestId("menu-btn-ai"));
     fireEvent.click(screen.getByTestId("difficulty-btn-master"));
     fireEvent.click(screen.getByTestId("first-player-ai-btn"));
 
-    expect(screen.getByTestId("coming-soon-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("coming-soon-notice")).toHaveTextContent(/Master AI difficulty is currently under development/i);
-
-    // Click "Play Beginner AI"
-    fireEvent.click(screen.getByTestId("coming-soon-play-beginner-btn"));
-
-    // Now board is mounted with Beginner AI and chosen starting player AI
+    // Board is mounted with Master AI and AI as opening player
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
-    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(BEGINNER\)/i);
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 2's Turn/i);
   });
 

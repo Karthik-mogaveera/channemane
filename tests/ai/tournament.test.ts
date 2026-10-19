@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import { createInitialGame } from "../../src/engine/board";
 import { selectExpertMove } from "../../src/engine/ai/expert";
+import { selectMasterMove } from "../../src/engine/ai/master";
 import { selectBeginnerMove } from "../../src/engine/ai/beginner";
 import { ChannemaneGame } from "../../src/engine/simulation";
 import type { Player } from "../../src/engine/types";
@@ -255,4 +256,152 @@ describe("Expert AI Benchmark Suite & Strength Validation (Section 10.D)", () =>
       expect(avgLatencyMs).toBeLessThan(100);
     });
   });
+
+  describe("Seeded Tournament: Master AI vs Expert AI (Section 11.E)", () => {
+    function playMasterVsExpertMatch(
+      masterPlayer: Player,
+      expertPlayer: Player,
+      openingPlayer: Player,
+      seedOffset: number
+    ): {
+      winner: Player | null;
+      masterWon: boolean;
+      totalTurns: number;
+      avgTimeMs: number;
+      endgameSolves: number;
+    } {
+      let seed = seedOffset;
+      const tournamentRNG = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+
+      const game = new ChannemaneGame(openingPlayer, undefined, "ai", "master", masterPlayer);
+      let turns = 0;
+      let totalTimeMs = 0;
+      let masterDecisions = 0;
+      let endgameSolves = 0;
+      const maxTurns = 200;
+
+      while (!game.isGameOver() && turns < maxTurns) {
+        if (game.isRoundOver()) {
+          if (game.isGameOver()) break;
+          const nextRoundRes = game.startNextRound();
+          if (!nextRoundRes.success) break;
+          continue;
+        }
+
+        const bonuses = game.getClaimableBonuses();
+        for (const b of bonuses) {
+          game.claimBonus(b);
+        }
+
+        const legalPits = game.getSelectablePits();
+        if (legalPits.length === 0) break;
+
+        const current = game.getCurrentPlayer();
+        let chosenPit: number | null = null;
+
+        if (current === masterPlayer) {
+          const t0 = Date.now();
+          const decision = selectMasterMove(game.getState(), masterPlayer, {
+            maxDepth: 3,
+            maxTimeMs: 40,
+            rng: tournamentRNG,
+          });
+          totalTimeMs += Date.now() - t0;
+          masterDecisions++;
+          if (decision.diagnostics.endgameSolved) {
+            endgameSolves++;
+          }
+          chosenPit = decision.pitId;
+        } else {
+          const decision = selectExpertMove(game.getState(), expertPlayer, {
+            maxDepth: 3,
+            maxTimeMs: 30,
+            rng: tournamentRNG,
+          });
+          chosenPit = decision.pitId;
+        }
+
+        if (chosenPit === null || !legalPits.includes(chosenPit)) {
+          chosenPit = legalPits[0];
+        }
+
+        const playRes = game.selectPit(chosenPit);
+        if (!playRes.success) break;
+
+        turns++;
+      }
+
+      const state = game.getState();
+      const p1Storage = state.players.player1.storage;
+      const p2Storage = state.players.player2.storage;
+      const masterStorage = masterPlayer === "PLAYER_1" ? p1Storage : p2Storage;
+      const expertStorage = expertPlayer === "PLAYER_1" ? p1Storage : p2Storage;
+
+      const matchWinner =
+        game.getWinner() ??
+        (masterStorage > expertStorage
+          ? masterPlayer
+          : expertStorage > masterStorage
+          ? expertPlayer
+          : null);
+      const masterWon = matchWinner === masterPlayer;
+      const avgTimeMs = masterDecisions > 0 ? totalTimeMs / masterDecisions : 0;
+
+      return {
+        winner: matchWinner,
+        masterWon,
+        totalTurns: turns,
+        avgTimeMs,
+        endgameSolves,
+      };
+    }
+
+    it("Runs an 8-game tournament between Master AI and Expert AI with alternating positions", () => {
+      let masterWins = 0;
+      let expertWins = 0;
+      let draws = 0;
+      let totalAvgTime = 0;
+      let totalEndgameSolves = 0;
+
+      const gamesToPlay = 8;
+
+      for (let i = 0; i < gamesToPlay; i++) {
+        const masterRole: Player = i % 2 === 0 ? "PLAYER_1" : "PLAYER_2";
+        const expertRole: Player = masterRole === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
+        const openingPlayer: Player = i % 4 < 2 ? "PLAYER_1" : "PLAYER_2";
+
+        const match = playMasterVsExpertMatch(masterRole, expertRole, openingPlayer, 5000 + i * 131);
+
+        if (match.masterWon) {
+          masterWins++;
+        } else if (match.winner === expertRole) {
+          expertWins++;
+        } else {
+          draws++;
+        }
+        totalAvgTime += match.avgTimeMs;
+        totalEndgameSolves += match.endgameSolves;
+      }
+
+      const winRate = masterWins / gamesToPlay;
+      const avgLatencyMs = totalAvgTime / gamesToPlay;
+
+      console.log(`\n=== TOURNAMENT RESULTS: MASTER vs EXPERT ===`);
+      console.log(`Games Played:    ${gamesToPlay}`);
+      console.log(`Master Wins:     ${masterWins} (${(winRate * 100).toFixed(1)}%)`);
+      console.log(`Expert Wins:     ${expertWins}`);
+      console.log(`Draws:           ${draws}`);
+      console.log(`Endgame Solves:  ${totalEndgameSolves}`);
+      console.log(`Avg Latency:     ${avgLatencyMs.toFixed(2)} ms/turn`);
+      console.log(`============================================\n`);
+
+      // Master must win or draw at least 50% against Expert and maintain fast latency
+      expect(masterWins + draws).toBeGreaterThanOrEqual(4);
+      expect(avgLatencyMs).toBeLessThan(120);
+    }, 30000);
+  });
 });
+

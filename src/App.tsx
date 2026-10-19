@@ -113,7 +113,8 @@ export const App: React.FC<AppProps> = ({
 
     if (
       selectedDifficultyForFirstPlayer === "beginner" ||
-      selectedDifficultyForFirstPlayer === "expert"
+      selectedDifficultyForFirstPlayer === "expert" ||
+      selectedDifficultyForFirstPlayer === "master"
     ) {
       setGameMode("ai", selectedDifficultyForFirstPlayer, "PLAYER_2");
       restartMatch(startingPlayer, "ai", selectedDifficultyForFirstPlayer, "PLAYER_2");

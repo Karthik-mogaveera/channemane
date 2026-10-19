@@ -159,7 +159,7 @@ describe("Expert AI UI & Turn Orchestration Integration", () => {
     expect(screen.getByTestId("p1-captured-count")).toHaveTextContent("0");
   });
 
-  it("Master difficulty continues to display Coming Soon notice", async () => {
+  it("Master difficulty launches functional Master AI game", async () => {
     render(<App />);
 
     await act(async () => {
@@ -176,9 +176,9 @@ describe("Expert AI UI & Turn Orchestration Integration", () => {
       fireEvent.click(screen.getByTestId("first-player-player-btn"));
     });
 
-    // Coming Soon modal
-    expect(screen.getByTestId("coming-soon-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("coming-soon-notice")).toHaveTextContent(/Master AI difficulty is currently under development/i);
+    // Game is mounted with Master AI
+    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
   });
 
   it("Restarting or returning to menu invalidates pending AI searches cleanly", async () => {

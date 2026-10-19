@@ -141,7 +141,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(EXPERT\)/i);
   });
 
-  it("Scenario 7: Selecting Master difficulty displays First Player modal and Coming Soon safeguard with Beginner fallback", () => {
+  it("Scenario 7: Selecting Master difficulty displays First Player modal and launches Master AI game", () => {
     render(<App />);
 
     act(() => {
@@ -160,17 +160,9 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
       fireEvent.click(screen.getByTestId("first-player-ai-btn"));
     });
 
-    // Master is not yet implemented -> Coming Soon safeguard modal is shown
-    expect(screen.getByTestId("coming-soon-modal")).toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
-
-    // Can transition to Beginner AI via fallback button
-    act(() => {
-      fireEvent.click(screen.getByTestId("coming-soon-play-beginner-btn"));
-    });
-
+    // Master launches cleanly
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
-    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(BEGINNER\)/i);
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
   });
 
   it("Scenario 8: Clicking 'Local Multiplayer' directly opens board without asking difficulty", () => {

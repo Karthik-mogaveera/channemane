@@ -13,7 +13,7 @@ import type {
   GameMode,
   AIDifficulty,
 } from "../../engine/types";
-import { selectBeginnerMove } from "../../engine/ai";
+import { selectBeginnerMove, expertAIClient } from "../../engine/ai";
 import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
 import type { RoundSetupResult } from "../../engine/roundSetup";
@@ -881,6 +881,7 @@ export function useChannemaneGame(
         clearTimeout(aiBonusTimeoutRef.current);
         aiBonusTimeoutRef.current = null;
       }
+      expertAIClient.cancelPendingSearch();
       if (turnNotificationTimeoutRef.current) {
         clearTimeout(turnNotificationTimeoutRef.current);
         turnNotificationTimeoutRef.current = null;
@@ -981,14 +982,14 @@ export function useChannemaneGame(
   ]);
 
   /**
-   * Beginner AI Turn Orchestration & Auto-Bonus Effect (Features 1 & 3)
+   * AI Turn Orchestration & Auto-Bonus Effect (Beginner & Expert)
    * Seamlessly coordinates AI turns:
-   * 1. Confirms gameMode === "ai", aiDifficulty === "beginner", and phase === "PLAYING".
+   * 1. Confirms gameMode === "ai", aiDifficulty is "beginner" | "expert", and phase === "PLAYING".
    * 2. Automatically claims AI-owned bonuses (never human bonuses), during both AI & human turns.
    * 3. Waits until any active turn-notification finishes before initiating moves.
-   * 4. Selects legal starting pits after a brief thinking pause.
+   * 4. Selects legal starting pits after a brief thinking pause (using Beginner heuristic or Expert search).
    * 5. Automatically confirms continuation and capture when paused.
-   * 6. Cleanly cancels pending timers on unmount, mode switch, or match completion.
+   * 6. Cleanly cancels pending timers and in-flight searches on unmount, mode switch, or match completion.
    */
   useEffect(() => {
     if (aiTimeoutRef.current) {
@@ -999,10 +1000,11 @@ export function useChannemaneGame(
       clearTimeout(aiBonusTimeoutRef.current);
       aiBonusTimeoutRef.current = null;
     }
+    expertAIClient.cancelPendingSearch();
 
     if (
       gameMode !== "ai" ||
-      aiDifficulty !== "beginner" ||
+      (aiDifficulty !== "beginner" && aiDifficulty !== "expert") ||
       gameState.phase !== "PLAYING" ||
       isAnimating ||
       isReviewingBoard ||
@@ -1034,27 +1036,59 @@ export function useChannemaneGame(
 
     // A. AI Starting Pit Selection
     if (interactionState === "WAITING_FOR_START") {
-      const chosenPit = selectBeginnerMove(gameState, currentAI);
-      if (chosenPit === null) {
+      if (aiDifficulty === "beginner") {
+        const chosenPit = selectBeginnerMove(gameState, currentAI);
+        if (chosenPit === null) {
+          return;
+        }
+
+        const thinkingDelay = animationSettings.enabled ? 500 : 0;
+        aiTimeoutRef.current = setTimeout(() => {
+          aiTimeoutRef.current = null;
+          const current = gameRef.current.getState();
+          if (
+            current.phase === "PLAYING" &&
+            current.currentPlayer === currentAI &&
+            !gameRef.current.isTurnInProgress()
+          ) {
+            const pitToPlay = selectBeginnerMove(current, currentAI) ?? chosenPit;
+            if (pitToPlay !== null) {
+              selectPit(pitToPlay);
+            }
+          }
+        }, thinkingDelay);
         return;
       }
 
-      const thinkingDelay = animationSettings.enabled ? 500 : 0;
-      aiTimeoutRef.current = setTimeout(() => {
-        aiTimeoutRef.current = null;
-        const current = gameRef.current.getState();
-        if (
-          current.phase === "PLAYING" &&
-          current.currentPlayer === currentAI &&
-          !gameRef.current.isTurnInProgress()
-        ) {
-          const pitToPlay = selectBeginnerMove(current, currentAI) ?? chosenPit;
-          if (pitToPlay !== null) {
-            selectPit(pitToPlay);
+      if (aiDifficulty === "expert") {
+        const thinkingDelay = animationSettings.enabled ? 300 : 0;
+        aiTimeoutRef.current = setTimeout(async () => {
+          aiTimeoutRef.current = null;
+          const current = gameRef.current.getState();
+          if (
+            current.phase === "PLAYING" &&
+            current.currentPlayer === currentAI &&
+            !gameRef.current.isTurnInProgress()
+          ) {
+            try {
+              const result = await expertAIClient.requestDecision(current, currentAI);
+              const pitToPlay = result.pitId;
+              const freshState = gameRef.current.getState();
+              if (
+                pitToPlay !== null &&
+                freshState.phase === "PLAYING" &&
+                freshState.currentPlayer === currentAI &&
+                !gameRef.current.isTurnInProgress()
+              ) {
+                selectPit(pitToPlay);
+              }
+            } catch {
+              // Ignore canceled search requests
+            }
           }
-        }
-      }, thinkingDelay);
-      return;
+        }, thinkingDelay);
+        return;
+      }
     }
 
     // B. AI Continuous Sowing Confirmation
@@ -1082,6 +1116,18 @@ export function useChannemaneGame(
       }, captureDelay);
       return;
     }
+
+    return () => {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
+      if (aiBonusTimeoutRef.current) {
+        clearTimeout(aiBonusTimeoutRef.current);
+        aiBonusTimeoutRef.current = null;
+      }
+      expertAIClient.cancelPendingSearch();
+    };
   }, [
     gameMode,
     aiDifficulty,

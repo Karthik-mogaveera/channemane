@@ -800,6 +800,71 @@ Code inspection revealed the exact failure mechanisms:
 - **Unit & Integration Suite (`npx vitest run`)**: All 46 test files passed (306/306 tests, 0 failures).
 - **Production Build (`npm run build`)**: Compiled successfully with Vite in 3.14s.
 
+---
+
+## 24. Expert AI Difficulty Implementation (Section 24)
+
+### 24.1 Architecture & Design
+The Expert AI difficulty is engineered as an authoritative, high-performance decision module for Channemane:
+1. **Search Algorithm**:
+   - Alpha-Beta Minimax search with move ordering.
+   - Iterative Deepening from depth 1 up to `maxDepth` (default 6).
+   - Incomplete iteration safety: If a search iteration is interrupted due to budget expiration, the search strictly returns the best move from the deepest *fully completed* iteration.
+   - Transposition Table (TT) caching: Stores exact, lower-bound, and upper-bound scores with best move suggestions. Keys are comprehensive (`r:round|p:phase|tp:turnPhase|c:player|s:p1_p2|pits...`) incorporating pit seeds, open/closed status, and bonus availability.
+   - Limited tactical extensions: 1-ply search extension on horizon nodes with unstable tactical conditions (< 3 selectable pits or <= 14 board seeds).
+   - Rare tie variation: Configurable threshold (`tieThreshold = 15`) and variation probability (default 10%) among near-tied top moves with injectable RNG for deterministic test reproducibility.
+2. **5-Tier Position Evaluator**:
+   - **Priority 1: Match Outcome**: Strongly prefers proven forced match wins (`+1,000,000 - depth`) and avoids forced losses (`-1,000,000 + depth`) evaluated accurately upon round settlement when storage is terminal (< 5 seeds).
+   - **Priority 2: Round Outcome**: Evaluates round settlement consequences, round wins (`+20,000`), open pit pairs for the next round (`calculateOpenPairs`), and seed reserves.
+   - **Priority 3: Storage Advantage**: Strongly weights secured storage difference (`storageWeight = 100`) and friendly vs opponent board seeds (`boardSeedWeight = 15`).
+   - **Priority 4: Tactical Opportunities**: Rewards claimable bonuses (`+120`), heavily penalizes opponent bonus opportunities (`-140`), rewards 3-seed bonus setup opportunities (`+35`), and penalizes opponent 3-seed bonus threats (`-40`).
+   - **Priority 5: Positional Quality**: Evaluates legal candidate mobility (`+25` per move) and pit defense (`+20`).
+3. **Execution & Web Worker**:
+   - Dedicated Web Worker `src/engine/ai/expertWorker.ts` for off-thread browser search execution.
+   - Client coordinator `src/engine/ai/expertClient.ts` with request ID tracking, automatic cancellation of superseded searches, and automatic synchronous fallback for Node/Vitest test environments.
+
+### 24.2 Files Changed & Created
+- `src/engine/ai/types.ts`:
+  - Defined `ExpertEvaluationWeights`, `ExpertSearchConfig`, `ExpertSearchDiagnostics`, `ExpertIterationInfo`, `TTEntry`, and `TTNodeType`.
+- `src/engine/ai/expert.ts`:
+  - Implemented `DEFAULT_EXPERT_WEIGHTS`, `getGameStateKey`, `evaluatePosition`, `getOrderedCandidateMoves`, `minimax`, and `selectExpertMove`.
+- `src/engine/ai/expertWorker.ts`:
+  - Created Web Worker script handling isolated message events for background search execution.
+- `src/engine/ai/expertClient.ts`:
+  - Created client wrapper with Worker instantiation, cancellation token management, and synchronous fallback.
+- `src/engine/ai/index.ts`:
+  - Re-exported all Expert AI types, evaluation, search, and client symbols.
+- `src/App.tsx`:
+  - Updated `handleSelectFirstPlayer` to launch game with `gameMode = "ai"`, `aiDifficulty = "expert"`, while keeping Master difficulty protected with the Coming Soon notice.
+- `src/ui/hooks/useChannemaneGame.ts`:
+  - Integrated Expert AI turn selection in the AI turn orchestration effect.
+  - Added clean search cancellation on restart, menu navigation, and unmount.
+- `tests/ai/expert.test.ts`:
+  - 15 unit tests covering evaluation priorities, state serialization, TT caching, move ordering, forced win/loss handling, iterative deepening budget safety, and tie variation.
+- `tests/ui/expertIntegration.test.tsx`:
+  - 6 integration tests verifying difficulty selection, first-player dialog, human-first, AI-first, auto-bonus collection, and cancellation on menu exit.
+- `tests/ai/tournament.test.ts`:
+  - Repeatable benchmark suite covering simple, full-branching, tactical, bonus-rich, near-round-ending, and near-match-ending positions.
+  - Seeded 8-game tournament simulation against Beginner AI.
+
+### 24.3 Performance & Tournament Results
+1. **Benchmark Suite**:
+   - Simple Position (1-2 moves): Solved in < 15ms at depth >= 2.
+   - Full Branching Opening (7 moves): Completed depth >= 2 with 15+ nodes evaluated in < 10ms.
+   - Tactical Capture: Immediate 6-seed capture identified in < 5ms.
+   - Bonus-Rich & Endgame: Completed depth >= 3 within 10ms.
+2. **Tournament (Expert vs Beginner)**:
+   - Games Played: 8 (alternating starting player: Expert as P1 & P2).
+   - Expert Wins: 8 (100.0% win rate).
+   - Beginner Wins: 0 (0.0%).
+   - Draws: 0.
+   - Average Thinking Latency: 0.54 - 2.22 ms/turn.
+
+### 24.4 Verification Results
+- **TypeScript Typecheck (`npm run typecheck`)**: Passed with 0 errors.
+- **Unit & Integration Suite (`npx vitest run`)**: All 49 test files passed (334/334 tests, 0 failures).
+- **Production Build (`npm run build`)**: Compiled successfully with Vite in 2.33s including Web Worker bundle (`expertWorker-*.js`).
+
 
 
 

@@ -88,22 +88,17 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 2's Turn/i);
   });
 
-  it("Test 6: Expert difficulty displays Coming Soon notice and prevents starting game", () => {
+  it("Test 6: Expert difficulty launches Expert AI game with chosen opening player", () => {
     render(<App />);
 
     fireEvent.click(screen.getByTestId("menu-btn-ai"));
     fireEvent.click(screen.getByTestId("difficulty-btn-expert"));
     fireEvent.click(screen.getByTestId("first-player-player-btn"));
 
-    // Coming soon modal is displayed
-    expect(screen.getByTestId("coming-soon-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("coming-soon-notice")).toHaveTextContent(/Expert AI difficulty is currently under development/i);
-    // Board is NOT mounted
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
-
-    // User can choose to return to menu
-    fireEvent.click(screen.getByTestId("coming-soon-back-btn"));
-    expect(screen.getByTestId("main-menu")).toBeInTheDocument();
+    // Board is mounted with Expert AI
+    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(EXPERT\)/i);
+    expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 1's Turn/i);
   });
 
   it("Test 7: Master difficulty displays Coming Soon notice and offers Play Beginner instead", () => {

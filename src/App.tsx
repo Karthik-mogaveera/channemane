@@ -111,9 +111,12 @@ export const App: React.FC<AppProps> = ({
     const startingPlayer: Player = firstPlayer === "player" ? "PLAYER_1" : "PLAYER_2";
     setChosenStartingPlayer(startingPlayer);
 
-    if (selectedDifficultyForFirstPlayer === "beginner") {
-      setGameMode("ai", "beginner", "PLAYER_2");
-      restartMatch(startingPlayer, "ai", "beginner", "PLAYER_2");
+    if (
+      selectedDifficultyForFirstPlayer === "beginner" ||
+      selectedDifficultyForFirstPlayer === "expert"
+    ) {
+      setGameMode("ai", selectedDifficultyForFirstPlayer, "PLAYER_2");
+      restartMatch(startingPlayer, "ai", selectedDifficultyForFirstPlayer, "PLAYER_2");
       setSelectedDifficultyForFirstPlayer(null);
       setCurrentScreen("GAME");
     } else if (selectedDifficultyForFirstPlayer) {

@@ -8,23 +8,30 @@ import {
   TOTAL_SEEDS,
   INITIAL_SEEDS_PER_PIT,
   getPitOwner,
+  THREE_PLAYER_TOTAL_PITS,
+  THREE_PLAYER_TOTAL_SEEDS,
+  THREE_PLAYER_RECOVERY_SEEDS,
 } from "./constants";
 import type { GameState, Pit, Player, GameMode, AIDifficulty } from "./types";
 
 /**
  * Creates the initial game state for Round 1.
- * All 14 pits are OPEN with 5 seeds each, both storages at 0, seedsInHand at 0.
+ * For 2-player: all 14 pits are OPEN with 5 seeds each (70 total seeds).
+ * For 3-player: all 15 pits are OPEN with 5 seeds each (75 total seeds).
  */
 export function createInitialGame(
   startingPlayer: Player = "PLAYER_1",
   gameMode: GameMode = "local",
   aiDifficulty: AIDifficulty | null = null,
-  aiPlayer: Player = "PLAYER_2"
+  aiPlayer: Player = "PLAYER_2",
+  playerCount: 2 | 3 = 2
 ): GameState {
+  const isThreePlayer = playerCount === 3;
+  const pitCount = isThreePlayer ? THREE_PLAYER_TOTAL_PITS : TOTAL_PITS;
   const pits: Pit[] = [];
 
-  for (let i = 0; i < TOTAL_PITS; i++) {
-    const owner = getPitOwner(i);
+  for (let i = 0; i < pitCount; i++) {
+    const owner = getPitOwner(i, pitCount);
     if (!owner) {
       throw new Error(`Invalid pit index ${i}`);
     }
@@ -55,7 +62,18 @@ export function createInitialGame(
         roundCaptured: 0,
         roundWins: 0,
       },
+      ...(isThreePlayer
+        ? {
+            player3: {
+              storage: 0,
+              roundCaptured: 0,
+              roundWins: 0,
+            },
+          }
+        : {}),
     },
+    playerCount,
+    disqualifiedPlayers: isThreePlayer ? [] : undefined,
     seedsInHand: 0,
     selectedPit: null,
     lastPit: null,
@@ -85,8 +103,7 @@ export function getPlayerSideSeeds(state: GameState, player: Player): number {
 
 /**
  * Calculates the grand total of all seeds in the game:
- * sum(all pit seeds) + Player 1 storage + Player 2 storage + seedsInHand
- * Mandatory invariant: must always equal 70 (Section 17).
+ * sum(all pit seeds) + Player 1 storage + Player 2 storage + (Player 3 storage) + seedsInHand
  */
 export function getTotalSeeds(state: GameState): number {
   const boardSeeds = getTotalBoardSeeds(state);
@@ -94,14 +111,25 @@ export function getTotalSeeds(state: GameState): number {
     boardSeeds +
     state.players.player1.storage +
     state.players.player2.storage +
+    (state.players.player3?.storage ?? 0) +
     (state.seedsInHand ?? 0)
   );
 }
 
 /**
- * Verifies whether the mandatory 70-seed conservation invariant is currently satisfied.
+ * Verifies whether the mandatory seed conservation invariant is currently satisfied.
+ * - 2-player: exactly 70 seeds.
+ * - 3-player normal: exactly 75 seeds.
+ * - 3-player recovery (after 1 disqualification): exactly 50 seeds.
  */
 export function verifySeedConservation(state: GameState): boolean {
+  if (state.playerCount === 3) {
+    const expected =
+      state.disqualifiedPlayers && state.disqualifiedPlayers.length > 0
+        ? THREE_PLAYER_RECOVERY_SEEDS
+        : THREE_PLAYER_TOTAL_SEEDS;
+    return getTotalSeeds(state) === expected;
+  }
   return getTotalSeeds(state) === TOTAL_SEEDS;
 }
 
@@ -115,6 +143,38 @@ export function cloneGameState(state: GameState): GameState {
     players: {
       player1: { ...state.players.player1 },
       player2: { ...state.players.player2 },
+      ...(state.players.player3
+        ? { player3: { ...state.players.player3 } }
+        : {}),
     },
+    disqualifiedPlayers: state.disqualifiedPlayers
+      ? [...state.disqualifiedPlayers]
+      : undefined,
   };
+}
+
+/**
+ * Returns list of active (non-disqualified) players in turn order.
+ */
+export function getActivePlayers(state: GameState): Player[] {
+  const all: Player[] =
+    state.playerCount === 3
+      ? ["PLAYER_1", "PLAYER_2", "PLAYER_3"]
+      : ["PLAYER_1", "PLAYER_2"];
+  const disqualified = state.disqualifiedPlayers ?? [];
+  return all.filter((p) => !disqualified.includes(p));
+}
+
+/**
+ * Returns the next active player in circular turn order skipping disqualified players.
+ */
+export function getNextActivePlayer(
+  state: GameState,
+  fromPlayer: Player = state.currentPlayer
+): Player {
+  const active = getActivePlayers(state);
+  if (active.length === 0) return fromPlayer;
+  const idx = active.indexOf(fromPlayer);
+  if (idx === -1) return active[0];
+  return active[(idx + 1) % active.length];
 }

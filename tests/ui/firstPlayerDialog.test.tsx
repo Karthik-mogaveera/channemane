@@ -118,6 +118,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     render(<App />);
 
     fireEvent.click(screen.getByTestId("menu-btn-local"));
+    fireEvent.click(screen.getByTestId("player-count-btn-2"));
 
     // Directly opens board, never opens first-player dialog
     expect(screen.queryByTestId("first-player-modal")).not.toBeInTheDocument();

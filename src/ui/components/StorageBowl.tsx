@@ -21,10 +21,23 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   className = "",
 }) => {
   const isP1 = player === "PLAYER_1";
-  const playerLabel = isP1 ? "Player 1" : "Player 2";
-  const testId = isP1 ? "storage-player1" : "storage-player2";
-  const countTestId = isP1 ? "p1-captured-count" : "p2-captured-count";
-  const gradId = isP1 ? "storage-seed-grad-p1" : "storage-seed-grad-p2";
+  const isP2 = player === "PLAYER_2";
+  const playerLabel = isP1 ? "Player 1" : isP2 ? "Player 2" : "Player 3";
+  const testId = isP1
+    ? "storage-player1"
+    : isP2
+    ? "storage-player2"
+    : "storage-player3";
+  const countTestId = isP1
+    ? "p1-captured-count"
+    : isP2
+    ? "p2-captured-count"
+    : "p3-captured-count";
+  const gradId = isP1
+    ? "storage-seed-grad-p1"
+    : isP2
+    ? "storage-seed-grad-p2"
+    : "storage-seed-grad-p3";
 
   // Deterministic seed positions (up to 70 seeds)
   const seedPositions = useMemo(() => {

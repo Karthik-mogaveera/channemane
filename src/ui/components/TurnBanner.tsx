@@ -29,11 +29,16 @@ export const TurnBanner: React.FC<TurnBannerProps> = ({
   hasClaimableBonus = false,
 }) => {
   const isP1 = currentPlayer === "PLAYER_1";
-  const playerText = isP1 ? "PLAYER 1" : "PLAYER 2";
-  let playerClass = isP1 ? "p1-turn" : "p2-turn";
+  const isP2 = currentPlayer === "PLAYER_2";
+  const playerText = isP1 ? "PLAYER 1" : isP2 ? "PLAYER 2" : "PLAYER 3";
+  let playerClass = isP1 ? "p1-turn" : isP2 ? "p2-turn" : "p3-turn";
 
   let statusText = `${playerText}'S TURN`;
-  let indicatorDotColor = isP1 ? "var(--p1-crimson)" : "var(--p2-indigo)";
+  let indicatorDotColor = isP1
+    ? "var(--p1-crimson)"
+    : isP2
+    ? "var(--p2-indigo)"
+    : "var(--p3-emerald, #10b981)";
 
   if (interactionState === "WAITING_FOR_CONTINUATION") {
     statusText = "Choose the highlighted pit to continue sowing.";

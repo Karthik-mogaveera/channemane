@@ -10,6 +10,7 @@ import { shouldEndRound } from "./roundEnd";
 import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
 import { checkAndHandleMatchEnd, type MatchEndResult } from "./matchEnd";
 import { transitionTurnPhase } from "./turnStateMachine";
+import { getNextActivePlayer } from "./board";
 import type { ActionResult, GameState, Player, TurnAnimationEvent } from "./types";
 
 export interface TurnResult {
@@ -104,15 +105,14 @@ export function playTurn(
     matchResult = checkAndHandleMatchEnd(state);
     matchEnded = matchResult.isMatchEnd;
   } else {
-    // Switch to opponent
-    const opponent: Player =
-      state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
-    state.currentPlayer = opponent;
+    // Switch to next active player
+    const nextPlayer: Player = getNextActivePlayer(state, turnPlayer);
+    state.currentPlayer = nextPlayer;
     transitionTurnPhase(state, "PLAYER_TURN");
     state.selectedPit = null;
 
     // Check Auto-Pass (Clarification 5):
-    // If opponent has no valid moves:
+    // If next player has no valid moves:
     if (!hasAnyValidMove(state, state.currentPlayer)) {
       // Re-check round-ending condition
       if (shouldEndRound(state)) {
@@ -124,11 +124,29 @@ export function playTurn(
         matchResult = checkAndHandleMatchEnd(state);
         matchEnded = matchResult.isMatchEnd;
       } else {
-        // Round does NOT end (opponent has 0 moves but other player has >= 4 seeds)
-        // Automatically pass turn back!
-        turnPassed = true;
-        state.currentPlayer =
-          state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
+        // Find if any other active player has valid moves
+        let candidate = getNextActivePlayer(state, state.currentPlayer);
+        let found = false;
+        const maxChecks = state.playerCount === 3 ? 3 : 2;
+        for (let i = 0; i < maxChecks; i++) {
+          if (hasAnyValidMove(state, candidate)) {
+            state.currentPlayer = candidate;
+            turnPassed = true;
+            found = true;
+            break;
+          }
+          candidate = getNextActivePlayer(state, candidate);
+        }
+        if (!found) {
+          // No player has moves -> end round
+          roundEnded = true;
+          const settlementOutcome = executeRoundSettlement(state);
+          if (settlementOutcome.success) {
+            roundSettlement = settlementOutcome.data;
+          }
+          matchResult = checkAndHandleMatchEnd(state);
+          matchEnded = matchResult.isMatchEnd;
+        }
       }
     }
   }

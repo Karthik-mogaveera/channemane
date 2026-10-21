@@ -105,7 +105,8 @@ export interface UseChannemaneGameReturn {
     startingPlayer?: Player,
     mode?: GameMode,
     difficulty?: AIDifficulty | null,
-    aiPlayer?: Player
+    aiPlayer?: Player,
+    playerCount?: 2 | 3
   ) => void;
   clearError: () => void;
 }
@@ -116,7 +117,8 @@ export function useChannemaneGame(
   initialGameState?: GameState,
   initialGameMode: GameMode = "local",
   initialDifficulty: AIDifficulty | null = null,
-  initialAIPlayer: Player = "PLAYER_2"
+  initialAIPlayer: Player = "PLAYER_2",
+  initialPlayerCount: 2 | 3 = 2
 ): UseChannemaneGameReturn {
   const [gameMode, setGameModeState] = useState<GameMode>(
     () => initialGameState?.gameMode ?? initialGameMode
@@ -127,6 +129,9 @@ export function useChannemaneGame(
   const [aiPlayer, setAiPlayerState] = useState<Player>(
     () => initialGameState?.aiPlayer ?? initialAIPlayer
   );
+  const [playerCount, setPlayerCount] = useState<2 | 3>(
+    () => initialGameState?.playerCount ?? initialPlayerCount
+  );
 
   const gameRef = useRef<ChannemaneGame>(
     new ChannemaneGame(
@@ -134,7 +139,8 @@ export function useChannemaneGame(
       initialGameState,
       initialGameState?.gameMode ?? initialGameMode,
       initialGameState?.aiDifficulty ?? initialDifficulty,
-      initialGameState?.aiPlayer ?? initialAIPlayer
+      initialGameState?.aiPlayer ?? initialAIPlayer,
+      initialGameState?.playerCount ?? initialPlayerCount
     )
   );
   const [gameState, setGameState] = useState<GameState>(() =>
@@ -869,7 +875,8 @@ export function useChannemaneGame(
       startingPlayer: Player = "PLAYER_1",
       mode?: GameMode,
       difficulty?: AIDifficulty | null,
-      newAiPlayer?: Player
+      newAiPlayer?: Player,
+      newPlayerCount?: 2 | 3
     ) => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
       animationTimeoutsRef.current = [];
@@ -906,20 +913,23 @@ export function useChannemaneGame(
       const chosenMode = mode ?? gameMode;
       const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
       const chosenAiPlayer = newAiPlayer ?? aiPlayer;
+      const chosenPlayerCount = newPlayerCount ?? playerCount;
       setGameModeState(chosenMode);
       setAiDifficultyState(chosenDiff);
       setAiPlayerState(chosenAiPlayer);
+      setPlayerCount(chosenPlayerCount);
 
       gameRef.current = new ChannemaneGame(
         startingPlayer,
         undefined,
         chosenMode,
         chosenDiff,
-        chosenAiPlayer
+        chosenAiPlayer,
+        chosenPlayerCount
       );
       setGameState(gameRef.current.getState());
     },
-    [gameMode, aiDifficulty, aiPlayer]
+    [gameMode, aiDifficulty, aiPlayer, playerCount]
   );
 
   const effectiveGameState: GameState = useMemo(() => {

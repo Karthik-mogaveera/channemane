@@ -37,10 +37,10 @@ export function validatePitSelection(
     };
   }
 
-  if (!isValidPitId(pitId)) {
+  if (!isValidPitId(pitId, state.pits.length)) {
     return {
       success: false,
-      error: `Invalid pit ID: ${pitId}. Must be an integer between 0 and 13.`,
+      error: `Invalid pit ID: ${pitId}. Must be an integer between 0 and ${state.pits.length - 1}.`,
     };
   }
 

@@ -19,9 +19,11 @@ import { DifficultySelect } from "./ui/components/DifficultySelect";
 import { FirstPlayerModal } from "./ui/components/FirstPlayerModal";
 import { ComingSoonModal } from "./ui/components/ComingSoonModal";
 import { TurnNotification } from "./ui/components/TurnNotification";
+import { MultiplayerSelect, type MultiplayerPlayerCount } from "./ui/components/MultiplayerSelect";
+import { WorkInProgressModal } from "./ui/components/WorkInProgressModal";
 import type { GameMode, AIDifficulty, Player } from "./engine/types";
 
-export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "GAME";
+export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "MULTIPLAYER_SELECT" | "GAME";
 
 export interface AppProps {
   initialScreen?: AppScreen;
@@ -45,6 +47,7 @@ export const App: React.FC<AppProps> = ({
     difficulty: AIDifficulty;
     selectedFirstPlayer: "player" | "ai";
   } | null>(null);
+  const [wipPlayerCount, setWipPlayerCount] = useState<MultiplayerPlayerCount | null>(null);
   const [chosenStartingPlayer, setChosenStartingPlayer] =
     useState<Player>("PLAYER_1");
   const { isPortraitBlocked } = useOrientation();
@@ -152,18 +155,37 @@ export const App: React.FC<AppProps> = ({
     setCurrentScreen("DIFFICULTY_SELECT");
   };
 
-  const handlePlayLocal = () => {
+  const handlePlayLocal = (playerCount: 2 | 3 = 2) => {
     setChosenStartingPlayer("PLAYER_1");
     setSelectedDifficultyForFirstPlayer(null);
     setComingSoonNotice(null);
+    setWipPlayerCount(null);
     setGameMode("local", null);
-    restartMatch("PLAYER_1", "local", null);
+    restartMatch("PLAYER_1", "local", null, undefined, playerCount);
     setCurrentScreen("GAME");
+  };
+
+  const handleOpenMultiplayerSelect = () => {
+    setSelectedDifficultyForFirstPlayer(null);
+    setComingSoonNotice(null);
+    setWipPlayerCount(null);
+    setCurrentScreen("MULTIPLAYER_SELECT");
+  };
+
+  const handleSelectPlayerCount = (count: MultiplayerPlayerCount) => {
+    if (count === 2) {
+      handlePlayLocal(2);
+    } else if (count === 3) {
+      handlePlayLocal(3);
+    } else {
+      setWipPlayerCount(count);
+    }
   };
 
   const handleReturnToMenu = () => {
     setSelectedDifficultyForFirstPlayer(null);
     setComingSoonNotice(null);
+    setWipPlayerCount(null);
     restartMatch("PLAYER_1");
     setCurrentScreen("MAIN_MENU");
   };
@@ -177,12 +199,30 @@ export const App: React.FC<AppProps> = ({
       {currentScreen === "MAIN_MENU" && (
         <MainMenu
           onPlayAI={handlePlayAI}
-          onPlayLocal={handlePlayLocal}
+          onPlayLocal={handleOpenMultiplayerSelect}
           onOpenRules={() => setIsRulesOpen(true)}
         />
       )}
 
-      {/* Screen 2: AI Difficulty Selection */}
+      {/* Screen 2: Local Multiplayer Player Count Selection */}
+      {currentScreen === "MULTIPLAYER_SELECT" && (
+        <>
+          <MultiplayerSelect
+            onSelectPlayerCount={handleSelectPlayerCount}
+            onBack={handleReturnToMenu}
+          />
+
+          {/* Work in Progress Modal for 3-6 Players */}
+          {wipPlayerCount !== null && (
+            <WorkInProgressModal
+              playerCount={wipPlayerCount}
+              onClose={() => setWipPlayerCount(null)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Screen 3: AI Difficulty Selection */}
       {currentScreen === "DIFFICULTY_SELECT" && (
         <>
           <DifficultySelect
@@ -220,7 +260,15 @@ export const App: React.FC<AppProps> = ({
 
           {/* Top Header with Return to Menu & Mode Badge */}
           <Header
-            onRestart={() => restartMatch(chosenStartingPlayer, gameMode, aiDifficulty)}
+            onRestart={() =>
+              restartMatch(
+                chosenStartingPlayer,
+                gameMode,
+                aiDifficulty,
+                undefined,
+                gameState.playerCount || 2
+              )
+            }
             onOpenRules={() => setIsRulesOpen(true)}
             animationSettings={animationSettings}
             onToggleAnimation={toggleAnimationSpeed}
@@ -296,6 +344,8 @@ export const App: React.FC<AppProps> = ({
             currentPlayer={gameState.currentPlayer}
             player1={gameState.players.player1}
             player2={gameState.players.player2}
+            player3={gameState.players.player3}
+            disqualifiedPlayers={gameState.disqualifiedPlayers}
           />
 
           {/* 14-Pit Physical Board & Storage Bowls */}
@@ -327,7 +377,15 @@ export const App: React.FC<AppProps> = ({
           {matchSummary && (
             <MatchEndModal
               matchResult={matchSummary}
-              onNewMatch={() => restartMatch(chosenStartingPlayer, gameMode, aiDifficulty)}
+              onNewMatch={() =>
+                restartMatch(
+                  chosenStartingPlayer,
+                  gameMode,
+                  aiDifficulty,
+                  undefined,
+                  gameState.playerCount || 2
+                )
+              }
               onClose={dismissMatchModal}
             />
           )}

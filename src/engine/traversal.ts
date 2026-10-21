@@ -3,7 +3,7 @@
  * Strictly follows Phase 1 Specification (Sections 14, 20, 21, 26)
  */
 
-import { TOTAL_PITS, isValidPitId } from "./constants";
+import { isValidPitId } from "./constants";
 import type { Pit } from "./types";
 
 /**
@@ -24,13 +24,14 @@ export function getNextOpenPit(
   currentPitId: number,
   pits: readonly Pit[]
 ): number | null {
-  if (!isValidPitId(currentPitId) || pits.length !== TOTAL_PITS) {
+  const total = pits.length;
+  if (!isValidPitId(currentPitId, total)) {
     return null;
   }
 
-  // Iterate up to TOTAL_PITS steps ahead to find the next open pit
-  for (let offset = 1; offset <= TOTAL_PITS; offset++) {
-    const candidateId = (currentPitId + offset) % TOTAL_PITS;
+  // Iterate up to total steps ahead to find the next open pit
+  for (let offset = 1; offset <= total; offset++) {
+    const candidateId = (currentPitId + offset) % total;
     const pit = pits[candidateId];
     if (pit && pit.status === "OPEN") {
       return candidateId;

@@ -1,9 +1,5 @@
-/**
- * Match-End Detection Engine
- * Strictly follows Phase 1 Specification (Sections 45, 54)
- */
-
 import { MIN_STORAGE_FOR_MATCH_ELIGIBILITY } from "./constants";
+import { getActivePlayers } from "./board";
 import type { GameState, Player } from "./types";
 
 export interface MatchEndResult {
@@ -13,11 +9,30 @@ export interface MatchEndResult {
   reason: string | null;
 }
 
+function getPlayerStorage(state: GameState, player: Player): number {
+  if (player === "PLAYER_1") return state.players.player1.storage;
+  if (player === "PLAYER_2") return state.players.player2.storage;
+  return state.players.player3?.storage ?? 0;
+}
+
 /**
  * Checks if the match has reached terminal state after round settlement.
- * A player cannot participate in the next round if they have fewer than 5 seeds in storage.
+ * - 2-player: storage < 5 ends match.
+ * - 3-player: if 2 players remain and either has < 5, match ends. If 3 active players, match continues (recovery occurs).
  */
 export function isMatchOver(state: GameState): boolean {
+  if (state.playerCount === 3) {
+    const active = getActivePlayers(state);
+    if (active.length <= 1) return true;
+    if (active.length === 2) {
+      return (
+        getPlayerStorage(state, active[0]) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY ||
+        getPlayerStorage(state, active[1]) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+      );
+    }
+    return false;
+  }
+
   return (
     state.players.player1.storage < MIN_STORAGE_FOR_MATCH_ELIGIBILITY ||
     state.players.player2.storage < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
@@ -26,14 +41,82 @@ export function isMatchOver(state: GameState): boolean {
 
 /**
  * Evaluates and transitions the game state if match-end condition is met.
- *
- * Rules (Section 45 & 54):
- * - If storage < 5, openPairs === 0.
- * - That player loses the match.
- * - Opponent is declared winner.
- * - State phase transitions to "MATCH_END".
  */
 export function checkAndHandleMatchEnd(state: GameState): MatchEndResult {
+  if (state.playerCount === 3) {
+    const active = getActivePlayers(state);
+    if (active.length <= 1) {
+      state.phase = "MATCH_END";
+      state.winner = active[0] ?? null;
+      return {
+        isMatchEnd: true,
+        winner: active[0] ?? null,
+        loser: null,
+        reason: `${active[0]} is the sole remaining active player`,
+      };
+    }
+    if (active.length === 2) {
+      const pA = active[0];
+      const pB = active[1];
+      const sA = getPlayerStorage(state, pA);
+      const sB = getPlayerStorage(state, pB);
+      const canA = sA >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY;
+      const canB = sB >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY;
+
+      if (!canA && !canB) {
+        state.phase = "MATCH_END";
+        state.winner = null;
+        return {
+          isMatchEnd: true,
+          winner: null,
+          loser: null,
+          reason: "Both remaining players have fewer than 5 seeds in storage",
+        };
+      }
+      if (!canA) {
+        state.disqualifiedPlayers = [
+          ...(state.disqualifiedPlayers ?? []),
+          pA,
+        ];
+        state.phase = "MATCH_END";
+        state.winner = pB;
+        return {
+          isMatchEnd: true,
+          winner: pB,
+          loser: pA,
+          reason: `${pA} has only ${sA} seeds (fewer than 5) and cannot fund G1`,
+        };
+      }
+      if (!canB) {
+        state.disqualifiedPlayers = [
+          ...(state.disqualifiedPlayers ?? []),
+          pB,
+        ];
+        state.phase = "MATCH_END";
+        state.winner = pA;
+        return {
+          isMatchEnd: true,
+          winner: pA,
+          loser: pB,
+          reason: `${pB} has only ${sB} seeds (fewer than 5) and cannot fund G1`,
+        };
+      }
+      return {
+        isMatchEnd: false,
+        winner: null,
+        loser: null,
+        reason: null,
+      };
+    }
+
+    return {
+      isMatchEnd: false,
+      winner: null,
+      loser: null,
+      reason: null,
+    };
+  }
+
   const p1Storage = state.players.player1.storage;
   const p2Storage = state.players.player2.storage;
 
@@ -41,7 +124,6 @@ export function checkAndHandleMatchEnd(state: GameState): MatchEndResult {
   const p2CanPlay = p2Storage >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY;
 
   if (!p1CanPlay && !p2CanPlay) {
-    // Both under 5 (theoretically rare, e.g. tie if thresholds violated)
     state.phase = "MATCH_END";
     state.winner = null;
     return {

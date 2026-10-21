@@ -18,11 +18,15 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
   onStartNextRound,
   onClose,
 }) => {
+  const isThreePlayer = settlement.player3FinalStorage !== undefined;
+
   const winnerText =
     settlement.roundWinner === "PLAYER_1"
       ? "Player 1 Wins the Round!"
       : settlement.roundWinner === "PLAYER_2"
       ? "Player 2 Wins the Round!"
+      : settlement.roundWinner === "PLAYER_3"
+      ? "Player 3 Wins the Round!"
       : "Round Tied!";
 
   const openPairs = Math.min(
@@ -30,6 +34,8 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
     Math.floor(settlement.player2FinalStorage / 5),
     7
   );
+
+  const canStartNextRound = isThreePlayer ? true : openPairs > 0;
 
   return (
     <div
@@ -51,7 +57,10 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
             🏆 {winnerText}
           </div>
 
-          <div className="settlement-score-grid">
+          <div
+            className="settlement-score-grid"
+            style={isThreePlayer ? { gridTemplateColumns: "1fr 1fr 1fr" } : undefined}
+          >
             <div className="score-box">
               <h5>Player 1 Total Storage</h5>
               <div className="score-val" data-testid="settlement-p1-storage">
@@ -67,13 +76,30 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </div>
               <small>Seeds swept from Player 2 side: +{settlement.player2RemainingTransferred}</small>
             </div>
+
+            {isThreePlayer && (
+              <div className="score-box">
+                <h5>Player 3 Total Storage</h5>
+                <div className="score-val" data-testid="settlement-p3-storage">
+                  {settlement.player3FinalStorage}
+                </div>
+                <small>Seeds swept from Player 3 side: +{settlement.player3RemainingTransferred ?? 0}</small>
+              </div>
+            )}
           </div>
 
-          <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
-            <strong>Next Round Setup:</strong> Each player needs 5 seeds per pit.
-            With current storage totals, <strong>{openPairs} pairs ({openPairs * 2} pits)</strong> will open for the next round.
-            {openPairs < 7 && ` ${7 - openPairs} pairs (${(7 - openPairs) * 2} pits) will be closed.`}
-          </p>
+          {isThreePlayer ? (
+            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+              <strong>Next Round Setup:</strong> Pair-wise pit groups G1–G5 will open atomically
+              if all active players can contribute 5 seeds per group.
+            </p>
+          ) : (
+            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+              <strong>Next Round Setup:</strong> Each player needs 5 seeds per pit.
+              With current storage totals, <strong>{openPairs} pairs ({openPairs * 2} pits)</strong> will open for the next round.
+              {openPairs < 7 && ` ${7 - openPairs} pairs (${(7 - openPairs) * 2} pits) will be closed.`}
+            </p>
+          )}
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
@@ -85,7 +111,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           >
             Review Board
           </button>
-          {openPairs > 0 && (
+          {canStartNextRound && (
             <button
               type="button"
               className="btn"

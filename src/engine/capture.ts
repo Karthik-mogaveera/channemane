@@ -101,9 +101,12 @@ export function evaluateAndExecuteCapture(
     if (state.currentPlayer === "PLAYER_1") {
       state.players.player1.storage += seedsToCapture;
       state.players.player1.roundCaptured += seedsToCapture;
-    } else {
+    } else if (state.currentPlayer === "PLAYER_2") {
       state.players.player2.storage += seedsToCapture;
       state.players.player2.roundCaptured += seedsToCapture;
+    } else if (state.currentPlayer === "PLAYER_3" && state.players.player3) {
+      state.players.player3.storage += seedsToCapture;
+      state.players.player3.roundCaptured += seedsToCapture;
     }
 
     return {

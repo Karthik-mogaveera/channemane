@@ -3,7 +3,7 @@
  * Strictly follows Phase 1 & Phase 2 Specification
  */
 
-export type Player = "PLAYER_1" | "PLAYER_2";
+export type Player = "PLAYER_1" | "PLAYER_2" | "PLAYER_3";
 
 export type PitStatus = "OPEN" | "CLOSED";
 
@@ -62,7 +62,18 @@ export interface GameState {
   players: {
     player1: PlayerState;
     player2: PlayerState;
+    player3?: PlayerState;
   };
+
+  /**
+   * Number of players in the match (default 2, or 3)
+   */
+  playerCount?: 2 | 3;
+
+  /**
+   * List of permanently disqualified players
+   */
+  disqualifiedPlayers?: Player[];
 
   /**
    * Seeds currently held in hand during active sowing (default 0).
@@ -141,8 +152,12 @@ export type TurnAnimationEvent =
 /**
  * Type guard for Player
  */
-export function isPlayer(value: unknown): value is Player {
-  return value === "PLAYER_1" || value === "PLAYER_2";
+export function isPlayer(value: unknown, allowThreePlayer = false): value is Player {
+  return (
+    value === "PLAYER_1" ||
+    value === "PLAYER_2" ||
+    (allowThreePlayer && value === "PLAYER_3")
+  );
 }
 
 /**

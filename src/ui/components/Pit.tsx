@@ -45,7 +45,10 @@ export const Pit: React.FC<PitProps> = React.memo(({
   const isClosed = status === "CLOSED";
   const hasBonus = bonusAvailable && seeds === 4 && !isClosed;
   const isPlayer1 = owner === "PLAYER_1";
-  const ownerLabel = isPlayer1 ? "Player 1" : "Player 2";
+  const isPlayer2 = owner === "PLAYER_2";
+  const ownerLabel = isPlayer1 ? "Player 1" : isPlayer2 ? "Player 2" : "Player 3";
+  const pitCellClass = isPlayer1 ? "p1-pit-cell" : isPlayer2 ? "p2-pit-cell" : "p3-pit-cell";
+  const countClass = isPlayer1 ? "p1-count" : isPlayer2 ? "p2-count" : "p3-count";
 
   // Long-press gesture state & refs
   const [isHolding, setIsHolding] = useState<boolean>(false);
@@ -174,7 +177,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
 
   return (
     <div
-      className={`pit-cell ${isPlayer1 ? "p1-pit-cell" : "p2-pit-cell"}`}
+      className={`pit-cell ${pitCellClass}`}
       data-testid={`pit-cell-${pitId}`}
     >
       {/* Player 1 external count: ABOVE pit (Player 1 side) */}
@@ -314,10 +317,10 @@ export const Pit: React.FC<PitProps> = React.memo(({
         </button>
       </div>
 
-      {/* Player 2 external count: BELOW pit (Player 2 side) */}
+      {/* Player 2/Player 3 external count: BELOW pit */}
       {!isPlayer1 && (
         <div
-          className={`pit-external-count p2-count ${seeds === 0 ? "empty" : ""}`}
+          className={`pit-external-count ${countClass} ${seeds === 0 ? "empty" : ""}`}
           data-testid={`pit-count-${pitId}`}
           aria-hidden="true"
         >

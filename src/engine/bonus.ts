@@ -9,6 +9,7 @@ import { shouldEndRound } from "./roundEnd";
 import { executeRoundSettlement, type RoundSettlementResult } from "./settlement";
 import { checkAndHandleMatchEnd, type MatchEndResult } from "./matchEnd";
 import { hasAnyValidMove } from "./selection";
+import { getNextActivePlayer } from "./board";
 
 export interface ClaimBonusResult {
   pitId: number;
@@ -38,7 +39,7 @@ export function canClaimBonus(
     return false;
   }
 
-  if (!isValidPitId(pitId)) {
+  if (!isValidPitId(pitId, state.pits.length)) {
     return false;
   }
 
@@ -60,12 +61,12 @@ export function canClaimBonus(
  * Authoritative Rules:
  * - A bonus ALWAYS belongs to pit.owner, regardless of whose turn it is
  *   or which physical player clicked the Claim button.
- * - The recipient is strictly pit.owner; the other player's storage is untouched.
+ * - The recipient is strictly pit.owner; other players' storage is untouched.
  * - Transfers 4 seeds to pit.owner's storage.
  * - Sets pit seeds to 0.
  * - Sets pit bonusAvailable to false.
  * - Evaluates round-ending conditions after collection.
- * - Preserves the 70-seed conservation invariant.
+ * - Preserves the seed conservation invariant.
  */
 export function claimBonus(
   state: GameState,
@@ -79,7 +80,7 @@ export function claimBonus(
     };
   }
 
-  if (!isValidPitId(pitId)) {
+  if (!isValidPitId(pitId, state.pits.length)) {
     return {
       success: false,
       error: `Invalid pit ID: ${pitId}`,
@@ -102,16 +103,16 @@ export function claimBonus(
   }
 
   // The bonus unconditionally belongs to the authoritative owner of the pit.
-  // Whoever triggers the claim (Player 1, Player 2, or physical UI touch),
-  // the 4 seeds are credited to pit.owner's storage.
   const owner = pit.owner;
   pit.seeds = 0;
   pit.bonusAvailable = false;
 
   if (owner === "PLAYER_1") {
     state.players.player1.storage += BONUS_CLAIM_SEEDS;
-  } else {
+  } else if (owner === "PLAYER_2") {
     state.players.player2.storage += BONUS_CLAIM_SEEDS;
+  } else if (owner === "PLAYER_3" && state.players.player3) {
+    state.players.player3.storage += BONUS_CLAIM_SEEDS;
   }
 
   // Check round-ending conditions after bonus collection (Issue 1)
@@ -131,10 +132,9 @@ export function claimBonus(
   } else {
     // If active player now has no valid moves because of bonus claim, check auto-pass
     if (!hasAnyValidMove(state, state.currentPlayer)) {
-      const opponent: Player =
-        state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
-      if (hasAnyValidMove(state, opponent)) {
-        state.currentPlayer = opponent;
+      const nextPlayer = getNextActivePlayer(state, state.currentPlayer);
+      if (hasAnyValidMove(state, nextPlayer)) {
+        state.currentPlayer = nextPlayer;
       }
     }
   }

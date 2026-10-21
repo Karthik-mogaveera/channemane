@@ -940,6 +940,157 @@ The Master difficulty is engineered as an elite-level AI opponent for Channemane
 4. **Production Build**:
    - `npm run build`: Compiled production bundle in 3.37s with Vite and TypeScript.
 
+---
+
+## 26. Local Multiplayer Player Count Selection Implementation
+
+### 26.1 Architectural Overview
+When the user clicks **"Local Multiplayer"** on the Main Menu, the application navigates to a dedicated player-count selection screen (`MULTIPLAYER_SELECT`) presenting exactly five choices:
+1. **2 Players**: Fully playable; routes directly into the authoritative 2-player local multiplayer game engine without unnecessary state mutation.
+2. **3 Players**: Displays a non-intrusive "Work in Progress" modal with exact user-facing notice: *"Multiplayer for this player count is currently under development. Stay tuned for future updates!"*.
+3. **4 Players**: Displays the same "Work in Progress" modal.
+4. **5 Players**: Displays the same "Work in Progress" modal.
+5. **6 Players**: Displays the same "Work in Progress" modal.
+
+### 26.2 Key Components & Responsive Layout
+- **`MultiplayerSelect` Component (`src/ui/components/MultiplayerSelect.tsx`)**:
+  - Displays cultural emblem 👥, title *"Local Multiplayer"*, and subtitle *"Choose the number of players"*.
+  - Renders 5 interactive option buttons with tailored illustrations/emojis, badges (`Play Now` for 2 Players, `Coming Soon` for 3–6 Players), and descriptions.
+  - Includes a Back button returning cleanly to the Main Menu.
+  - Respects the Karnataka Royal Heritage theme and maintains consistent typography, borders, and hover states.
+- **`WorkInProgressModal` Component (`src/ui/components/WorkInProgressModal.tsx`)**:
+  - Accessible dialog (`role="dialog"`, `aria-modal="true"`, `aria-labelledby="wip-title"`).
+  - Exact Title: *"Work in Progress"*.
+  - Exact Message: *"Multiplayer for this player count is currently under development. Stay tuned for future updates!"*.
+  - Includes an explicit *"Got it"* action button.
+  - Dismissible via button click, backdrop click, or Escape key.
+  - Event propagation is stopped on the modal content to prevent unwanted clicks through to options underneath.
+- **Mobile Landscape Optimization**:
+  - In landscape viewports (height $\le$ 540px), adapts into a 2-column layout: left column contains the header and back button; right column arranges the 5 options with 2 Players spanning the top and 3–6 Players in a 2x2 grid. Fits within short mobile landscape screens without vertical scrolling.
+
+### 26.3 Files Created & Modified
+- **Created**:
+  - `src/ui/components/MultiplayerSelect.tsx`: 5-option selection screen component.
+  - `src/ui/components/WorkInProgressModal.tsx`: Accessible Work in Progress dialog component.
+  - `tests/ui/multiplayerSelect.test.tsx`: Comprehensive integration test suite covering navigation, 2P game launching, 3–6P WIP dialog triggers, dismissals, non-mutation, and regression checks.
+- **Modified**:
+  - `src/App.tsx`: Added `"MULTIPLAYER_SELECT"` screen to `AppScreen`, wired up handlers (`handleOpenMultiplayerSelect`, `handleSelectPlayerCount`), and integrated the WIP modal.
+  - `src/ui/styles/index.css`: Added styles for multiplayer selection card, badges, WIP dialog, and mobile-landscape grid layouts.
+  - `tests/ui/menuNavigation.test.tsx`: Updated Scenarios 8 & 10 to navigate through 2 Players option.
+  - `tests/ui/firstPlayerDialog.test.tsx`: Updated Test 8 to select 2 Players in Local Multiplayer.
+  - `tests/e2e/game.spec.ts`: Updated E2E Scenarios 4 & 6 for the 2 Players selection flow.
+
+### 26.4 Verification Results
+1. **Full Project Test Suite**:
+   - `npm test`: 52 test files passed, 365/365 tests passed (100% pass rate).
+2. **TypeScript Static Analysis**:
+   - `npm run typecheck`: Passed with 0 errors.
+3. **Production Build**:
+   - `npm run build`: Compiled production bundle in 3.44s with Vite and TypeScript.
+
+---
+
+## 27. 3-Player Local Multiplayer Mode Implementation
+
+### 27.1 Architecture & Physical Layout
+1. **Board Layout & Pit Ownership**:
+   - 15 total pits arranged in three rows of five:
+     - **Player 1 Side**: P0, P1, P2, P3, P4 (Row 1: rendered left-to-right 0, 1, 2, 3, 4).
+     - **Player 2 Side**: P5, P6, P7, P8, P9 (Row 2: rendered right-to-left 9, 8, 7, 6, 5).
+     - **Player 3 Side**: P10, P11, P12, P13, P14 (Row 3: rendered left-to-right 10, 11, 12, 13, 14).
+   - Three dedicated storage bowls:
+     - Player 1 (top-left) & Player 3 (bottom-left) on the left storage column.
+     - Player 2 on the right storage column.
+   - Initial State: 5 seeds per pit = 75 total seeds on board, 0 in each player's storage.
+   - Strict Seed Conservation Invariant: `sum(all 15 pit seeds) + storage P1 + storage P2 + storage P3 = 75` (normal 3-player match) or `50` (2-player recovery match after disqualification).
+
+2. **Counter-Clockwise Traversal & Sowing**:
+   - S-curve serpentine traversal: Row 1 left-to-right (0..4) -> Row 2 right-to-left (5..9) -> Row 3 left-to-right (10..14) -> wraps to Row 1 (0).
+   - Numerical ascending order with wrapping modulo 15 naturally reflects counter-clockwise physical traversal.
+   - Pits marked `status: "CLOSED"` are completely skipped during sowing, continuous sowing continuation inspections, and capture checks.
+   - Continuous sowing across player boundaries without artificial chain limits.
+   - Capture transferred to the sowing player's storage regardless of who owns the captured pit.
+   - Bonus claimed when a pit reaches 4 seeds; awarded exclusively to the pit's owner.
+
+3. **Pair-Wise Pit Groups (G1–G5)**:
+   - Authored centrally in pure configuration functions (`src/engine/constants.ts`):
+     - **All 3 active**: G1: [0, 9, 10], G2: [1, 8, 11], G3: [2, 7, 12], G4: [3, 6, 13], G5: [4, 5, 14]
+     - **P1 disqualified**: G1: [9, 10], G2: [8, 11], G3: [7, 12], G4: [6, 13], G5: [5, 14] (P0–P4 permanently closed)
+     - **P2 disqualified**: G1: [0, 10], G2: [1, 11], G3: [2, 12], G4: [3, 13], G5: [4, 14] (P5–P9 permanently closed)
+     - **P3 disqualified**: G1: [0, 9], G2: [1, 8], G3: [2, 7], G4: [3, 6], G5: [4, 5] (P10–P14 permanently closed)
+
+4. **Round Restart, Group Opening, and Disqualification Flow**:
+   - Pits are swept at settlement: P0–P4 to P1, P5–P9 to P2, P10–P14 to P3.
+   - Groups G1..G5 open in order atomically. Each open group deducts 5 seeds from each represented active player's storage.
+   - If any active player cannot afford 5 seeds for group $k$: group $k$ and all subsequent groups are closed; unspent seeds stay in storage.
+   - **G1 Failure (Disqualification Recovery)**:
+     - If G1 cannot open because an active player has $< 5$ seeds: that player is permanently disqualified.
+     - Disqualified player's pits are permanently closed.
+     - Exactly 25 seeds belonging to that player are removed from the game (elimination rule).
+     - The match restarts with the 2 remaining players using their pairwise groups.
+     - Recovery board initializes with 50 active seeds: 5 seeds in each of their 10 active pits, and 0 in both storages.
+   - **Final Match End**:
+     - If during 2-player recovery G1 cannot open because one remaining player has $< 5$ seeds: that player is disqualified and the sole remaining player wins the match (`phase = "MATCH_END"`).
+
+### 27.2 Files Modified and Created
+- **Engine Rules & Types**:
+  - `src/engine/types.ts`: Added `"PLAYER_3"` to `Player`, `player3?: PlayerState`, `playerCount?: 2 | 3`, `disqualifiedPlayers?: Player[]`.
+  - `src/engine/constants.ts`: Added `THREE_PLAYER_TOTAL_PITS`, `THREE_PLAYER_TOTAL_SEEDS`, `THREE_PLAYER_RECOVERY_SEEDS`, `THREE_PLAYER_P1/P2/P3_PITS`, `THREE_PLAYER_GROUPS_*`, `getThreePlayerGroups`, `getThreePlayerPitOwner`. Preserved 2-player defaults for `isValidPitId` and `getPitOwner`.
+  - `src/engine/traversal.ts`: Dynamic pit length support for counter-clockwise traversal skipping closed pits.
+  - `src/engine/selection.ts`: Dynamic pit bounds validation.
+  - `src/engine/board.ts`: Initial 15-pit/75-seed board creation, active player detection, `getNextActivePlayer`, 75/50 seed conservation invariants, cloning.
+  - `src/engine/capture.ts`: Captured seeds attribution to Player 3.
+  - `src/engine/bonus.ts`: Bonus attribution to Player 3, dynamic bounds.
+  - `src/engine/roundEnd.ts`: Round-end detection (`boardSeeds < 4`).
+  - `src/engine/settlement.ts`: 3-player sweeping (P0–P4 to P1, P5–P9 to P2, P10–P14 to P3), `player3RemainingTransferred`, `player3FinalStorage`, `roundWinner`.
+  - `src/engine/roundSetup.ts`: `setupNextRoundThreePlayer` with atomic G1..G5 group opening, G1 failure disqualification, 25-seed elimination, 50-seed 2-player restart, and final victory detection.
+  - `src/engine/matchEnd.ts`: 3-player match end evaluation and remaining-player victory detection.
+  - `src/engine/game.ts` & `src/engine/simulation.ts`: Turn rotation `P1 -> P2 -> P3 -> P1` skipping disqualified players, auto-passing, constructor support.
+- **UI Components & Hooks**:
+  - `src/ui/hooks/useChannemaneGame.ts`: Added `initialPlayerCount` and `restartMatch(..., newPlayerCount)`.
+  - `src/ui/components/MultiplayerSelect.tsx`: Updated 3 Players button to active "Play Now".
+  - `src/App.tsx`: Wired 3 Players to launch 3-player board, pass Player 3 and disqualified state to `PlayerPanels`.
+  - `src/ui/components/GameBoard.tsx`: 3-row layout (`Row 1: [0..4]`, `Row 2: [9..5]`, `Row 3: [10..14]`) with 3 storage bowls.
+  - `src/ui/components/Pit.tsx`: Added Player 3 owner, class, and external count styling.
+  - `src/ui/components/StorageBowl.tsx`: Added Player 3 storage bowl support.
+  - `src/ui/components/PlayerPanels.tsx`: Added Player 3 card with `(Disqualified)` tag.
+  - `src/ui/components/TurnBanner.tsx`: Added Player 3 turn status and dot color.
+  - `src/ui/components/SettlementModal.tsx`: Render Player 3 score box and 3-player group preview.
+  - `src/ui/components/MatchEndModal.tsx`: Support Player 3 victory banner.
+  - `src/ui/styles/index.css`: Added `--p3-emerald` palette, `.three-player-board`, `.three-player-row`, `.board-storage-col`, `.player-card.p3`, `.disqualified-tag`, and `.pit-external-count.p3-count`.
+- **Tests**:
+  - `tests/engine/threePlayerRules.test.ts`: Complete test suite with 26 tests including all 16 mandatory regression cases (T01–T16), seed conservation, circular traversal, continuous sowing, capture, and bonus.
+  - `tests/ui/multiplayerSelect.test.tsx`: Updated for 3-player active launch and 4–6 player WIP handling.
+  - `tests/e2e/game.spec.ts`: Added E2E Scenario 4b for 3-player local multiplayer launch.
+
+### 27.3 Verification & Test Results
+1. **Numerical Regression Tests (T01–T16)**:
+   - T01 (22, 28, 25): G1–G4 open, G5 closed, storage (2, 8, 5) -> PASSED
+   - T02 (35, 23, 17): G1–G3 open, G4–G5 closed, storage (20, 8, 2) -> PASSED
+   - T03 (54, 6, 15): G1 open, G2–G5 closed, storage (49, 1, 10) -> PASSED
+   - T04 (2, 29, 44): P1 disqualified, P2/P3 restarted with 25 seeds each (50 total, 0 storage) -> PASSED
+   - T05 (39, 4, 32): P2 disqualified, P1/P3 restarted with 25 seeds each (50 total, 0 storage) -> PASSED
+   - T06 (2, 29, 44): P1 disqualified, recovery restart verified -> PASSED
+   - T07 (0, 32, 43): P1 disqualified, recovery restart verified -> PASSED
+   - T08 (4, 21, 50): P1 disqualified, recovery restart verified -> PASSED
+   - T09 (24, 26, P3 Disq): G1–G4 open, G5 closed -> PASSED
+   - T10 (44, 6, P3 Disq): G1 open, G2–G5 closed -> PASSED
+   - T11 (49, 1, P3 Disq): P2 disqualified, P1 wins match -> PASSED
+   - T12 (9, 41, P2 Disq): G1 open, G2–G5 closed -> PASSED
+   - T13 (43, 7, P2 Disq): G1 open, G2–G5 closed -> PASSED
+   - T14 (16, 34, P2 Disq): G1–G3 open, G4–G5 closed -> PASSED
+   - T15 (4, 46, P2 Disq): P1 disqualified, P3 wins match -> PASSED
+   - T16 (42, 8, P1 Disq): G1 open, G2–G5 closed -> PASSED
+2. **Full Project Unit & Integration Tests (Vitest)**:
+   - 53 test files passed, 392/392 tests passed (100% pass rate, 0 failed, 0 skipped).
+3. **Playwright Browser E2E Tests**:
+   - 23 browser tests passed across Chromium (100% pass rate, 0 failed, 0 skipped, 43.4s runtime).
+4. **TypeScript & Static Analysis**:
+   - `npm run typecheck` (`tsc --noEmit`): Passed with 0 errors.
+5. **Production Build**:
+   - `npm run build`: Compiled production bundle cleanly in 3.74s (`dist/index.html` generated).
+
+
 
 
 

@@ -165,17 +165,27 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
   });
 
-  it("Scenario 8: Clicking 'Local Multiplayer' directly opens board without asking difficulty", () => {
+  it("Scenario 8: Clicking 'Local Multiplayer' opens player selection, and choosing '2 Players' opens board", () => {
     render(<App />);
 
-    // Click Local Multiplayer directly
+    // Click Local Multiplayer
     act(() => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
     });
 
+    // Multiplayer selection screen is displayed
+    expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
+    expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+
+    // Click 2 Players
+    act(() => {
+      fireEvent.click(screen.getByTestId("player-count-btn-2"));
+    });
+
     // Directly on game board, no difficulty screen ever shown
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
-    expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.queryByTestId("main-menu")).not.toBeInTheDocument();
 
     // Tag shows LOCAL 2P
@@ -207,9 +217,12 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
   it("Scenario 10: In-game 'Menu' button returns to Main Menu cleanly and resets state", () => {
     render(<App />);
 
-    // Start a Local Multiplayer game
+    // Start a Local Multiplayer game (Menu -> Local -> 2 Players)
     act(() => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("player-count-btn-2"));
     });
 
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
@@ -233,6 +246,9 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     // Now start another game to verify state is clean (P0 is fresh with 5 seeds)
     act(() => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("player-count-btn-2"));
     });
 
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();

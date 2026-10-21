@@ -3,7 +3,7 @@
  * Strictly follows Phase 1 Specification (Section 56)
  */
 
-import { createInitialGame, cloneGameState, verifySeedConservation } from "./board";
+import { createInitialGame, cloneGameState, verifySeedConservation, getNextActivePlayer } from "./board";
 import { getSelectablePits } from "./selection";
 import { validatePitSelection } from "./selection";
 import { pickupSeeds } from "./pickup";
@@ -91,11 +91,12 @@ export class ChannemaneGame {
     initialState?: GameState,
     gameMode: GameMode = "local",
     aiDifficulty: AIDifficulty | null = null,
-    aiPlayer: Player = "PLAYER_2"
+    aiPlayer: Player = "PLAYER_2",
+    playerCount: 2 | 3 = 2
   ) {
     this.state = initialState
       ? cloneGameState(initialState)
-      : createInitialGame(startingPlayer, gameMode, aiDifficulty, aiPlayer);
+      : createInitialGame(startingPlayer, gameMode, aiDifficulty, aiPlayer, playerCount);
     if (this.state.phase === "ROUND_SETTLEMENT" && isMatchOver(this.state)) {
       this.state.phase = "MATCH_END";
       checkAndHandleMatchEnd(this.state);
@@ -446,7 +447,9 @@ export class ChannemaneGame {
         newStorageTotal:
           this.state.currentPlayer === "PLAYER_1"
             ? this.state.players.player1.storage
-            : this.state.players.player2.storage,
+            : this.state.currentPlayer === "PLAYER_2"
+            ? this.state.players.player2.storage
+            : this.state.players.player3?.storage ?? 0,
       });
     }
 
@@ -489,12 +492,25 @@ export class ChannemaneGame {
         matchEnded = matchResult.isMatchEnd;
       }
     } else {
-      const opponent: Player =
-        this.state.currentPlayer === "PLAYER_1" ? "PLAYER_2" : "PLAYER_1";
-      if (hasAnyValidMove(this.state, opponent)) {
-        this.state.currentPlayer = opponent;
+      const nextActive = getNextActivePlayer(this.state, this.state.currentPlayer);
+      if (hasAnyValidMove(this.state, nextActive)) {
+        this.state.currentPlayer = nextActive;
       } else {
-        turnPassed = true;
+        let candidate = getNextActivePlayer(this.state, nextActive);
+        let found = false;
+        const maxChecks = this.state.playerCount === 3 ? 3 : 2;
+        for (let i = 0; i < maxChecks; i++) {
+          if (hasAnyValidMove(this.state, candidate)) {
+            this.state.currentPlayer = candidate;
+            turnPassed = true;
+            found = true;
+            break;
+          }
+          candidate = getNextActivePlayer(this.state, candidate);
+        }
+        if (!found) {
+          turnPassed = true;
+        }
       }
       this.state.turnPhase = "PLAYER_TURN";
     }

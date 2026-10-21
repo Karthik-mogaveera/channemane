@@ -13,23 +13,31 @@ export interface PlayerPanelsProps {
   currentPlayer: Player;
   player1: PlayerState;
   player2: PlayerState;
+  player3?: PlayerState;
+  disqualifiedPlayers?: Player[];
 }
 
 export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
   currentPlayer,
   player1,
   player2,
+  player3,
+  disqualifiedPlayers = [],
 }) => {
+  const isP1Dis = disqualifiedPlayers.includes("PLAYER_1");
+  const isP2Dis = disqualifiedPlayers.includes("PLAYER_2");
+  const isP3Dis = disqualifiedPlayers.includes("PLAYER_3");
+
   return (
     <div className="players-bar" role="region" aria-label="Players status">
       {/* Player 1 Card */}
       <div
-        className={`player-card p1 ${currentPlayer === "PLAYER_1" ? "active" : ""}`}
+        className={`player-card p1 ${currentPlayer === "PLAYER_1" ? "active" : ""} ${isP1Dis ? "disqualified" : ""}`}
         data-testid="player-card-1"
       >
         <div className="player-name">
           <span style={{ color: "var(--p1-crimson)" }}>●</span>
-          <span>Player 1</span>
+          <span>Player 1 {isP1Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
         </div>
         <div className="player-stats">
           <span>Round Wins: </span>
@@ -39,18 +47,35 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
 
       {/* Player 2 Card */}
       <div
-        className={`player-card p2 ${currentPlayer === "PLAYER_2" ? "active" : ""}`}
+        className={`player-card p2 ${currentPlayer === "PLAYER_2" ? "active" : ""} ${isP2Dis ? "disqualified" : ""}`}
         data-testid="player-card-2"
       >
         <div className="player-name">
           <span style={{ color: "var(--p2-indigo)" }}>●</span>
-          <span>Player 2</span>
+          <span>Player 2 {isP2Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
         </div>
         <div className="player-stats">
           <span>Round Wins: </span>
           <strong data-testid="p2-wins-count">{player2.roundWins}</strong>
         </div>
       </div>
+
+      {/* Player 3 Card (rendered if 3-player mode) */}
+      {player3 && (
+        <div
+          className={`player-card p3 ${currentPlayer === "PLAYER_3" ? "active" : ""} ${isP3Dis ? "disqualified" : ""}`}
+          data-testid="player-card-3"
+        >
+          <div className="player-name">
+            <span style={{ color: "var(--p3-emerald, #10b981)" }}>●</span>
+            <span>Player 3 {isP3Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
+          </div>
+          <div className="player-stats">
+            <span>Round Wins: </span>
+            <strong data-testid="p3-wins-count">{player3.roundWins}</strong>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

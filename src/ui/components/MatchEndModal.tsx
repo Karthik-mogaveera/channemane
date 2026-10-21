@@ -16,8 +16,14 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
   matchResult,
   onNewMatch,
 }) => {
-  const isP1Winner = matchResult.winner === "PLAYER_1";
-  const winnerTitle = isP1Winner ? "Player 1 Wins the Match!" : "Player 2 Wins the Match!";
+  const winnerTitle =
+    matchResult.winner === "PLAYER_1"
+      ? "Player 1 Wins the Match!"
+      : matchResult.winner === "PLAYER_2"
+      ? "Player 2 Wins the Match!"
+      : matchResult.winner === "PLAYER_3"
+      ? "Player 3 Wins the Match!"
+      : "Match Tied!";
 
   return (
     <div

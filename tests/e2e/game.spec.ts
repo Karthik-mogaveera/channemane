@@ -6,6 +6,10 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     const localBtn = page.getByTestId("menu-btn-local");
     if (await localBtn.isVisible()) {
       await localBtn.click();
+      const p2Btn = page.getByTestId("player-count-btn-2");
+      if (await p2Btn.isVisible()) {
+        await p2Btn.click();
+      }
     }
     // Wait for board to be visible and web fonts to settle
     await expect(page.getByTestId("channemane-board")).toBeVisible();
@@ -348,7 +352,7 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
   });
 
-  test("E2E Scenario 3: Selecting Master difficulty prompts for first player and displays coming soon safeguard", async ({
+  test("E2E Scenario 3: Selecting Master difficulty prompts for first player and launches Master game", async ({
     page,
   }) => {
     await page.goto("/");
@@ -360,26 +364,44 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await expect(page.getByTestId("first-player-modal")).toBeVisible();
     await page.getByTestId("first-player-player-btn").click();
 
-    // Coming soon modal appears as safeguard
-    await expect(page.getByTestId("coming-soon-modal")).toBeVisible();
-    await expect(page.getByTestId("coming-soon-modal")).toContainText("Coming Soon");
-
-    // Click "Play Beginner AI" from coming soon safeguard
-    await page.getByTestId("coming-soon-play-beginner-btn").click();
+    // Directly launches Master game
     await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (MASTER)");
   });
 
-  test("E2E Scenario 4: Local Multiplayer opens board directly without difficulty prompt", async ({
+  test("E2E Scenario 4: Local Multiplayer opens player count selection and 2 Players opens board", async ({
     page,
   }) => {
     await page.goto("/");
 
     await page.getByTestId("menu-btn-local").click();
+    await expect(page.getByTestId("multiplayer-select")).toBeVisible();
+
+    await page.getByTestId("player-count-btn-2").click();
 
     await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("multiplayer-select")).not.toBeVisible();
     await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
     await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 2P");
+  });
+
+  test("E2E Scenario 4b: Local Multiplayer 3 Players launches 3-Player 15-pit board", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-local").click();
+    await expect(page.getByTestId("multiplayer-select")).toBeVisible();
+
+    await page.getByTestId("player-count-btn-3").click();
+
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("multiplayer-select")).not.toBeVisible();
+    await expect(page.getByTestId("player-card-1")).toBeVisible();
+    await expect(page.getByTestId("player-card-2")).toBeVisible();
+    await expect(page.getByTestId("player-card-3")).toBeVisible();
+    await expect(page.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
+    await expect(page.getByTestId("pit-14")).toHaveAttribute("data-seeds", "5");
   });
 
   test("E2E Scenario 5: Rules modal opens from Main Menu and closes back to Main Menu", async ({
@@ -401,6 +423,7 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await page.goto("/");
 
     await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-2").click();
     await expect(page.getByTestId("channemane-board")).toBeVisible();
 
     // Click Menu in Header

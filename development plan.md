@@ -1225,7 +1225,34 @@ When the user clicks **"Local Multiplayer"** on the Main Menu, the application n
    - 54 test files passed, 396/396 tests passed.
 3. **TypeScript Typecheck & Build**:
    - `tsc --noEmit`: 0 errors.
-   - `vite build`: Production bundle compiled cleanly in 2.38s.
+
+## 30. 3-Player Board Layout Space Optimization & Full-Height Storage
+
+### 30.1 Layout Enhancements Implemented
+1. **Full-Height Storage Bowls**:
+   - Storage bowl height dynamically matches the full height of the 3-row pit grid:
+     `--p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap))`
+   - Applied `align-items: stretch` to both `.three-player-storage-left` and `.three-player-storage-right`.
+   - Reservoir container utilizes `flex: 1` (`min-height: 220px; border-radius: 22px; margin: 6px 0`) to fill the vertical body of the bowl proportionally without distortion.
+   - P1, P2, and P3 storage bowls are identical in height and vertically flush with the top and bottom of the pit grid.
+2. **Pit Gaps & Circularity**:
+   - Increased horizontal column gap from 12px to `18px` (`--p3-col-gap: 18px`).
+   - Increased vertical row gap from 16px to `20px` (`--p3-row-gap: 20px`).
+   - Every pit strictly maintains `aspect-ratio: 1 / 1` and `border-radius: 50%` with equal dimensions across all rows.
+3. **Interior Space Utilization**:
+   - Outer board padding set to `20px 24px` with a generous `24px` gap flanking the center grid.
+   - Eliminates unwanted dead space inside the board wrapper, cleanly distributing the elements across the full board canvas.
+   - Preserves 100% isolation for the 2-player board.
+4. **Responsive Adaptations**:
+   - Tablet (`max-width: 900px`): `col-gap: 14px`, `row-gap: 16px`, storage width `88px`, storage height matching grid.
+   - Mobile (`max-width: 680px`): `col-gap: 8px`, `row-gap: 10px`, storage width `68px`, storage height matching grid.
+   - Mobile landscape (`max-height: 600px`): `col-gap: 10px`, `row-gap: 10px`, storage width `80px`, storage height matching grid.
+
+### 30.2 Validation
+- **Playwright E2E Suite**: 25/25 tests passed (Scenario 8 & 9 passed within $\le 1\text{px}$ tolerance).
+- **TypeScript Typecheck**: 0 errors.
+- **Production Build**: Clean compilation in 2.36s.
+
 
 
 

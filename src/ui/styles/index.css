@@ -489,36 +489,56 @@ body {
   margin-bottom: -6px;
 }
 
-/* 3-Player Board Styles (Uniform Mathematical Grid & Reference Layout) */
+/* 3-Player Board Styles (Full Board Coverage & Uniform Mathematical Grid) */
 .three-player-board {
-  --p3-pit-size: var(--pit-size);
-  --p3-pit-cell-width: var(--pit-size);
-  --p3-pit-cell-height: var(--pit-cell-height);
-  --p3-col-gap: var(--pit-col-gap);
-  --p3-row-gap: var(--pit-row-gap);
+  --p3-pit-size: clamp(56px, 7.2vw, 92px);
+  --p3-pit-cell-width: var(--p3-pit-size);
+  --p3-pit-cell-height: calc(var(--p3-pit-size) + 28px);
+  --p3-col-gap: 18px;
+  --p3-row-gap: 20px;
+  --p3-storage-width: 108px;
+  --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
 
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 24px;
+  padding: 20px 24px;
 }
 
 .three-player-storage-left {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+  height: var(--p3-storage-height);
   flex-shrink: 0;
 }
 
 .three-player-storage-right {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
+  height: var(--p3-storage-height);
   flex-shrink: 0;
+}
+
+.three-player-board .storage-bowl {
+  width: var(--p3-storage-width);
+  height: var(--p3-storage-height);
+  border-radius: 40px;
+  padding: 14px 8px;
+  box-sizing: border-box;
+}
+
+.three-player-board .storage-bowl .storage-seeds-reservoir {
+  width: calc(var(--p3-storage-width) - 16px);
+  flex: 1;
+  min-height: 220px;
+  margin: 6px 0;
+  border-radius: 22px;
 }
 
 .three-player-pits-grid {
@@ -582,21 +602,25 @@ body {
     --p3-pit-size: clamp(48px, 6vw, 70px);
     --p3-pit-cell-width: var(--p3-pit-size);
     --p3-pit-cell-height: calc(var(--p3-pit-size) + 24px);
-    --p3-col-gap: 10px;
-    --p3-row-gap: 12px;
-    gap: 12px;
-    padding: 14px;
+    --p3-col-gap: 14px;
+    --p3-row-gap: 16px;
+    --p3-storage-width: 88px;
+    --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
+    gap: 16px;
+    padding: 16px 18px;
   }
 
   .three-player-board .storage-bowl {
-    width: 88px;
-    height: 195px;
-    padding: 8px 4px;
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
+    border-radius: 32px;
+    padding: 10px 6px;
   }
 
   .three-player-board .storage-bowl .storage-seeds-reservoir {
-    width: 76px;
-    height: 115px;
+    width: calc(var(--p3-storage-width) - 12px);
+    min-height: 160px;
+    border-radius: 18px;
   }
 }
 
@@ -605,22 +629,25 @@ body {
     --p3-pit-size: clamp(38px, 5.5vw, 48px);
     --p3-pit-cell-width: var(--p3-pit-size);
     --p3-pit-cell-height: calc(var(--p3-pit-size) + 22px);
-    --p3-col-gap: 6px;
-    --p3-row-gap: 8px;
-    gap: 8px;
-    padding: 8px;
+    --p3-col-gap: 8px;
+    --p3-row-gap: 10px;
+    --p3-storage-width: 68px;
+    --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
+    gap: 10px;
+    padding: 10px 10px;
   }
 
   .three-player-board .storage-bowl {
-    width: 68px;
-    height: 160px;
-    padding: 6px 3px;
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
     border-radius: 24px;
+    padding: 8px 4px;
   }
 
   .three-player-board .storage-bowl .storage-seeds-reservoir {
-    width: 58px;
-    height: 90px;
+    width: calc(var(--p3-storage-width) - 10px);
+    min-height: 120px;
+    border-radius: 14px;
   }
 }
 
@@ -1202,8 +1229,25 @@ body {
     --p3-pit-size: clamp(40px, 6.5vw, 68px);
     --p3-pit-cell-width: var(--p3-pit-size);
     --p3-pit-cell-height: calc(var(--p3-pit-size) + 20px);
-    --p3-col-gap: 8px;
-    --p3-row-gap: 8px;
+    --p3-col-gap: 10px;
+    --p3-row-gap: 10px;
+    --p3-storage-width: 80px;
+    --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
+    gap: 12px;
+    padding: 8px 12px;
+  }
+
+  .three-player-board .storage-bowl {
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
+    border-radius: 26px;
+    padding: 8px 4px;
+  }
+
+  .three-player-board .storage-bowl .storage-seeds-reservoir {
+    width: calc(var(--p3-storage-width) - 10px);
+    min-height: 110px;
+    border-radius: 14px;
   }
 
   .storage-bowl {

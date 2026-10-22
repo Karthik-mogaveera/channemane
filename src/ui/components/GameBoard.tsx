@@ -58,128 +58,109 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
           aria-label="3-Player Channemane Game Board"
           onContextMenu={(e) => e.preventDefault()}
         >
-          {/* Left Storage Bowls: Player 1 & Player 3 */}
-          <div className="board-storage-col storage-col-left">
+          {/* Left: Player 1 Storage (P1S) */}
+          <div className="three-player-storage-left" data-testid="p1-storage-container">
             <StorageBowl
               player="PLAYER_1"
               storageSeeds={gameState.players.player1.storage}
               className="board-storage-p1"
             />
-            <StorageBowl
-              player="PLAYER_3"
-              storageSeeds={gameState.players.player3?.storage ?? 0}
-              className="board-storage-p3"
-            />
           </div>
 
-          {/* Center 3x5 Pits Grid */}
-          <div className="pits-grid-container three-player-pits-container">
-            {/* Row 1: Player 1 */}
-            <div className="row-label p1-label" aria-hidden="true">
-              Player 1 Side (P0–P4)
-            </div>
-            <div
-              className="pits-row three-player-row row-1"
-              role="row"
-              aria-label="Player 1 pits row"
-            >
-              {THREE_PLAYER_ROW_1_PITS.map((pitId) => {
-                const pit = gameState.pits[pitId]!;
-                return (
-                  <Pit
-                    key={pitId}
-                    pitId={pitId}
-                    owner={pit.owner}
-                    seeds={pit.seeds}
-                    status={pit.status}
-                    bonusAvailable={pit.bonusAvailable}
-                    isSelectable={selectablePits.includes(pitId)}
-                    isActiveDrop={activeDropPit === pitId}
-                    isAnimating={isAnimating}
-                    isContinuationTarget={highlightedContinuationPit === pitId}
-                    isCaptureTarget={highlightedCapturePit === pitId}
-                    onSelect={onSelectPit}
-                    onConfirmContinuation={onConfirmContinuation}
-                    onConfirmCapture={onConfirmCapture}
-                    onClaimBonus={onClaimBonus}
-                  />
-                );
-              })}
-            </div>
+          {/* Center 3x5 Pits Grid (15 Pits) */}
+          <div
+            className="three-player-pits-grid"
+            data-testid="three-player-pits-grid"
+            role="grid"
+            aria-label="3-Player 15 Pits Grid"
+          >
+            {/* Row 1: Player 1 (P0–P4) */}
+            {THREE_PLAYER_ROW_1_PITS.map((pitId) => {
+              const pit = gameState.pits[pitId]!;
+              return (
+                <Pit
+                  key={pitId}
+                  pitId={pitId}
+                  owner={pit.owner}
+                  seeds={pit.seeds}
+                  status={pit.status}
+                  bonusAvailable={pit.bonusAvailable}
+                  isSelectable={selectablePits.includes(pitId)}
+                  isActiveDrop={activeDropPit === pitId}
+                  isAnimating={isAnimating}
+                  isContinuationTarget={highlightedContinuationPit === pitId}
+                  isCaptureTarget={highlightedCapturePit === pitId}
+                  countPosition="below"
+                  onSelect={onSelectPit}
+                  onConfirmContinuation={onConfirmContinuation}
+                  onConfirmCapture={onConfirmCapture}
+                  onClaimBonus={onClaimBonus}
+                />
+              );
+            })}
 
-            {/* Row 2: Player 2 */}
-            <div className="row-label p2-label" aria-hidden="true">
-              Player 2 Side (P5–P9)
-            </div>
-            <div
-              className="pits-row three-player-row row-2"
-              role="row"
-              aria-label="Player 2 pits row"
-            >
-              {THREE_PLAYER_ROW_2_PITS.map((pitId) => {
-                const pit = gameState.pits[pitId]!;
-                return (
-                  <Pit
-                    key={pitId}
-                    pitId={pitId}
-                    owner={pit.owner}
-                    seeds={pit.seeds}
-                    status={pit.status}
-                    bonusAvailable={pit.bonusAvailable}
-                    isSelectable={selectablePits.includes(pitId)}
-                    isActiveDrop={activeDropPit === pitId}
-                    isAnimating={isAnimating}
-                    isContinuationTarget={highlightedContinuationPit === pitId}
-                    isCaptureTarget={highlightedCapturePit === pitId}
-                    onSelect={onSelectPit}
-                    onConfirmContinuation={onConfirmContinuation}
-                    onConfirmCapture={onConfirmCapture}
-                    onClaimBonus={onClaimBonus}
-                  />
-                );
-              })}
-            </div>
+            {/* Row 2: Player 2 (P9–P5) */}
+            {THREE_PLAYER_ROW_2_PITS.map((pitId) => {
+              const pit = gameState.pits[pitId]!;
+              return (
+                <Pit
+                  key={pitId}
+                  pitId={pitId}
+                  owner={pit.owner}
+                  seeds={pit.seeds}
+                  status={pit.status}
+                  bonusAvailable={pit.bonusAvailable}
+                  isSelectable={selectablePits.includes(pitId)}
+                  isActiveDrop={activeDropPit === pitId}
+                  isAnimating={isAnimating}
+                  isContinuationTarget={highlightedContinuationPit === pitId}
+                  isCaptureTarget={highlightedCapturePit === pitId}
+                  countPosition="below"
+                  onSelect={onSelectPit}
+                  onConfirmContinuation={onConfirmContinuation}
+                  onConfirmCapture={onConfirmCapture}
+                  onClaimBonus={onClaimBonus}
+                />
+              );
+            })}
 
-            {/* Row 3: Player 3 */}
-            <div className="row-label p3-label" aria-hidden="true">
-              Player 3 Side (P10–P14)
-            </div>
-            <div
-              className="pits-row three-player-row row-3"
-              role="row"
-              aria-label="Player 3 pits row"
-            >
-              {THREE_PLAYER_ROW_3_PITS.map((pitId) => {
-                const pit = gameState.pits[pitId]!;
-                return (
-                  <Pit
-                    key={pitId}
-                    pitId={pitId}
-                    owner={pit.owner}
-                    seeds={pit.seeds}
-                    status={pit.status}
-                    bonusAvailable={pit.bonusAvailable}
-                    isSelectable={selectablePits.includes(pitId)}
-                    isActiveDrop={activeDropPit === pitId}
-                    isAnimating={isAnimating}
-                    isContinuationTarget={highlightedContinuationPit === pitId}
-                    isCaptureTarget={highlightedCapturePit === pitId}
-                    onSelect={onSelectPit}
-                    onConfirmContinuation={onConfirmContinuation}
-                    onConfirmCapture={onConfirmCapture}
-                    onClaimBonus={onClaimBonus}
-                  />
-                );
-              })}
-            </div>
+            {/* Row 3: Player 3 (P10–P14) */}
+            {THREE_PLAYER_ROW_3_PITS.map((pitId) => {
+              const pit = gameState.pits[pitId]!;
+              return (
+                <Pit
+                  key={pitId}
+                  pitId={pitId}
+                  owner={pit.owner}
+                  seeds={pit.seeds}
+                  status={pit.status}
+                  bonusAvailable={pit.bonusAvailable}
+                  isSelectable={selectablePits.includes(pitId)}
+                  isActiveDrop={activeDropPit === pitId}
+                  isAnimating={isAnimating}
+                  isContinuationTarget={highlightedContinuationPit === pitId}
+                  isCaptureTarget={highlightedCapturePit === pitId}
+                  countPosition="below"
+                  onSelect={onSelectPit}
+                  onConfirmContinuation={onConfirmContinuation}
+                  onConfirmCapture={onConfirmCapture}
+                  onClaimBonus={onClaimBonus}
+                />
+              );
+            })}
           </div>
 
-          {/* Right Storage Bowl: Player 2 */}
-          <div className="board-storage-col storage-col-right">
+          {/* Right: Player 2 Storage (P2S) & Player 3 Storage (P3S) side-by-side */}
+          <div className="three-player-storage-right" data-testid="p2-p3-storage-container">
             <StorageBowl
               player="PLAYER_2"
               storageSeeds={gameState.players.player2.storage}
               className="board-storage-p2"
+            />
+            <StorageBowl
+              player="PLAYER_3"
+              storageSeeds={gameState.players.player3?.storage ?? 0}
+              className="board-storage-p3"
             />
           </div>
         </div>

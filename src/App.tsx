@@ -120,7 +120,7 @@ export const App: React.FC<AppProps> = ({
       selectedDifficultyForFirstPlayer === "master"
     ) {
       setGameMode("ai", selectedDifficultyForFirstPlayer, "PLAYER_2");
-      restartMatch(startingPlayer, "ai", selectedDifficultyForFirstPlayer, "PLAYER_2");
+      restartMatch(startingPlayer, "ai", selectedDifficultyForFirstPlayer, "PLAYER_2", 2);
       setSelectedDifficultyForFirstPlayer(null);
       setCurrentScreen("GAME");
     } else if (selectedDifficultyForFirstPlayer) {
@@ -137,7 +137,7 @@ export const App: React.FC<AppProps> = ({
       comingSoonNotice?.selectedFirstPlayer === "player" ? "PLAYER_1" : "PLAYER_2";
     setChosenStartingPlayer(startingPlayer);
     setGameMode("ai", "beginner", "PLAYER_2");
-    restartMatch(startingPlayer, "ai", "beginner", "PLAYER_2");
+    restartMatch(startingPlayer, "ai", "beginner", "PLAYER_2", 2);
     setComingSoonNotice(null);
     setCurrentScreen("GAME");
   };
@@ -145,7 +145,7 @@ export const App: React.FC<AppProps> = ({
   const handleBackToMenuFromComingSoon = () => {
     setComingSoonNotice(null);
     setSelectedDifficultyForFirstPlayer(null);
-    restartMatch("PLAYER_1");
+    restartMatch("PLAYER_1", "local", null, undefined, 2);
     setCurrentScreen("MAIN_MENU");
   };
 
@@ -186,7 +186,7 @@ export const App: React.FC<AppProps> = ({
     setSelectedDifficultyForFirstPlayer(null);
     setComingSoonNotice(null);
     setWipPlayerCount(null);
-    restartMatch("PLAYER_1");
+    restartMatch("PLAYER_1", "local", null, undefined, 2);
     setCurrentScreen("MAIN_MENU");
   };
 
@@ -275,6 +275,7 @@ export const App: React.FC<AppProps> = ({
             onReturnToMenu={handleReturnToMenu}
             gameMode={gameMode}
             aiDifficulty={aiDifficulty}
+            playerCount={gameState.playerCount ?? 2}
           />
 
           {/* Turn & Status Indicator */}

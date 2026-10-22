@@ -15,6 +15,7 @@ export interface HeaderProps {
   onReturnToMenu?: () => void;
   gameMode?: GameMode | null;
   aiDifficulty?: AIDifficulty | null;
+  playerCount?: 2 | 3;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onReturnToMenu,
   gameMode,
   aiDifficulty,
+  playerCount = 2,
 }) => {
   return (
     <header className="game-header" role="banner">
@@ -38,6 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="game-mode-tag" data-testid="game-mode-tag">
               {gameMode === "ai"
                 ? `🤖 AI (${aiDifficulty ? aiDifficulty.toUpperCase() : "STANDARD"})`
+                : playerCount === 3
+                ? "👥 LOCAL 3P"
                 : "👥 LOCAL 2P"}
             </span>
           )}

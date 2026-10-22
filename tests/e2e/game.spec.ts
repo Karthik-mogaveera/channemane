@@ -496,6 +496,142 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
       timeout: 30000,
     });
   });
+
+  test("E2E Scenario 8: 3-Player Board Mathematically Uniform Pit Alignment and Reference Storage Layout", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Navigate: Main Menu -> Local Multiplayer -> 3 Players
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // 1. Measure all 15 pit bounding boxes
+    const pitBoxes: { id: number; x: number; y: number; width: number; height: number; cx: number; cy: number }[] = [];
+    for (let i = 0; i < 15; i++) {
+      const box = await page.getByTestId(`pit-${i}`).boundingBox();
+      expect(box).not.toBeNull();
+      const b = box!;
+      pitBoxes.push({
+        id: i,
+        x: b.x,
+        y: b.y,
+        width: b.width,
+        height: b.height,
+        cx: b.x + b.width / 2,
+        cy: b.y + b.height / 2,
+      });
+    }
+
+    // Criterion 1: Every pit is circular with width == height (within 1px)
+    for (const p of pitBoxes) {
+      expect(Math.abs(p.width - p.height)).toBeLessThanOrEqual(1.0);
+    }
+
+    // Criterion 2: Every pit across the entire board has identical width and height (within 1px)
+    const baseWidth = pitBoxes[0].width;
+    const baseHeight = pitBoxes[0].height;
+    for (const p of pitBoxes) {
+      expect(Math.abs(p.width - baseWidth)).toBeLessThanOrEqual(1.0);
+      expect(Math.abs(p.height - baseHeight)).toBeLessThanOrEqual(1.0);
+    }
+
+    // Row definitions
+    const row1 = [0, 1, 2, 3, 4].map((id) => pitBoxes[id]);
+    const row2 = [9, 8, 7, 6, 5].map((id) => pitBoxes[id]);
+    const row3 = [10, 11, 12, 13, 14].map((id) => pitBoxes[id]);
+
+    // Criterion 3: Horizontal center-to-center distances within rows are uniform (within 1px)
+    const baseColGapRow1 = row1[1].cx - row1[0].cx;
+    for (let c = 0; c < 4; c++) {
+      const dist1 = row1[c + 1].cx - row1[c].cx;
+      const dist2 = row2[c + 1].cx - row2[c].cx;
+      const dist3 = row3[c + 1].cx - row3[c].cx;
+      expect(Math.abs(dist1 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
+      expect(Math.abs(dist2 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
+      expect(Math.abs(dist3 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
+    }
+
+    // Criterion 4: Column centers align vertically across rows (within 1px)
+    for (let c = 0; c < 5; c++) {
+      expect(Math.abs(row1[c].cx - row2[c].cx)).toBeLessThanOrEqual(1.0);
+      expect(Math.abs(row2[c].cx - row3[c].cx)).toBeLessThanOrEqual(1.0);
+    }
+
+    // Criterion 5: Vertical row-to-row distances are uniform (within 1px)
+    const row1ToRow2Dist = row2[0].cy - row1[0].cy;
+    const row2ToRow3Dist = row3[0].cy - row2[0].cy;
+    expect(Math.abs(row1ToRow2Dist - row2ToRow3Dist)).toBeLessThanOrEqual(1.0);
+    for (let c = 1; c < 5; c++) {
+      const d12 = row2[c].cy - row1[c].cy;
+      const d23 = row3[c].cy - row2[c].cy;
+      expect(Math.abs(d12 - row1ToRow2Dist)).toBeLessThanOrEqual(1.0);
+      expect(Math.abs(d23 - row1ToRow2Dist)).toBeLessThanOrEqual(1.0);
+    }
+
+    // Criterion 6: Storage placement matches reference representation:
+    // Left: P1S
+    // Center: Pits
+    // Right: P2S and P3S side-by-side (P3S is farther right)
+    const p1StorageBox = await page.getByTestId("storage-player1").boundingBox();
+    const p2StorageBox = await page.getByTestId("storage-player2").boundingBox();
+    const p3StorageBox = await page.getByTestId("storage-player3").boundingBox();
+
+    expect(p1StorageBox).not.toBeNull();
+    expect(p2StorageBox).not.toBeNull();
+    expect(p3StorageBox).not.toBeNull();
+
+    // P1S is to the left of the leftmost pits
+    expect(p1StorageBox!.x + p1StorageBox!.width).toBeLessThanOrEqual(row1[0].x);
+
+    // P2S is to the right of the rightmost pits
+    expect(p2StorageBox!.x).toBeGreaterThanOrEqual(row1[4].x + row1[4].width);
+
+    // P3S is to the right of P2S (side-by-side)
+    expect(p3StorageBox!.x).toBeGreaterThanOrEqual(p2StorageBox!.x + p2StorageBox!.width);
+  });
+
+  test("E2E Scenario 9: Mode Switching Cycle (3P -> AI -> 3P) isolates board configuration", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // 1. Enter 3-Player mode
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("pit-14")).toBeVisible();
+    await expect(page.getByTestId("storage-player3")).toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
+
+    // 2. Return to menu
+    await page.getByTestId("main-menu-btn").click();
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+
+    // 3. Enter AI mode
+    await page.getByTestId("menu-btn-ai").click();
+    await page.getByTestId("difficulty-btn-beginner").click();
+    await page.getByTestId("first-player-player-btn").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // Verify 2-player board: exactly 14 pits, 2 storages
+    await expect(page.getByTestId("pit-13")).toBeVisible();
+    await expect(page.getByTestId("pit-14")).not.toBeVisible();
+    await expect(page.getByTestId("storage-player1")).toBeVisible();
+    await expect(page.getByTestId("storage-player2")).toBeVisible();
+    await expect(page.getByTestId("storage-player3")).not.toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI");
+
+    // 4. Return to menu and re-enter 3-Player mode
+    await page.getByTestId("main-menu-btn").click();
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("pit-14")).toBeVisible();
+    await expect(page.getByTestId("storage-player3")).toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
+  });
 });
 
 

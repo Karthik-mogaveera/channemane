@@ -1090,6 +1090,99 @@ When the user clicks **"Local Multiplayer"** on the Main Menu, the application n
 5. **Production Build**:
    - `npm run build`: Compiled production bundle cleanly in 3.74s (`dist/index.html` generated).
 
+---
+
+## 28. GAME MODE STATE ISOLATION, PERFECT BOARD ALIGNMENT & REFERENCE 3-PLAYER REPRESENTATION
+
+### 28.1 Root Causes Found
+
+1. **Issue 1 (State Leakage into AI Mode)**:
+   - In `src/ui/hooks/useChannemaneGame.ts`, `restartMatch` defaulted `chosenPlayerCount` to `playerCount` state from the previous match whenever `newPlayerCount` was not passed. Switching to AI mode from 3-player local mode thus retained `playerCount = 3`.
+   - In `src/engine/board.ts` (`createInitialGame`) and `src/engine/simulation.ts` (`ChannemaneGame`), the engine lacked an unconditional invariant enforcing `effectivePlayerCount = 2` whenever `gameMode === "ai"`.
+   - In `src/App.tsx`, `handleSelectFirstPlayer`, `handleReturnToMenu`, and `handleBackToMenuFromComingSoon` did not specify explicit `playerCount = 2`.
+
+2. **Issue 2 (Pit Spacing Asymmetry)**:
+   - `Pit.tsx` rendered Player 1 external seed counts *above* the pit button, but Player 2 and 3 counts *below* the pit button. This shifted Row 1's pit center vertically relative to Rows 2 and 3.
+   - `GameBoard.tsx` inserted non-grid `<div className="row-label">` elements between Row 1, Row 2, and Row 3, breaking vertical CSS Grid alignment.
+   - Pit widths previously relied on `clamp()` values with flex shrink inside separate row containers rather than fixed shared CSS variables on a single unified CSS Grid.
+
+3. **Issue 3 (Reference 3-Player Board Representation)**:
+   - The previous board placed Player 1 & 3 in a stacked column on the left and Player 2 on the right.
+   - The user reference diagram required:
+     ```text
+     -----                    -----   -----
+     |      | O O O O O |      |  |      |
+     |      | O O O O O |      |  |      |
+     |      | O O O O O |      |  |      |
+     -----                    -----   -----
+     P1S                      P2S    P3S
+     ```
+     Left: Player 1 Storage (`P1S`), Center: 3x5 Pits Grid, Right: Player 2 Storage (`P2S`) and Player 3 Storage (`P3S`) side-by-side.
+
+### 28.2 Fixes Implemented
+
+1. **Engine-Level & Hook-Level Game Mode Isolation**:
+   - `src/engine/board.ts`: In `createInitialGame`, enforced `const effectivePlayerCount: 2 | 3 = gameMode === "ai" ? 2 : playerCount;`.
+   - `src/engine/simulation.ts`: In `ChannemaneGame` constructor and `setGameMode`, enforced `playerCount = 2` whenever `gameMode === "ai"`.
+   - `src/ui/hooks/useChannemaneGame.ts`:
+     - In `setGameMode("ai")`: explicitly called `setPlayerCount(2)`.
+     - In `restartMatch`: enforced `const chosenPlayerCount: 2 | 3 = chosenMode === "ai" ? 2 : (newPlayerCount ?? (mode ? 2 : playerCount));`.
+     - In unmount cleanup: added `expertAIClient.cancelPendingSearch()` to terminate any in-flight Web Worker or search task.
+   - `src/App.tsx`: Explicitly passed `playerCount = 2` to `restartMatch` on AI mode launch and main menu returns. Passed `playerCount={gameState.playerCount ?? 2}` to `<Header>`.
+   - `src/ui/components/Header.tsx`: Added `playerCount?: 2 | 3` prop, displaying `👥 LOCAL 3P` when `playerCount === 3` and `👥 LOCAL 2P` when `playerCount === 2`.
+
+2. **Mathematically Uniform Grid & Spacing**:
+   - `src/ui/components/Pit.tsx`: Added optional `countPosition?: "above" | "below"` prop.
+   - In 3-player mode, all 15 pits specify `countPosition="below"`, ensuring every cell has the pit button first and external count below, yielding identical relative vertical centers across all rows.
+   - In `src/ui/styles/index.css`: Defined unified CSS variables:
+     ```css
+     --p3-pit-size: 72px;
+     --p3-pit-cell-width: 72px;
+     --p3-pit-cell-height: 100px;
+     --p3-col-gap: 16px;
+     --p3-row-gap: 16px;
+     --p3-storage-width: 96px;
+     --p3-storage-height: 332px;
+     ```
+     - Horizontal center-to-center distance: $72\text{px} + 16\text{px} = 88\text{px}$ identically across all 5 columns ($0.0\text{px}$ deviation).
+     - Vertical center-to-center distance: $100\text{px} + 16\text{px} = 116\text{px}$ identically across all 3 rows ($0.0\text{px}$ deviation).
+     - Pits remain perfectly circular (`aspect-ratio: 1 / 1; border-radius: 50%`).
+     - Responsive breakpoints proportionally scale CSS variables at `900px` and `680px` without distorting grid uniformity.
+
+3. **Specified 3-Player Board Representation**:
+   - `src/ui/components/GameBoard.tsx`:
+     - Left container (`.three-player-storage-left`): Contains `StorageBowl` for Player 1 (`P1S`).
+     - Center container (`.three-player-pits-grid`): A unified 3x5 CSS Grid containing all 15 pits in order (`Row 1: [0..4]`, `Row 2: [9..5]`, `Row 3: [10..14]`).
+     - Right container (`.three-player-storage-right`): A horizontal flex row containing `StorageBowl` for Player 2 (`P2S`) and Player 3 (`P3S`) side-by-side with `gap: 12px`.
+   - Preserved all logical pit ownerships (P0–P4: Player 1, P5–P9: Player 2, P10–P14: Player 3), pair-wise groups G1–G5, clockwise continuous sowing, captures, bonuses, settlement, and disqualification mechanics.
+
+### 28.3 Regression & Acceptance Test Results
+
+1. **Automated Unit & Integration Mode Switching Suite** (`tests/ui/gameModeSwitching.test.tsx`):
+   - **Test A**: Start 3P -> 15 pits & 3 storages verified -> return to menu -> start AI mode -> standard 2-player board (14 pits, 2 storages, 2 participants) verified. -> PASSED
+   - **Test B**: Start AI mode first -> standard 2-player board verified -> exit to menu -> start 3P mode -> 15-pit board & 3 storages verified. -> PASSED
+   - **Test C**: Repeated cycling (3P -> Menu -> AI -> Menu -> 3P) verified clean state preservation. -> PASSED
+   - **Test D**: In-flight turn and animations cleanly cleared on mode switch; no stale state in newly started game. -> PASSED
+
+2. **Playwright Browser E2E Bounding-Box Measurements** (`tests/e2e/game.spec.ts`):
+   - **Scenario 8**:
+     - Rendered pit dimensions: every pit has $W = H \pm 1\text{px}$ (circular).
+     - Dimension uniformity: all 15 pits have identical width and height within $\le 1\text{px}$.
+     - Horizontal center-to-center distances: $X_{c+1} - X_c$ is uniform within $\le 1\text{px}$.
+     - Column vertical alignment: $X_{center}$ aligns across rows within $\le 1\text{px}$.
+     - Vertical row-to-row distances: $Y_{r+1} - Y_r$ is uniform within $\le 1\text{px}$.
+     - Storage layout: P1S is to the left of the grid, P2S and P3S are to the right side-by-side ($X_{P3S} > X_{P2S} > X_{Pit4}$). -> PASSED
+   - **Scenario 9**: Mode switching cycle in real browser verified without state leakage. -> PASSED
+
+3. **Full Suite Execution**:
+   - `npx vitest run`: 54 test files passed, 396/396 tests passed (100% pass rate).
+   - `npx playwright test`: 25/25 browser tests passed across Chromium (100% pass rate).
+   - `npm run typecheck`: 0 TypeScript errors.
+   - `npm run build`: Production bundle compiled cleanly in 3.41s.
+
+4. **Remaining Limitations**: None.
+
+
 
 
 

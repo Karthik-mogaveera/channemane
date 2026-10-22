@@ -218,6 +218,7 @@ export function useChannemaneGame(
         clearTimeout(turnNotificationTimeoutRef.current);
         turnNotificationTimeoutRef.current = null;
       }
+      expertAIClient.cancelPendingSearch();
     };
   }, []);
 
@@ -853,6 +854,9 @@ export function useChannemaneGame(
       setGameModeState(mode);
       setAiDifficultyState(difficulty);
       setAiPlayerState(newAiPlayer);
+      if (mode === "ai") {
+        setPlayerCount(2);
+      }
       gameRef.current.setGameMode(mode, difficulty, newAiPlayer);
       setGameState(gameRef.current.getState());
     },
@@ -913,7 +917,10 @@ export function useChannemaneGame(
       const chosenMode = mode ?? gameMode;
       const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
       const chosenAiPlayer = newAiPlayer ?? aiPlayer;
-      const chosenPlayerCount = newPlayerCount ?? playerCount;
+      const chosenPlayerCount: 2 | 3 =
+        chosenMode === "ai"
+          ? 2
+          : (newPlayerCount ?? (mode ? 2 : playerCount));
       setGameModeState(chosenMode);
       setAiDifficultyState(chosenDiff);
       setAiPlayerState(chosenAiPlayer);

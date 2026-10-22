@@ -481,59 +481,147 @@ body {
   margin-bottom: -6px;
 }
 
-/* 3-Player Board Styles */
+/* 3-Player Board Styles (Uniform Mathematical Grid & Reference Layout) */
 .three-player-board {
-  grid-template-columns: auto 1fr auto;
-  gap: 16px;
-}
+  --p3-pit-size: 72px;
+  --p3-pit-cell-width: 72px;
+  --p3-pit-cell-height: 100px;
+  --p3-col-gap: 16px;
+  --p3-row-gap: 16px;
+  --p3-storage-width: 96px;
+  --p3-storage-height: 332px; /* 3 * 100 + 2 * 16 = 332px matching the 3x5 pit grid exactly */
 
-.three-player-pits-container {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.three-player-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
-
-.board-storage-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  gap: 20px;
+  padding: 24px;
+}
+
+.three-player-storage-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--p3-storage-width);
+  height: var(--p3-storage-height);
+  flex-shrink: 0;
+}
+
+.three-player-storage-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: var(--p3-storage-height);
+  flex-shrink: 0;
 }
 
 .three-player-board .storage-bowl {
-  width: 96px;
-  height: 155px;
-  padding: 6px 4px;
+  width: var(--p3-storage-width);
+  height: var(--p3-storage-height);
+  padding: 12px 6px;
+  box-sizing: border-box;
 }
 
 .three-player-board .storage-bowl .storage-seeds-reservoir {
   width: 80px;
-  height: 80px;
-}
-
-.three-player-board .storage-col-right .storage-bowl {
   height: 180px;
 }
 
-.row-label.p1-label {
-  color: var(--p1-crimson-border);
+.three-player-pits-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--p3-pit-cell-width));
+  grid-template-rows: repeat(3, var(--p3-pit-cell-height));
+  column-gap: var(--p3-col-gap);
+  row-gap: var(--p3-row-gap);
+  justify-items: center;
+  align-items: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.row-label.p2-label {
-  color: var(--p2-indigo-border);
+.three-player-pits-grid .pit-cell {
+  width: var(--p3-pit-cell-width);
+  height: var(--p3-pit-cell-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
-.row-label.p3-label {
-  color: var(--p3-emerald-border);
+.three-player-pits-grid .channemane-pit {
+  width: var(--p3-pit-size);
+  height: var(--p3-pit-size);
+  min-width: var(--p3-pit-size);
+  min-height: var(--p3-pit-size);
+  max-width: var(--p3-pit-size);
+  max-height: var(--p3-pit-size);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.three-player-pits-grid .pit-button-wrapper {
+  width: var(--p3-pit-size);
+  height: var(--p3-pit-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.three-player-pits-grid .pit-external-count {
+  height: 24px;
+  min-height: 24px;
+  line-height: 24px;
+  margin: 0;
+}
+
+/* Responsive scaling for 3-player board */
+@media (max-width: 900px) {
+  .three-player-board {
+    --p3-pit-size: 56px;
+    --p3-pit-cell-width: 56px;
+    --p3-pit-cell-height: 80px;
+    --p3-col-gap: 12px;
+    --p3-row-gap: 12px;
+    --p3-storage-width: 76px;
+    --p3-storage-height: 264px;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .three-player-board .storage-bowl .storage-seeds-reservoir {
+    width: 64px;
+    height: 140px;
+  }
+}
+
+@media (max-width: 680px) {
+  .three-player-board {
+    --p3-pit-size: 44px;
+    --p3-pit-cell-width: 44px;
+    --p3-pit-cell-height: 66px;
+    --p3-col-gap: 8px;
+    --p3-row-gap: 8px;
+    --p3-storage-width: 58px;
+    --p3-storage-height: 214px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .three-player-board .storage-bowl .storage-seeds-reservoir {
+    width: 48px;
+    height: 110px;
+  }
 }
 
 /* Pit Cell & External Counters (Issues 4, 5, 9) */

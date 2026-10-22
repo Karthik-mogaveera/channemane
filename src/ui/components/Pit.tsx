@@ -20,6 +20,7 @@ export interface PitProps {
   isAnimating: boolean;
   isContinuationTarget?: boolean;
   isCaptureTarget?: boolean;
+  countPosition?: "above" | "below";
   onSelect: (pitId: number) => void;
   onConfirmContinuation?: (pitId: number) => void;
   onConfirmCapture?: (pitId: number) => void;
@@ -37,6 +38,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
   isAnimating,
   isContinuationTarget = false,
   isCaptureTarget = false,
+  countPosition,
   onSelect,
   onConfirmContinuation,
   onConfirmCapture,
@@ -49,6 +51,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
   const ownerLabel = isPlayer1 ? "Player 1" : isPlayer2 ? "Player 2" : "Player 3";
   const pitCellClass = isPlayer1 ? "p1-pit-cell" : isPlayer2 ? "p2-pit-cell" : "p3-pit-cell";
   const countClass = isPlayer1 ? "p1-count" : isPlayer2 ? "p2-count" : "p3-count";
+  const renderCountPosition = countPosition ?? (isPlayer1 ? "above" : "below");
 
   // Long-press gesture state & refs
   const [isHolding, setIsHolding] = useState<boolean>(false);
@@ -180,10 +183,10 @@ export const Pit: React.FC<PitProps> = React.memo(({
       className={`pit-cell ${pitCellClass}`}
       data-testid={`pit-cell-${pitId}`}
     >
-      {/* Player 1 external count: ABOVE pit (Player 1 side) */}
-      {isPlayer1 && (
+      {/* External count: ABOVE pit */}
+      {renderCountPosition === "above" && (
         <div
-          className={`pit-external-count p1-count ${seeds === 0 ? "empty" : ""}`}
+          className={`pit-external-count ${countClass} ${seeds === 0 ? "empty" : ""}`}
           data-testid={`pit-count-${pitId}`}
           aria-hidden="true"
         >
@@ -317,8 +320,8 @@ export const Pit: React.FC<PitProps> = React.memo(({
         </button>
       </div>
 
-      {/* Player 2/Player 3 external count: BELOW pit */}
-      {!isPlayer1 && (
+      {/* External count: BELOW pit */}
+      {renderCountPosition === "below" && (
         <div
           className={`pit-external-count ${countClass} ${seeds === 0 ? "empty" : ""}`}
           data-testid={`pit-count-${pitId}`}

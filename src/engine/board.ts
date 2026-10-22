@@ -26,7 +26,8 @@ export function createInitialGame(
   aiPlayer: Player = "PLAYER_2",
   playerCount: 2 | 3 = 2
 ): GameState {
-  const isThreePlayer = playerCount === 3;
+  const effectivePlayerCount: 2 | 3 = gameMode === "ai" ? 2 : playerCount;
+  const isThreePlayer = effectivePlayerCount === 3;
   const pitCount = isThreePlayer ? THREE_PLAYER_TOTAL_PITS : TOTAL_PITS;
   const pits: Pit[] = [];
 
@@ -72,7 +73,7 @@ export function createInitialGame(
           }
         : {}),
     },
-    playerCount,
+    playerCount: effectivePlayerCount,
     disqualifiedPlayers: isThreePlayer ? [] : undefined,
     seedsInHand: 0,
     selectedPit: null,

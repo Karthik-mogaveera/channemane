@@ -1180,7 +1180,53 @@ When the user clicks **"Local Multiplayer"** on the Main Menu, the application n
    - `npm run typecheck`: 0 TypeScript errors.
    - `npm run build`: Production bundle compiled cleanly in 3.41s.
 
-4. **Remaining Limitations**: None.
+
+## 29. 3-Player Board UI Polish & 2-Player Reference Parity
+
+### 29.1 Root Causes of Previous Visual Inconsistencies
+1. **Pit Dimensions Discrepancy**: The 3-player board artificially clamped pits to a fixed 72px diameter, while the authoritative 2-player board pits rendered at `clamp(54px, 7.2vw, 92px)` (~92px on desktop).
+2. **Column Gaps Discrepancy**: The 3-player grid used `column-gap: 16px`, whereas the 2-player board spacing system strictly uses `12px`.
+3. **Storage Bowl Distortion**: The 3-player board overrode `.storage-bowl` height to `332px` and reservoir to `80px × 180px`, distorting the natural proportions compared to the 2-player storage (`104px × 230px`, reservoir `90px × 140px`, border radius `36px`).
+4. **Outer Board Padding & Gaps**: The 3-player board used `padding: 24px; gap: 20px;`, differing from the 2-player board's `padding: 16px 20px; gap: 16px;`.
+
+### 29.2 Unified Design Tokens & Implementation
+1. **Root Design Tokens (`src/ui/styles/index.css`)**:
+   ```css
+   --pit-size: clamp(54px, 7.2vw, 92px);
+   --pit-col-gap: 12px;
+   --pit-row-gap: 16px;
+   --pit-cell-height: calc(var(--pit-size) + 28px);
+   --storage-width: 104px;
+   --storage-height: 230px;
+   ```
+2. **Standardized 3-Player Grid & Pit Rules**:
+   - Both 2-player and 3-player pits now reference `--pit-size` directly.
+   - Horizontal column gap unified to `12px` (`--pit-col-gap`).
+   - Vertical row gap unified to `16px` (`--pit-row-gap`).
+   - Outer board padding standardized to `16px 20px` and gap to `16px`.
+3. **Storage Proportions & Symmetry**:
+   - Removed artificial 332px height and 80px/180px reservoir overrides on `.three-player-board .storage-bowl`.
+   - All 3 storage bowls (Player 1 on Left, Player 2 & 3 on Right) inherit the exact canonical 2-player storage bowl styling (`104px × 230px`, reservoir `90px × 140px`, border radius `36px`, padding `10px 6px`).
+   - Vertically centered alongside the 3x5 pit grid.
+4. **Responsive Scaling System**:
+   - `max-width: 900px`: Proportionally scales pit size to `clamp(48px, 6vw, 70px)`, gap to `10px`, and storage bowl to `88px × 195px` (maintaining ~0.45 aspect ratio).
+   - `max-width: 680px`: Scales pit size to `clamp(38px, 5.5vw, 48px)`, gap to `6px`, and storage bowl to `68px × 160px`.
+   - Mobile landscape (`max-height: 600px`): Scales pit size to `clamp(40px, 6.5vw, 68px)`, gap to `8px`, and storage bowl to `88px × 180px`, identically to 2-player board.
+
+### 29.3 Verification & Quality Assurance
+1. **Playwright Browser E2E Bounding-Box Measurements**:
+   - All 15 pits circular ($|W - H| \le 1\text{px}$).
+   - Equal pit dimensions across all 15 pits ($\le 1\text{px}$).
+   - Equal horizontal center-to-center distances across rows ($\le 1\text{px}$).
+   - Column vertical center alignment across rows ($\le 1\text{px}$).
+   - Vertical row-to-row distances uniform ($\le 1\text{px}$).
+   - 25/25 Playwright tests passed.
+2. **Vitest Unit & Integration Suite**:
+   - 54 test files passed, 396/396 tests passed.
+3. **TypeScript Typecheck & Build**:
+   - `tsc --noEmit`: 0 errors.
+   - `vite build`: Production bundle compiled cleanly in 2.38s.
+
 
 
 

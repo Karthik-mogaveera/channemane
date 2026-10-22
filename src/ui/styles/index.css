@@ -66,6 +66,14 @@
   /* Radiant royal brass gold */
   --indicator-bonus-light: #fbbf24;
   --indicator-bonus-glow: rgba(212, 175, 55, 0.55);
+
+  /* Board & Pit Sizing Tokens (Unified Design System) */
+  --pit-size: clamp(54px, 7.2vw, 92px);
+  --pit-col-gap: 12px;
+  --pit-row-gap: 16px;
+  --pit-cell-height: calc(var(--pit-size) + 28px);
+  --storage-width: 104px;
+  --storage-height: 230px;
 }
 
 * {
@@ -483,28 +491,24 @@ body {
 
 /* 3-Player Board Styles (Uniform Mathematical Grid & Reference Layout) */
 .three-player-board {
-  --p3-pit-size: 72px;
-  --p3-pit-cell-width: 72px;
-  --p3-pit-cell-height: 100px;
-  --p3-col-gap: 16px;
-  --p3-row-gap: 16px;
-  --p3-storage-width: 96px;
-  --p3-storage-height: 332px; /* 3 * 100 + 2 * 16 = 332px matching the 3x5 pit grid exactly */
+  --p3-pit-size: var(--pit-size);
+  --p3-pit-cell-width: var(--pit-size);
+  --p3-pit-cell-height: var(--pit-cell-height);
+  --p3-col-gap: var(--pit-col-gap);
+  --p3-row-gap: var(--pit-row-gap);
 
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 24px;
+  gap: 16px;
+  padding: 16px 20px;
 }
 
 .three-player-storage-left {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--p3-storage-width);
-  height: var(--p3-storage-height);
   flex-shrink: 0;
 }
 
@@ -514,20 +518,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: var(--p3-storage-height);
   flex-shrink: 0;
-}
-
-.three-player-board .storage-bowl {
-  width: var(--p3-storage-width);
-  height: var(--p3-storage-height);
-  padding: 12px 6px;
-  box-sizing: border-box;
-}
-
-.three-player-board .storage-bowl .storage-seeds-reservoir {
-  width: 80px;
-  height: 180px;
 }
 
 .three-player-pits-grid {
@@ -588,39 +579,48 @@ body {
 /* Responsive scaling for 3-player board */
 @media (max-width: 900px) {
   .three-player-board {
-    --p3-pit-size: 56px;
-    --p3-pit-cell-width: 56px;
-    --p3-pit-cell-height: 80px;
-    --p3-col-gap: 12px;
+    --p3-pit-size: clamp(48px, 6vw, 70px);
+    --p3-pit-cell-width: var(--p3-pit-size);
+    --p3-pit-cell-height: calc(var(--p3-pit-size) + 24px);
+    --p3-col-gap: 10px;
     --p3-row-gap: 12px;
-    --p3-storage-width: 76px;
-    --p3-storage-height: 264px;
-    gap: 14px;
-    padding: 16px;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .three-player-board .storage-bowl {
+    width: 88px;
+    height: 195px;
+    padding: 8px 4px;
   }
 
   .three-player-board .storage-bowl .storage-seeds-reservoir {
-    width: 64px;
-    height: 140px;
+    width: 76px;
+    height: 115px;
   }
 }
 
 @media (max-width: 680px) {
   .three-player-board {
-    --p3-pit-size: 44px;
-    --p3-pit-cell-width: 44px;
-    --p3-pit-cell-height: 66px;
-    --p3-col-gap: 8px;
+    --p3-pit-size: clamp(38px, 5.5vw, 48px);
+    --p3-pit-cell-width: var(--p3-pit-size);
+    --p3-pit-cell-height: calc(var(--p3-pit-size) + 22px);
+    --p3-col-gap: 6px;
     --p3-row-gap: 8px;
-    --p3-storage-width: 58px;
-    --p3-storage-height: 214px;
-    gap: 10px;
-    padding: 10px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .three-player-board .storage-bowl {
+    width: 68px;
+    height: 160px;
+    padding: 6px 3px;
+    border-radius: 24px;
   }
 
   .three-player-board .storage-bowl .storage-seeds-reservoir {
-    width: 48px;
-    height: 110px;
+    width: 58px;
+    height: 90px;
   }
 }
 
@@ -680,8 +680,8 @@ body {
 .channemane-pit {
   position: relative;
   aspect-ratio: 1 / 1;
-  width: clamp(54px, 7.2vw, 92px);
-  height: clamp(54px, 7.2vw, 92px);
+  width: var(--pit-size);
+  height: var(--pit-size);
   min-width: 48px;
   min-height: 48px;
   background: radial-gradient(circle at 45% 40%, #2f170d 0%, #1b0c06 70%, #110703 100%);
@@ -1196,6 +1196,14 @@ body {
   .channemane-board {
     padding: 8px 12px;
     gap: 10px;
+  }
+
+  .three-player-board {
+    --p3-pit-size: clamp(40px, 6.5vw, 68px);
+    --p3-pit-cell-width: var(--p3-pit-size);
+    --p3-pit-cell-height: calc(var(--p3-pit-size) + 20px);
+    --p3-col-gap: 8px;
+    --p3-row-gap: 8px;
   }
 
   .storage-bowl {

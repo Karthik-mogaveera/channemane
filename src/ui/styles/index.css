@@ -494,8 +494,8 @@ body {
   --p3-pit-size: clamp(56px, 7.2vw, 92px);
   --p3-pit-cell-width: var(--p3-pit-size);
   --p3-pit-cell-height: calc(var(--p3-pit-size) + 28px);
-  --p3-col-gap: 18px;
-  --p3-row-gap: 20px;
+  --p3-col-gap: 40px;
+  --p3-row-gap: 10px;
   --p3-storage-width: 108px;
   --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
 
@@ -520,7 +520,7 @@ body {
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
-  gap: 14px;
+  gap: 30px;
   height: var(--p3-storage-height);
   flex-shrink: 0;
 }

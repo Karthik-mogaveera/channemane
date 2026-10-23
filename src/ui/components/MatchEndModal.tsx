@@ -9,12 +9,14 @@ import type { MatchEndResult } from "../../engine/matchEnd";
 export interface MatchEndModalProps {
   matchResult: MatchEndResult;
   onNewMatch: () => void;
+  onHome?: () => void;
   onClose?: () => void;
 }
 
 export const MatchEndModal: React.FC<MatchEndModalProps> = ({
   matchResult,
   onNewMatch,
+  onHome,
 }) => {
   const winnerTitle =
     matchResult.winner === "PLAYER_1"
@@ -49,16 +51,128 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
             👑 {winnerTitle}
           </div>
 
+          {matchResult.rankings && matchResult.rankings.length > 0 && (
+            <div
+              className="match-rankings-container"
+              data-testid="match-rankings"
+              style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}
+            >
+              {matchResult.rankings.map((ranking) => {
+                const isWinner =
+                  ranking.label === "Winner" || ranking.label === "1st Place";
+                const isSecond = ranking.label === "2nd Place";
+                const playerName =
+                  ranking.player === "PLAYER_1"
+                    ? "Player 1"
+                    : ranking.player === "PLAYER_2"
+                    ? "Player 2"
+                    : "Player 3";
+
+                const badgeBg = isWinner
+                  ? "rgba(234, 179, 8, 0.25)"
+                  : isSecond
+                  ? "rgba(148, 163, 184, 0.2)"
+                  : "rgba(239, 68, 68, 0.2)";
+                const badgeBorder = isWinner
+                  ? "#eab308"
+                  : isSecond
+                  ? "#94a3b8"
+                  : "#ef4444";
+                const badgeColor = isWinner
+                  ? "#fef08a"
+                  : isSecond
+                  ? "#e2e8f0"
+                  : "#fca5a5";
+
+                return (
+                  <div
+                    key={ranking.player}
+                    className={`match-ranking-row ${isWinner ? "winner-row" : ""}`}
+                    data-testid={`ranking-row-${ranking.player.toLowerCase()}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 14px",
+                      borderRadius: "8px",
+                      background: isWinner
+                        ? "linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(202,138,4,0.05) 100%)"
+                        : "rgba(255, 255, 255, 0.04)",
+                      border: isWinner ? "1px solid rgba(234,179,8,0.4)" : "1px solid rgba(255, 255, 255, 0.08)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        className="ranking-badge"
+                        data-testid={`ranking-badge-${ranking.player.toLowerCase()}`}
+                        style={{
+                          display: "inline-block",
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          background: badgeBg,
+                          border: `1px solid ${badgeBorder}`,
+                          color: badgeColor,
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        {ranking.label}
+                      </span>
+                      <strong
+                        className="ranking-player-name"
+                        data-testid={`ranking-player-${ranking.player.toLowerCase()}`}
+                        style={{
+                          fontSize: isWinner ? "1.05rem" : "0.95rem",
+                          color: isWinner ? "var(--gold-light, #fef08a)" : "var(--text-light, #f8fafc)",
+                        }}
+                      >
+                        {playerName}
+                      </strong>
+                    </div>
+
+                    <div
+                      className="ranking-storage-val"
+                      data-testid={`ranking-storage-${ranking.player.toLowerCase()}`}
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "var(--text-muted, #94a3b8)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {ranking.storage} seeds
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <p style={{ marginTop: "14px", textAlign: "center", color: "var(--text-muted)" }}>
             {matchResult.reason}
           </p>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "16px" }}>
+        <div
+          className="match-end-actions"
+          style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "16px" }}
+        >
+          {onHome && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ flex: 1, justifyContent: "center" }}
+              onClick={onHome}
+              data-testid="match-home-btn"
+              aria-label="Return to Home Menu"
+            >
+              🏠 Home
+            </button>
+          )}
           <button
             type="button"
             className="btn"
-            style={{ width: "100%", justifyContent: "center" }}
+            style={{ flex: 1, justifyContent: "center" }}
             onClick={onNewMatch}
             data-testid="new-match-btn"
           >

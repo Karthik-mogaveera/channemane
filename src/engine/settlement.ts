@@ -15,6 +15,7 @@ export interface RoundSettlementResult {
   player3FinalStorage?: number;
   roundWinner: Player | null;
   preSettlementState?: GameState;
+  disqualifiedPlayers?: Player[];
 }
 
 /**
@@ -98,6 +99,18 @@ export function executeRoundSettlement(
   state.phase = "ROUND_SETTLEMENT";
   state.turnPhase = "TURN_END";
 
+  const disqualifiedPlayers: Player[] = [
+    ...(state.disqualifiedPlayers ?? []),
+  ];
+  if (state.playerCount === 3) {
+    const active = getActivePlayers(state);
+    for (const p of active) {
+      if (storageMap[p] < 5 && !disqualifiedPlayers.includes(p)) {
+        disqualifiedPlayers.push(p);
+      }
+    }
+  }
+
   return {
     success: true,
     data: {
@@ -110,6 +123,8 @@ export function executeRoundSettlement(
       player3FinalStorage: state.players.player3?.storage,
       roundWinner,
       preSettlementState,
+      disqualifiedPlayers:
+        state.playerCount === 3 ? disqualifiedPlayers : undefined,
     },
   };
 }

@@ -16,6 +16,11 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
     it("pauses on completion of first distribution batch, highlights exact pit with green glow, and shows prompt", () => {
       render(<App initialScreen="GAME" />);
 
+      // Advance past initial turn announcement
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
       // Player 1 taps legal starting pit P0
       const pit0 = screen.getByTestId("pit-0");
       act(() => {
@@ -261,6 +266,12 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
   describe("Section 7: Status Messages and Contextual Guidance", () => {
     it("displays player turn at start and continuation message when paused", () => {
       render(<App initialScreen="GAME" />);
+
+      // Advance past initial turn announcement
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
       expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
 
       // Start sowing

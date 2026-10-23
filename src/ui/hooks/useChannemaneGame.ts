@@ -76,6 +76,7 @@ export interface UseChannemaneGameReturn {
 
   // Turn-Start Notification (Feature 3)
   turnNotification: string | null;
+  dismissTurnNotification: () => void;
 
   // Modals & Controls
   isRulesOpen: boolean;
@@ -192,7 +193,12 @@ export function useChannemaneGame(
     })
   );
 
-  const [turnNotification, setTurnNotification] = useState<string | null>(null);
+  const [turnNotification, setTurnNotificationState] = useState<string | null>(null);
+  const turnNotificationRef = useRef<string | null>(null);
+  const setTurnNotification = useCallback((val: string | null) => {
+    turnNotificationRef.current = val;
+    setTurnNotificationState(val);
+  }, []);
   const turnNotificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [turnCount, setTurnCount] = useState<number>(1);
   const lastNotifiedTurnIdRef = useRef<number>(0);
@@ -453,7 +459,8 @@ export function useChannemaneGame(
         isAnimating ||
         isReviewingBoard ||
         interactionState !== "WAITING_FOR_START" ||
-        gameRef.current.isTurnInProgress()
+        gameRef.current.isTurnInProgress() ||
+        turnNotificationRef.current !== null
       ) {
         return null;
       }
@@ -618,7 +625,7 @@ export function useChannemaneGame(
         },
       };
     },
-    [isAnimating, isReviewingBoard, interactionState, gameState.phase, animationSettings, clearError, scheduleSowingSteps]
+    [isAnimating, isReviewingBoard, interactionState, gameState.phase, animationSettings, clearError, scheduleSowingSteps, turnNotification]
   );
 
   /**
@@ -946,14 +953,23 @@ export function useChannemaneGame(
     return gameState;
   }, [isReviewingBoard, reviewBoardState, gameState]);
 
+  const dismissTurnNotification = useCallback(() => {
+    if (turnNotificationTimeoutRef.current) {
+      clearTimeout(turnNotificationTimeoutRef.current);
+      turnNotificationTimeoutRef.current = null;
+    }
+    setTurnNotification(null);
+  }, []);
+
   /**
-   * Turn-Start Notification Effect (Feature 3)
-   * Displays "Your turn" or "AI turn" transient popup before each player's turn begins.
+   * Turn-Start Notification Effect (Feature 3 & Local Multiplayer)
+   * Displays "Your turn" or "AI turn" (in AI mode) or "Player X's Turn" (in Local mode)
+   * transient popup before each player's turn begins.
    * Disables player interactions and delays AI decision-making for ~800ms.
    */
   useEffect(() => {
     if (
-      gameMode !== "ai" ||
+      (gameMode !== "ai" && gameMode !== "local") ||
       gameState.phase !== "PLAYING" ||
       interactionState !== "WAITING_FOR_START" ||
       isAnimating ||
@@ -969,9 +985,19 @@ export function useChannemaneGame(
     }
 
     lastNotifiedTurnIdRef.current = turnCount;
-    const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
-    const notificationText =
-      gameState.currentPlayer === currentAI ? "AI turn" : "Your turn";
+    let notificationText: string;
+    if (gameMode === "ai") {
+      const currentAI = gameState.aiPlayer ?? aiPlayer ?? "PLAYER_2";
+      notificationText =
+        gameState.currentPlayer === currentAI ? "AI turn" : "Your turn";
+    } else {
+      notificationText =
+        gameState.currentPlayer === "PLAYER_1"
+          ? "Player 1's Turn"
+          : gameState.currentPlayer === "PLAYER_2"
+          ? "Player 2's Turn"
+          : "Player 3's Turn";
+    }
 
     setTurnNotification(notificationText);
 
@@ -1228,6 +1254,7 @@ export function useChannemaneGame(
     aiDifficulty,
     aiPlayer,
     turnNotification,
+    dismissTurnNotification,
     setGameMode,
     setAiPlayer,
     isReviewingBoard,

@@ -1253,6 +1253,63 @@ When the user clicks **"Local Multiplayer"** on the Main Menu, the application n
 - **TypeScript Typecheck**: 0 errors.
 - **Production Build**: Clean compilation in 2.36s.
 
+## 31. Local Multiplayer Turn Popup, Disqualification Status, Match Results, and Home Navigation
+
+### 31.1 Local Multiplayer: Turn Announcement Before Sowing
+1. **Turn-Start Announcement Flow**:
+   - Reused the existing `TurnNotification` component from AI mode for 2-player and 3-player Local Multiplayer.
+   - Triggers at the start of each player's turn (`gameState.phase === "PLAYING"` and `interactionState === "WAITING_FOR_START"`).
+   - Shows correct player announcement (`"Player 1's Turn"`, `"Player 2's Turn"`, `"Player 3's Turn"`) with distinctive player color themes (`turn-notification-p1`, `turn-notification-p2`, `turn-notification-p3`) and color-coded avatar markers (🔴, 🔵, 🟢).
+   - Interactive dismissal: click or press Enter/Space dismisses immediately, or auto-dismisses after 800ms.
+   - Gameplay action guard: `selectPit` strictly blocks input (`turnNotificationRef.current !== null`), and `selectablePits` returns `[]` while active.
+   - Guaranteed against double-turn advancement and duplicate popups using `lastNotifiedTurnIdRef` and `turnCount` tracking.
+   - AI turn behavior remains completely preserved and unchanged.
+
+### 31.2 Three-Player Game: Disqualification in Round Settlement and Storage
+1. **Round Settlement Modal Disqualification Reporting**:
+   - Engine evaluates eligibility during `executeRoundSettlement`: active players with $< 5$ seeds in storage are flagged in `disqualifiedPlayers`.
+   - `SettlementModal.tsx` renders `"Disqualified"` in place of numeric storage values in player result cards for disqualified players.
+   - Active players retain authoritative numeric storage scores.
+2. **Storage Display After Settlement**:
+   - `StorageBowl.tsx` accepts `isDisqualified?: boolean`.
+   - Disqualified player's storage displays `"Disqualified"` (`.storage-disqualified-text`) instead of numeric seed counts.
+   - Pits belonging to disqualified players remain permanently closed (`pit.status === "CLOSED"`), disabled, and non-selectable.
+   - Disqualified players are skipped in turn rotation; they receive no turns, cannot sow, and claim no bonuses.
+   - Engine state retains `disqualifiedPlayers` immutably across subsequent rounds until match restart.
+
+### 31.3 Match Finished Modal: Authoritative Match Results Placement
+1. **Authoritative Placement Computation**:
+   - Created `computeMatchRankings(state, winner, loser)` in `src/engine/matchEnd.ts`.
+   - **2-Player Mode**: Ranks winner as `"Winner"` and other player as `"Lost"`.
+   - **3-Player Mode**:
+     - `"1st Place"`: Authoritative match winner.
+     - `"2nd Place"`: Runner-up (eliminated immediately before the winner).
+     - `"Lost"`: First eliminated player (based on sequential disqualification history or lowest storage).
+   - Handles both normal seed-depletion completion and sequential disqualification match completions.
+2. **Results Presentation**:
+   - `MatchEndModal.tsx` renders placement cards with distinct visual styling (`winner-card` with gold badge, `runnerup-card`, `lost-card`).
+   - Displays player name, rank badge, and final storage count.
+
+### 31.4 Home Navigation
+1. **Home Button in Match Finished Modal**:
+   - Added clearly visible `"🏠 Home"` button (`data-testid="match-home-btn"`) alongside `"Play Again"`.
+   - Invokes `onHome` (`handleReturnToMenu` in `App.tsx`).
+   - Cleanly resets game state (`restartMatch("PLAYER_1", "local", null, undefined, 2)`), clears review states, resets error flags, and navigates to `MAIN_MENU`.
+   - Prevents stale board, player count, disqualifications, or match summaries from leaking into subsequent games.
+   - Accessible via mouse, touch, and keyboard.
+
+### 31.5 Verification and Test Results
+- **Vitest Unit & Integration Suite**:
+  - `tests/ui/localMultiplayerEnhancements.test.tsx` (9 tests passing).
+  - All 55 test files and 405 unit/integration tests passed 100%.
+- **Playwright E2E Suite**:
+  - All 27 browser E2E tests passed (including Scenarios 10 & 11).
+- **TypeScript Typecheck**:
+  - `tsc --noEmit`: 0 errors.
+- **Vite Production Build**:
+  - `tsc && vite build`: Succeeded in 3.08s with 0 errors.
+
+
 
 
 

@@ -4,16 +4,18 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     const localBtn = page.getByTestId("menu-btn-local");
-    if (await localBtn.isVisible()) {
-      await localBtn.click();
-      const p2Btn = page.getByTestId("player-count-btn-2");
-      if (await p2Btn.isVisible()) {
-        await p2Btn.click();
-      }
-    }
+    await localBtn.waitFor({ state: "visible", timeout: 5000 });
+    await localBtn.click();
+    const p2Btn = page.getByTestId("player-count-btn-2");
+    await p2Btn.waitFor({ state: "visible", timeout: 5000 });
+    await p2Btn.click();
+
     // Wait for board to be visible and web fonts to settle
     await expect(page.getByTestId("channemane-board")).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
+
+    // Wait for initial turn notification popup to clear so pits are interactive
+    await page.waitForTimeout(850);
   });
 
   test("Positive 1: Game loads with full board, 14 pits, 5 seeds each, and Player 1 turn", async ({
@@ -451,11 +453,15 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     // Switch to Fast Mode for rapid animation stepping
     await page.getByTestId("toggle-animation-btn").click();
 
-    // Verify initial Player 1 turn
-    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 1'S TURN");
+    // Ensure turn announcement popup appears and dismisses cleanly
+    await expect(page.getByTestId("turn-notification-popup")).toBeVisible();
+    await expect(page.getByTestId("turn-notification-popup")).toBeHidden({ timeout: 5000 });
 
     // Human clicks pit 0
-    await page.getByTestId("pit-0").click();
+    const pit0 = page.getByTestId("pit-0");
+    await expect(pit0).toBeEnabled({ timeout: 5000 });
+    await pit0.click();
+    await expect(pit0).toHaveAttribute("data-seeds", "0", { timeout: 5000 });
 
     // Wait for continuation prompt
     await expect(page.getByTestId("turn-indicator")).toContainText(
@@ -631,6 +637,49 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
     await expect(page.getByTestId("pit-14")).toBeVisible();
     await expect(page.getByTestId("storage-player3")).toBeVisible();
     await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
+  });
+
+  test("E2E Scenario 10: Turn popup announces player turn before sowing and can be dismissed", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Launch Local 2P
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-2").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // Verify turn announcement popup is visible and states Player 1
+    const turnPopup = page.getByTestId("turn-notification-popup");
+    await expect(turnPopup).toBeVisible();
+    await expect(turnPopup).toContainText("Player 1");
+
+    // Dismiss by clicking
+    await turnPopup.click({ force: true });
+    await expect(turnPopup).toBeHidden();
+
+    // Verify pits are now interactive
+    await expect(page.getByTestId("pit-0")).toBeEnabled();
+  });
+
+  test("E2E Scenario 11: 3-Player Local Multiplayer announces turn on launch", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    // Launch Local 3P
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+
+    // Verify turn announcement popup is visible
+    const turnPopup = page.getByTestId("turn-notification-popup");
+    await expect(turnPopup).toBeVisible();
+    await expect(turnPopup).toContainText("Player 1");
+
+    // Dismiss by clicking
+    await turnPopup.click({ force: true });
+    await expect(turnPopup).toBeHidden();
   });
 });
 

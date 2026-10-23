@@ -64,6 +64,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
               player="PLAYER_1"
               storageSeeds={gameState.players.player1.storage}
               className="board-storage-p1"
+              isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_1")}
             />
           </div>
 
@@ -156,11 +157,13 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
               player="PLAYER_2"
               storageSeeds={gameState.players.player2.storage}
               className="board-storage-p2"
+              isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_2")}
             />
             <StorageBowl
               player="PLAYER_3"
               storageSeeds={gameState.players.player3?.storage ?? 0}
               className="board-storage-p3"
+              isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_3")}
             />
           </div>
         </div>

@@ -13,12 +13,14 @@ export interface StorageBowlProps {
   player: Player;
   storageSeeds: number;
   className?: string;
+  isDisqualified?: boolean;
 }
 
 export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   player,
   storageSeeds,
   className = "",
+  isDisqualified = false,
 }) => {
   const isP1 = player === "PLAYER_1";
   const isP2 = player === "PLAYER_2";
@@ -46,16 +48,27 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
 
   return (
     <div
-      className={`storage-bowl ${className}`}
+      className={`storage-bowl ${className} ${isDisqualified ? "disqualified" : ""}`}
       data-testid={testId}
-      aria-label={`${playerLabel} Storage, ${storageSeeds} seeds collected`}
+      aria-label={`${playerLabel} Storage, ${
+        isDisqualified ? "Disqualified" : `${storageSeeds} seeds collected`
+      }`}
       role="region"
     >
       <div className="storage-header">
         <span className="storage-label">{playerLabel}</span>
-        <span className="storage-count" data-testid={countTestId}>
-          {storageSeeds}
-        </span>
+        {isDisqualified ? (
+          <span
+            className="storage-count storage-disqualified-text"
+            data-testid={countTestId}
+          >
+            Disqualified
+          </span>
+        ) : (
+          <span className="storage-count" data-testid={countTestId}>
+            {storageSeeds}
+          </span>
+        )}
       </div>
 
       {/* Captured Seeds Visual Reservoir */}

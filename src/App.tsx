@@ -70,6 +70,7 @@ export const App: React.FC<AppProps> = ({
     settlementSummary,
     matchSummary,
     turnNotification,
+    dismissTurnNotification,
     isRulesOpen,
     setIsRulesOpen,
     animationSettings,
@@ -256,7 +257,10 @@ export const App: React.FC<AppProps> = ({
       {currentScreen === "GAME" && (
         <>
           {/* Turn-Start Notification Popup (Feature 3) */}
-          <TurnNotification notification={turnNotification} />
+          <TurnNotification
+            notification={turnNotification}
+            onDismiss={dismissTurnNotification}
+          />
 
           {/* Top Header with Return to Menu & Mode Badge */}
           <Header
@@ -387,6 +391,7 @@ export const App: React.FC<AppProps> = ({
                   gameState.playerCount || 2
                 )
               }
+              onHome={handleReturnToMenu}
               onClose={dismissMatchModal}
             />
           )}

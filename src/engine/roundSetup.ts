@@ -75,9 +75,12 @@ export function setupNextRoundThreePlayer(
     // Case A: Disqualification from a 3-player game
     if (activePlayers.length === 3) {
       const disqualified = ineligiblePlayers;
+      const newDisqualified = disqualified.filter(
+        (p) => !state.disqualifiedPlayers?.includes(p)
+      );
       state.disqualifiedPlayers = [
         ...(state.disqualifiedPlayers ?? []),
-        ...disqualified,
+        ...newDisqualified,
       ];
 
       // Close disqualified player's pits permanently and eliminate their storage seeds
@@ -151,10 +154,12 @@ export function setupNextRoundThreePlayer(
     } else if (activePlayers.length === 2) {
       // Case B: Disqualification when only two players remain
       const disqualified = ineligiblePlayers[0];
-      state.disqualifiedPlayers = [
-        ...(state.disqualifiedPlayers ?? []),
-        disqualified,
-      ];
+      if (disqualified && !state.disqualifiedPlayers?.includes(disqualified)) {
+        state.disqualifiedPlayers = [
+          ...(state.disqualifiedPlayers ?? []),
+          disqualified,
+        ];
+      }
       const winner = activePlayers.find((p) => p !== disqualified) ?? null;
       state.phase = "MATCH_END";
       state.turnPhase = "TURN_END";

@@ -99,6 +99,11 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
     mockViewport(false, true, 844, 390);
     render(<App initialScreen="GAME" />);
 
+    // Dismiss initial turn popup to allow sowing
+    if (screen.queryByTestId("turn-notification-popup")) {
+      fireEvent.click(screen.getByTestId("turn-notification-popup"));
+    }
+
     const pit0 = screen.getByTestId("pit-0");
     fireEvent.click(pit0);
 

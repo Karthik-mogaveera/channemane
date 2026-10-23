@@ -48,6 +48,11 @@ describe("App Integration with Channemane Engine", () => {
   it("allows selecting a legal pit, prompts continuation, and advances the turn", () => {
     render(<App initialScreen="GAME" />);
 
+    // Advance past initial turn notification popup
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
     // Player 1 clicks their own pit P0
     const pit0 = screen.getByTestId("pit-0");
     expect(pit0).not.toBeDisabled();
@@ -79,6 +84,11 @@ describe("App Integration with Channemane Engine", () => {
 
   it("shows real-time seed-by-seed animation increments", () => {
     render(<App initialScreen="GAME" />);
+
+    // Advance past initial turn notification popup
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
 
     const pit0 = screen.getByTestId("pit-0");
 
@@ -149,6 +159,11 @@ describe("App Integration with Channemane Engine", () => {
 
   it("resets the board when New Game is clicked", () => {
     render(<App initialScreen="GAME" />);
+
+    // Advance past initial turn notification popup
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
 
     // Play a move
     act(() => {

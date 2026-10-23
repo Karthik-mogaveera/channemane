@@ -117,6 +117,9 @@ describe("Local Multiplayer Player Count Selection", () => {
 
     // Sowing a move works normally
     act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    act(() => {
       fireEvent.click(screen.getByTestId("pit-0"));
       vi.runAllTimers();
     });

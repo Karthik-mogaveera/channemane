@@ -37,6 +37,13 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
 
   const canStartNextRound = isThreePlayer ? true : openPairs > 0;
 
+  const isP1Disqualified =
+    isThreePlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_1"));
+  const isP2Disqualified =
+    isThreePlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_2"));
+  const isP3Disqualified =
+    isThreePlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_3"));
+
   return (
     <div
       className="modal-overlay"
@@ -61,37 +68,60 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
             className="settlement-score-grid"
             style={isThreePlayer ? { gridTemplateColumns: "1fr 1fr 1fr" } : undefined}
           >
-            <div className="score-box">
+            <div className={`score-box ${isP1Disqualified ? "disqualified-box" : ""}`}>
               <h5>Player 1 Total Storage</h5>
-              <div className="score-val" data-testid="settlement-p1-storage">
-                {settlement.player1FinalStorage}
+              <div
+                className={`score-val ${isP1Disqualified ? "storage-disqualified-text" : ""}`}
+                data-testid="settlement-p1-storage"
+              >
+                {isP1Disqualified ? "Disqualified" : settlement.player1FinalStorage}
               </div>
-              <small>Seeds swept from Player 1 side: +{settlement.player1RemainingTransferred}</small>
+              <small>
+                {isP1Disqualified
+                  ? `Eliminated (< 5 seeds in storage)`
+                  : `Seeds swept from Player 1 side: +${settlement.player1RemainingTransferred}`}
+              </small>
             </div>
 
-            <div className="score-box">
+            <div className={`score-box ${isP2Disqualified ? "disqualified-box" : ""}`}>
               <h5>Player 2 Total Storage</h5>
-              <div className="score-val" data-testid="settlement-p2-storage">
-                {settlement.player2FinalStorage}
+              <div
+                className={`score-val ${isP2Disqualified ? "storage-disqualified-text" : ""}`}
+                data-testid="settlement-p2-storage"
+              >
+                {isP2Disqualified ? "Disqualified" : settlement.player2FinalStorage}
               </div>
-              <small>Seeds swept from Player 2 side: +{settlement.player2RemainingTransferred}</small>
+              <small>
+                {isP2Disqualified
+                  ? `Eliminated (< 5 seeds in storage)`
+                  : `Seeds swept from Player 2 side: +${settlement.player2RemainingTransferred}`}
+              </small>
             </div>
 
             {isThreePlayer && (
-              <div className="score-box">
+              <div className={`score-box ${isP3Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 3 Total Storage</h5>
-                <div className="score-val" data-testid="settlement-p3-storage">
-                  {settlement.player3FinalStorage}
+                <div
+                  className={`score-val ${isP3Disqualified ? "storage-disqualified-text" : ""}`}
+                  data-testid="settlement-p3-storage"
+                >
+                  {isP3Disqualified ? "Disqualified" : settlement.player3FinalStorage}
                 </div>
-                <small>Seeds swept from Player 3 side: +{settlement.player3RemainingTransferred ?? 0}</small>
+                <small>
+                  {isP3Disqualified
+                    ? `Eliminated (< 5 seeds in storage)`
+                    : `Seeds swept from Player 3 side: +${settlement.player3RemainingTransferred ?? 0}`}
+                </small>
               </div>
             )}
           </div>
 
           {isThreePlayer ? (
             <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
-              <strong>Next Round Setup:</strong> Pair-wise pit groups G1–G5 will open atomically
-              if all active players can contribute 5 seeds per group.
+              <strong>Next Round Setup:</strong>{" "}
+              {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
+                ? "Disqualified players are eliminated permanently. The remaining active players will enter recovery mode with 50 total seeds."
+                : "Pair-wise pit groups G1–G5 will open atomically if all active players can contribute 5 seeds per group."}
             </p>
           ) : (
             <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>

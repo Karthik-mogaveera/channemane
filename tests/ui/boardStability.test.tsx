@@ -16,6 +16,11 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
   it("Test 1, 2, 3: Pit elements maintain stable identities and keys during seed-by-seed sowing", () => {
     render(<App initialScreen="GAME" />);
 
+    // Advance past initial turn notification
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
     const pit0 = screen.getByTestId("pit-0");
     const pit1 = screen.getByTestId("pit-1");
     const initialPit1Element = pit1;
@@ -44,6 +49,11 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
   it("Test 4: Active-drop highlighting applies visual class without transform scaling", () => {
     render(<App initialScreen="GAME" />);
 
+    // Advance past initial turn notification
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
     const pit0 = screen.getByTestId("pit-0");
     act(() => {
       fireEvent.click(pit0);
@@ -69,6 +79,11 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
 
   it("Test 5 & 6: Seed-by-seed animation and continuous sowing update counts progressively", () => {
     render(<App initialScreen="GAME" />);
+
+    // Advance past initial turn notification
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
 
     const pit0 = screen.getByTestId("pit-0");
     act(() => {

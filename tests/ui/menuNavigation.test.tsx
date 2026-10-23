@@ -227,6 +227,11 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
 
     expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
 
+    // Advance past initial turn announcement
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
     // Play a move on Pit 0 to alter state
     act(() => {
       fireEvent.click(screen.getByTestId("pit-0"));

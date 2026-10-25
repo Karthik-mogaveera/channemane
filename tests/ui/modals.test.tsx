@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SettlementModal } from "../../src/ui/components/SettlementModal";
 import { MatchEndModal } from "../../src/ui/components/MatchEndModal";
 import { RulesModal } from "../../src/ui/components/RulesModal";
+import { ComingSoonModal } from "../../src/ui/components/ComingSoonModal";
+import { FirstPlayerModal } from "../../src/ui/components/FirstPlayerModal";
 
 describe("Game Modals", () => {
   it("renders SettlementModal with scores and starts next round", () => {
@@ -108,5 +110,77 @@ describe("Game Modals", () => {
 
     fireEvent.click(screen.getByTestId("close-rules-btn"));
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("RulesModal dismisses when Escape key is pressed or backdrop is clicked", () => {
+    const handleClose = vi.fn();
+    render(<RulesModal isOpen={true} onClose={handleClose} />);
+
+    // Press Escape
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+
+    // Click backdrop
+    const modalOverlay = screen.getByTestId("rules-modal");
+    fireEvent.click(modalOverlay);
+    expect(handleClose).toHaveBeenCalledTimes(2);
+  });
+
+  it("SettlementModal triggers onClose (Review Board) when Escape key is pressed", () => {
+    const handleClose = vi.fn();
+    render(
+      <SettlementModal
+        settlement={{
+          player1RemainingTransferred: 0,
+          player2RemainingTransferred: 0,
+          player1FinalStorage: 35,
+          player2FinalStorage: 35,
+          roundWinner: null,
+        }}
+        onStartNextRound={vi.fn()}
+        onClose={handleClose}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ComingSoonModal closes on Escape key or backdrop click", () => {
+    const handleBack = vi.fn();
+    render(
+      <ComingSoonModal
+        difficulty="expert"
+        selectedFirstPlayer="player"
+        onPlayBeginner={vi.fn()}
+        onBackToMenu={handleBack}
+        onChangeDifficulty={vi.fn()}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(handleBack).toHaveBeenCalledTimes(1);
+
+    const overlay = screen.getByTestId("coming-soon-modal");
+    fireEvent.click(overlay);
+    expect(handleBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("FirstPlayerModal triggers onBack on Escape key or backdrop click", () => {
+    const handleBack = vi.fn();
+    render(
+      <FirstPlayerModal
+        difficulty="expert"
+        onSelectFirstPlayer={vi.fn()}
+        onBack={handleBack}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(handleBack).toHaveBeenCalledTimes(1);
+
+    const overlay = screen.getByTestId("first-player-modal");
+    fireEvent.click(overlay);
+    expect(handleBack).toHaveBeenCalledTimes(2);
   });
 });

@@ -6,6 +6,7 @@
 
 import React from "react";
 import type { RoundSettlementResult } from "../../engine/settlement";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface SettlementModalProps {
   settlement: RoundSettlementResult;
@@ -18,6 +19,11 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
   onStartNextRound,
   onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen: true,
+    onEscape: onClose,
+  });
+
   const isThreePlayer = settlement.player3FinalStorage !== undefined;
 
   const winnerText =
@@ -46,6 +52,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"

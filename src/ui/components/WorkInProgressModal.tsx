@@ -4,8 +4,9 @@
  * Displays friendly notice that the player count is currently under development.
  */
 
-import React, { useEffect } from "react";
+import React from "react";
 import type { MultiplayerPlayerCount } from "./MultiplayerSelect";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface WorkInProgressModalProps {
   playerCount: MultiplayerPlayerCount | null;
@@ -16,18 +17,12 @@ export const WorkInProgressModal: React.FC<WorkInProgressModalProps> = ({
   playerCount,
   onClose,
 }) => {
-  if (!playerCount) return null;
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen: Boolean(playerCount),
+    onEscape: onClose,
+  });
 
-  // Handle Escape key dismissal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  if (!playerCount) return null;
 
   // Handle backdrop overlay click
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -38,6 +33,7 @@ export const WorkInProgressModal: React.FC<WorkInProgressModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"

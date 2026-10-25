@@ -6,6 +6,7 @@
 
 import React from "react";
 import type { AIDifficulty } from "../../engine/types";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface FirstPlayerModalProps {
   difficulty: AIDifficulty;
@@ -18,6 +19,11 @@ export const FirstPlayerModal: React.FC<FirstPlayerModalProps> = ({
   onSelectFirstPlayer,
   onBack,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen: true,
+    onEscape: onBack,
+  });
+
   const difficultyLabel =
     difficulty === "beginner"
       ? "Beginner"
@@ -27,11 +33,17 @@ export const FirstPlayerModal: React.FC<FirstPlayerModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="first-player-title"
       data-testid="first-player-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onBack();
+        }
+      }}
     >
       <div className="modal-content first-player-card">
         {/* Header */}

@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface RulesModalProps {
   isOpen: boolean;
@@ -11,15 +12,26 @@ export interface RulesModalProps {
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen,
+    onEscape: onClose,
+  });
+
   if (!isOpen) return null;
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="rules-dialog-title"
       data-testid="rules-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div className="modal-content" style={{ maxWidth: "620px" }}>
         <div className="modal-header">

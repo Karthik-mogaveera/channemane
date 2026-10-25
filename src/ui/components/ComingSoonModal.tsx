@@ -7,6 +7,7 @@
 
 import React from "react";
 import type { AIDifficulty } from "../../engine/types";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface ComingSoonModalProps {
   difficulty: AIDifficulty;
@@ -22,6 +23,11 @@ export const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
   onBackToMenu,
   onChangeDifficulty,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen: true,
+    onEscape: onBackToMenu,
+  });
+
   const diffName =
     difficulty === "expert"
       ? "Expert"
@@ -31,11 +37,17 @@ export const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="coming-soon-title"
       data-testid="coming-soon-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onBackToMenu();
+        }
+      }}
     >
       <div className="modal-content coming-soon-card" data-testid="coming-soon-notice">
         {/* Header */}

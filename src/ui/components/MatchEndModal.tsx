@@ -5,6 +5,7 @@
 
 import React from "react";
 import type { MatchEndResult } from "../../engine/matchEnd";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export interface MatchEndModalProps {
   matchResult: MatchEndResult;
@@ -17,7 +18,13 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
   matchResult,
   onNewMatch,
   onHome,
+  onClose,
 }) => {
+  const modalRef = useFocusTrap<HTMLDivElement>({
+    isOpen: true,
+    onEscape: onClose ?? onHome,
+  });
+
   const winnerTitle =
     matchResult.winner === "PLAYER_1"
       ? "Player 1 Wins the Match!"
@@ -29,6 +36,7 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
 
   return (
     <div
+      ref={modalRef}
       className="modal-overlay"
       role="dialog"
       aria-modal="true"

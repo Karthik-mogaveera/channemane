@@ -96,11 +96,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       if (returnFocus && previousActiveElementRef.current?.focus) {
         previousActiveElementRef.current.focus();
       }

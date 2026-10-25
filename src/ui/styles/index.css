@@ -287,6 +287,8 @@ body {
   flex-direction: column;
   gap: 14px;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .players-bar {
@@ -505,6 +507,8 @@ body {
   justify-content: center;
   gap: 24px;
   padding: 20px 24px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .three-player-storage-left {
@@ -513,6 +517,7 @@ body {
   justify-content: center;
   height: var(--p3-storage-height);
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .three-player-storage-right {
@@ -523,6 +528,7 @@ body {
   gap: 30px;
   height: var(--p3-storage-height);
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .three-player-board .storage-bowl {
@@ -610,6 +616,10 @@ body {
     padding: 16px 18px;
   }
 
+  .three-player-storage-right {
+    gap: 16px;
+  }
+
   .three-player-board .storage-bowl {
     width: var(--p3-storage-width);
     height: var(--p3-storage-height);
@@ -631,10 +641,14 @@ body {
     --p3-pit-cell-height: calc(var(--p3-pit-size) + 22px);
     --p3-col-gap: 8px;
     --p3-row-gap: 10px;
-    --p3-storage-width: 68px;
+    --p3-storage-width: 64px;
     --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
-    gap: 10px;
-    padding: 10px 10px;
+    gap: 8px;
+    padding: 10px 8px;
+  }
+
+  .three-player-storage-right {
+    gap: 8px;
   }
 
   .three-player-board .storage-bowl {
@@ -648,6 +662,124 @@ body {
     width: calc(var(--p3-storage-width) - 10px);
     min-height: 120px;
     border-radius: 14px;
+  }
+}
+
+/* Mobile Viewports: Stack right storage column vertically to prevent horizontal overflow */
+@media (max-width: 560px) {
+  .board-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .three-player-board {
+    --p3-pit-size: clamp(34px, 8.2vw, 44px);
+    --p3-pit-cell-width: var(--p3-pit-size);
+    --p3-pit-cell-height: calc(var(--p3-pit-size) + 20px);
+    --p3-col-gap: 6px;
+    --p3-row-gap: 8px;
+    --p3-storage-width: clamp(52px, 13.5vw, 64px);
+    --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
+    gap: 6px;
+    padding: 8px 6px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .three-player-storage-left {
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
+  }
+
+  .three-player-storage-left .storage-bowl {
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
+    border-radius: 20px;
+    padding: 6px 3px;
+  }
+
+  .three-player-storage-left .storage-seeds-reservoir {
+    width: calc(var(--p3-storage-width) - 8px);
+    min-height: 90px;
+    border-radius: 12px;
+  }
+
+  /* Right storage: stack Player 2 and Player 3 bowls vertically into a single column */
+  .three-player-storage-right {
+    flex-direction: column;
+    width: var(--p3-storage-width);
+    height: var(--p3-storage-height);
+    gap: 6px;
+  }
+
+  .three-player-storage-right .storage-bowl {
+    width: var(--p3-storage-width);
+    height: calc((var(--p3-storage-height) - 6px) / 2);
+    border-radius: 16px;
+    padding: 4px 2px;
+  }
+
+  .three-player-storage-right .storage-seeds-reservoir {
+    width: calc(var(--p3-storage-width) - 8px);
+    flex: 1;
+    min-height: 28px;
+    margin: 2px 0;
+    border-radius: 10px;
+  }
+
+  .three-player-board .storage-header {
+    gap: 1px;
+  }
+
+  .three-player-board .storage-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.3px;
+  }
+
+  .three-player-board .storage-count {
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .three-player-board .storage-disqualified-text {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.2px !important;
+    white-space: nowrap;
+  }
+
+  .three-player-pits-grid .pit-external-count {
+    font-size: 0.72rem;
+    height: 18px;
+    min-height: 18px;
+    line-height: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .three-player-board {
+    --p3-pit-size: 34px;
+    --p3-pit-cell-width: 34px;
+    --p3-pit-cell-height: 52px;
+    --p3-col-gap: 4px;
+    --p3-row-gap: 6px;
+    --p3-storage-width: 48px;
+    --p3-storage-height: calc(3 * 52px + 2 * 6px);
+    gap: 4px;
+    padding: 6px 4px;
+  }
+
+  .three-player-board .storage-label {
+    font-size: 0.52rem;
+  }
+
+  .three-player-board .storage-count {
+    font-size: 0.95rem;
+  }
+
+  .three-player-board .storage-disqualified-text {
+    font-size: 0.46rem !important;
   }
 }
 
@@ -1235,6 +1367,10 @@ body {
     --p3-storage-height: calc(3 * var(--p3-pit-cell-height) + 2 * var(--p3-row-gap));
     gap: 12px;
     padding: 8px 12px;
+  }
+
+  .three-player-storage-right {
+    gap: 12px;
   }
 
   .three-player-board .storage-bowl {

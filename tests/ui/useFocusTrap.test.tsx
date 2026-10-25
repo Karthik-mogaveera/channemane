@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import React, { useRef } from "react";
+import React from "react";
 import { useFocusTrap } from "../../src/ui/hooks/useFocusTrap";
 
 const TestModal: React.FC<{ isOpen: boolean; onEscape?: () => void }> = ({

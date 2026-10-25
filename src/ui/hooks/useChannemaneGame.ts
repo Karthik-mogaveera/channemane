@@ -459,8 +459,7 @@ export function useChannemaneGame(
         isAnimating ||
         isReviewingBoard ||
         interactionState !== "WAITING_FOR_START" ||
-        gameRef.current.isTurnInProgress() ||
-        turnNotificationRef.current !== null
+        gameRef.current.isTurnInProgress()
       ) {
         return null;
       }
@@ -469,6 +468,13 @@ export function useChannemaneGame(
         setLastActionError("The match has ended. Start a new game to play again.");
         return null;
       }
+
+      // Automatically dismiss active turn announcement when sowing begins
+      if (turnNotificationTimeoutRef.current) {
+        clearTimeout(turnNotificationTimeoutRef.current);
+        turnNotificationTimeoutRef.current = null;
+      }
+      setTurnNotification(null);
 
       clearError();
       const startRes = gameRef.current.startTurn(pitId);

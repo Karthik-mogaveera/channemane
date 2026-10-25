@@ -14,8 +14,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, renderHook } from "@testing-library/react";
 import { App } from "../../src/App";
+import { useChannemaneGame } from "../../src/ui/hooks/useChannemaneGame";
 
 describe("Turn-Start Notifications (Feature 3)", () => {
   beforeEach(() => {
@@ -164,5 +165,22 @@ describe("Turn-Start Notifications (Feature 3)", () => {
       vi.advanceTimersByTime(800);
     });
     expect(screen.queryByTestId("turn-notification-popup")).not.toBeInTheDocument();
+  });
+
+  it("Test 5: selectPit execution dismisses active turn notification and commences turn (Issue #2)", () => {
+    const { result } = renderHook(() =>
+      useChannemaneGame("PLAYER_1", { enabled: false })
+    );
+
+    // Initial check: turnNotification should be set on mount
+    expect(result.current.turnNotification).toBe("Player 1's Turn");
+
+    // Calling selectPit(0) should not be blocked and should dismiss turnNotification
+    act(() => {
+      const turnRes = result.current.selectPit(0);
+      expect(turnRes?.success).toBe(true);
+    });
+
+    expect(result.current.turnNotification).toBeNull();
   });
 });

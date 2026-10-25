@@ -74,6 +74,49 @@ export function setupNextRoundThreePlayer(
 
     // Case A: Disqualification from a 3-player game
     if (activePlayers.length === 3) {
+      if (ineligiblePlayers.length >= 2) {
+        // Two or all three players are ineligible -> Match ends!
+        const sortedIneligible = [...ineligiblePlayers].sort(
+          (a, b) => getPlayerStorage(state, a) - getPlayerStorage(state, b)
+        );
+        const newDisqualified = sortedIneligible.filter(
+          (p) => !state.disqualifiedPlayers?.includes(p)
+        );
+        state.disqualifiedPlayers = [
+          ...(state.disqualifiedPlayers ?? []),
+          ...newDisqualified,
+        ];
+        for (const d of newDisqualified) {
+          for (const pit of state.pits) {
+            if (pit.owner === d) {
+              pit.status = "CLOSED";
+              pit.seeds = 0;
+              pit.bonusAvailable = false;
+            }
+          }
+        }
+        const remaining = activePlayers.filter((p) => !ineligiblePlayers.includes(p));
+        const winner = remaining.length === 1 ? remaining[0] : null;
+
+        state.phase = "MATCH_END";
+        state.turnPhase = "TURN_END";
+        state.winner = winner;
+
+        return {
+          success: true,
+          data: {
+            round: state.round,
+            openGroups: 0,
+            player1RemainingStorage: state.players.player1.storage,
+            player2RemainingStorage: state.players.player2.storage,
+            player3RemainingStorage: state.players.player3?.storage,
+            disqualifiedPlayers: state.disqualifiedPlayers,
+            matchEnded: true,
+            winner,
+          },
+        };
+      }
+
       const disqualified = ineligiblePlayers;
       const newDisqualified = disqualified.filter(
         (p) => !state.disqualifiedPlayers?.includes(p)

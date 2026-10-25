@@ -26,6 +26,7 @@ import { playTurn } from "../../src/engine/game";
 import { claimBonus, canClaimBonus } from "../../src/engine/bonus";
 import { executeRoundSettlement } from "../../src/engine/settlement";
 import { setupNextRound } from "../../src/engine/roundSetup";
+import { isMatchOver, checkAndHandleMatchEnd } from "../../src/engine/matchEnd";
 import type { GameState, Player } from "../../src/engine/types";
 
 describe("3-Player Engine Implementation & Section 15 Regression Suite", () => {
@@ -517,6 +518,84 @@ describe("3-Player Engine Implementation & Section 15 Regression Suite", () => {
       expect(state.players.player2.storage).toBe(28);
       expect(state.players.player3?.storage).toBe(25);
       expect(getTotalSeeds(state)).toBe(75);
+    });
+  });
+
+  describe("Simultaneous Multi-Player Disqualification (Issue #1)", () => {
+    it("should detect match is over when two players have < 5 storage in 3-player mode", () => {
+      const state = createInitialGame("PLAYER_1", "local", null, "PLAYER_2", 3);
+      for (const pit of state.pits) pit.seeds = 0;
+      state.players.player1.storage = 2;
+      state.players.player2.storage = 3;
+      if (state.players.player3) state.players.player3.storage = 70;
+      state.phase = "ROUND_SETTLEMENT";
+
+      expect(isMatchOver(state)).toBe(true);
+
+      const matchRes = checkAndHandleMatchEnd(state);
+      expect(matchRes.isMatchEnd).toBe(true);
+      expect(matchRes.winner).toBe("PLAYER_3");
+      expect(state.phase).toBe("MATCH_END");
+      expect(state.winner).toBe("PLAYER_3");
+      expect(state.disqualifiedPlayers).toContain("PLAYER_1");
+      expect(state.disqualifiedPlayers).toContain("PLAYER_2");
+
+      // Verify rankings: Player 3 = 1st, Player 2 (3 seeds) = 2nd, Player 1 (2 seeds) = 3rd (Lost)
+      expect(matchRes.rankings).toBeDefined();
+      expect(matchRes.rankings?.[0]).toEqual({
+        player: "PLAYER_3",
+        rank: 1,
+        label: "1st Place",
+        storage: 70,
+      });
+      expect(matchRes.rankings?.[1]).toEqual({
+        player: "PLAYER_2",
+        rank: 2,
+        label: "2nd Place",
+        storage: 3,
+      });
+      expect(matchRes.rankings?.[2]).toEqual({
+        player: "PLAYER_1",
+        rank: 3,
+        label: "Lost",
+        storage: 2,
+      });
+    });
+
+    it("should cleanly end match in setupNextRound when two players have < 5 storage without invariant crash", () => {
+      const state = createInitialGame("PLAYER_1", "local", null, "PLAYER_2", 3);
+      for (const pit of state.pits) pit.seeds = 0;
+      state.players.player1.storage = 4;
+      state.players.player2.storage = 1;
+      if (state.players.player3) state.players.player3.storage = 70;
+      state.phase = "ROUND_SETTLEMENT";
+
+      const res = setupNextRound(state);
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.matchEnded).toBe(true);
+        expect(res.data.winner).toBe("PLAYER_3");
+        expect(state.phase).toBe("MATCH_END");
+        expect(state.winner).toBe("PLAYER_3");
+        expect(state.disqualifiedPlayers).toEqual(["PLAYER_2", "PLAYER_1"]);
+      }
+    });
+
+    it("should handle all three players having < 5 storage simultaneously as a mutual disqualification match end", () => {
+      const state = createInitialGame("PLAYER_1", "local", null, "PLAYER_2", 3);
+      for (const pit of state.pits) pit.seeds = 0;
+      state.players.player1.storage = 1;
+      state.players.player2.storage = 2;
+      if (state.players.player3) state.players.player3.storage = 3;
+      state.phase = "ROUND_SETTLEMENT";
+
+      expect(isMatchOver(state)).toBe(true);
+
+      const matchRes = checkAndHandleMatchEnd(state);
+      expect(matchRes.isMatchEnd).toBe(true);
+      expect(matchRes.winner).toBeNull();
+      expect(state.phase).toBe("MATCH_END");
+      expect(state.winner).toBeNull();
     });
   });
 });

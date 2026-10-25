@@ -158,7 +158,11 @@ export function isMatchOver(state: GameState): boolean {
         getPlayerStorage(state, active[1]) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
       );
     }
-    return false;
+    // active.length === 3: If fewer than 2 players have >= 5 seeds, match cannot proceed to 2-player recovery
+    const eligible = active.filter(
+      (p) => getPlayerStorage(state, p) >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+    );
+    return eligible.length <= 1;
   }
 
   return (
@@ -239,6 +243,52 @@ export function checkAndHandleMatchEnd(state: GameState): MatchEndResult {
         winner: null,
         loser: null,
         reason: null,
+      };
+    }
+
+    // active.length === 3: Check for simultaneous disqualification
+    const ineligible = active.filter(
+      (p) => getPlayerStorage(state, p) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+    );
+
+    if (ineligible.length >= 2) {
+      // Sort ineligible ascending by storage so lower storage is ranked lower (disqualified earlier)
+      const sortedIneligible = [...ineligible].sort(
+        (a, b) => getPlayerStorage(state, a) - getPlayerStorage(state, b)
+      );
+
+      const newlyDisqualified = sortedIneligible.filter(
+        (p) => !state.disqualifiedPlayers?.includes(p)
+      );
+      state.disqualifiedPlayers = [
+        ...(state.disqualifiedPlayers ?? []),
+        ...newlyDisqualified,
+      ];
+
+      for (const d of newlyDisqualified) {
+        for (const pit of state.pits) {
+          if (pit.owner === d) {
+            pit.status = "CLOSED";
+            pit.seeds = 0;
+            pit.bonusAvailable = false;
+          }
+        }
+      }
+
+      const remaining = active.filter((p) => !ineligible.includes(p));
+      const winner = remaining.length === 1 ? remaining[0] : null;
+
+      state.phase = "MATCH_END";
+      state.winner = winner;
+      return {
+        isMatchEnd: true,
+        winner,
+        loser: null,
+        reason:
+          remaining.length === 1
+            ? `${winner} is the sole remaining active player after simultaneous disqualification of ${ineligible.join(", ")}`
+            : "All players have fewer than 5 seeds in storage",
+        rankings: computeMatchRankings(state, winner, null),
       };
     }
 

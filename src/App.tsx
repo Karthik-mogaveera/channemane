@@ -17,10 +17,9 @@ import { OrientationPrompt } from "./ui/components/OrientationPrompt";
 import { MainMenu } from "./ui/components/MainMenu";
 import { DifficultySelect } from "./ui/components/DifficultySelect";
 import { FirstPlayerModal } from "./ui/components/FirstPlayerModal";
-import { ComingSoonModal } from "./ui/components/ComingSoonModal";
+import { NoticeModal } from "./ui/components/NoticeModal";
 import { TurnNotification } from "./ui/components/TurnNotification";
 import { MultiplayerSelect, type MultiplayerPlayerCount } from "./ui/components/MultiplayerSelect";
-import { WorkInProgressModal } from "./ui/components/WorkInProgressModal";
 import type { GameMode, AIDifficulty, Player } from "./engine/types";
 
 export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "MULTIPLAYER_SELECT" | "GAME";
@@ -213,11 +212,28 @@ export const App: React.FC<AppProps> = ({
             onBack={handleReturnToMenu}
           />
 
-          {/* Work in Progress Modal for 3-6 Players */}
+          {/* Work in Progress Modal for 4-6 Players */}
           {wipPlayerCount !== null && (
-            <WorkInProgressModal
-              playerCount={wipPlayerCount}
+            <NoticeModal
+              isOpen={wipPlayerCount !== null}
+              title="Work in Progress"
+              subtitle={
+                <p className="wip-subtitle" data-testid="wip-player-count">
+                  {wipPlayerCount}-Player Multiplayer
+                </p>
+              }
+              message={
+                <p className="wip-description" data-testid="wip-message">
+                  Multiplayer for this player count is currently under development. Stay tuned for future updates!
+                </p>
+              }
               onClose={() => setWipPlayerCount(null)}
+              testId="wip-modal"
+              cardTestId="wip-card"
+              titleId="wip-title"
+              cardClassName="wip-card"
+              closeButtonText="Got it"
+              closeButtonTestId="wip-modal-ok-btn"
             />
           )}
         </>
@@ -242,12 +258,61 @@ export const App: React.FC<AppProps> = ({
 
           {/* Expert & Master Safeguard "Coming Soon" Modal */}
           {comingSoonNotice && (
-            <ComingSoonModal
-              difficulty={comingSoonNotice.difficulty}
-              selectedFirstPlayer={comingSoonNotice.selectedFirstPlayer}
-              onPlayBeginner={handlePlayBeginnerFromComingSoon}
-              onBackToMenu={handleBackToMenuFromComingSoon}
-              onChangeDifficulty={handleChangeDifficultyFromComingSoon}
+            <NoticeModal
+              isOpen={Boolean(comingSoonNotice)}
+              title="Coming Soon!"
+              subtitle={
+                <p className="coming-soon-subtitle">
+                  <strong>
+                    {comingSoonNotice.difficulty === "expert"
+                      ? "Expert"
+                      : comingSoonNotice.difficulty === "master"
+                      ? "Master"
+                      : "Selected"}{" "}
+                    AI
+                  </strong>{" "}
+                  difficulty is currently under development.
+                </p>
+              }
+              message={
+                <p className="coming-soon-description">
+                  Currently, <strong>Beginner AI</strong> and <strong>Local Multiplayer</strong> are fully playable.
+                  Would you like to play against Beginner AI or choose another option?
+                </p>
+              }
+              onClose={handleBackToMenuFromComingSoon}
+              testId="coming-soon-modal"
+              cardTestId="coming-soon-notice"
+              titleId="coming-soon-title"
+              cardClassName="coming-soon-card"
+              actions={
+                <div className="coming-soon-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handlePlayBeginnerFromComingSoon}
+                    data-testid="coming-soon-play-beginner-btn"
+                  >
+                    🟢 Play Beginner AI
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleChangeDifficultyFromComingSoon}
+                    data-testid="coming-soon-change-diff-btn"
+                  >
+                    🔄 Change Difficulty
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleBackToMenuFromComingSoon}
+                    data-testid="coming-soon-back-btn"
+                  >
+                    🏠 Return to Main Menu
+                  </button>
+                </div>
+              }
             />
           )}
         </>

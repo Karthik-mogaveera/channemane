@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SettlementModal } from "../../src/ui/components/SettlementModal";
 import { MatchEndModal } from "../../src/ui/components/MatchEndModal";
 import { RulesModal } from "../../src/ui/components/RulesModal";
-import { ComingSoonModal } from "../../src/ui/components/ComingSoonModal";
+import { NoticeModal } from "../../src/ui/components/NoticeModal";
 import { FirstPlayerModal } from "../../src/ui/components/FirstPlayerModal";
 
 describe("Game Modals", () => {
@@ -146,24 +146,34 @@ describe("Game Modals", () => {
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it("ComingSoonModal closes on Escape key or backdrop click", () => {
-    const handleBack = vi.fn();
+  it("NoticeModal renders title, message, and closes on Escape key, backdrop click, or action button", () => {
+    const handleClose = vi.fn();
     render(
-      <ComingSoonModal
-        difficulty="expert"
-        selectedFirstPlayer="player"
-        onPlayBeginner={vi.fn()}
-        onBackToMenu={handleBack}
-        onChangeDifficulty={vi.fn()}
+      <NoticeModal
+        title="Coming Soon!"
+        subtitle="Expert AI difficulty is currently under development."
+        message="Currently, Beginner AI and Local Multiplayer are fully playable."
+        onClose={handleClose}
+        testId="coming-soon-modal"
+        cardTestId="coming-soon-notice"
+        titleId="coming-soon-title"
       />
     );
 
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(handleBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Coming Soon!")).toBeInTheDocument();
+    expect(screen.getByText("Expert AI difficulty is currently under development.")).toBeInTheDocument();
+    expect(screen.getByText("Currently, Beginner AI and Local Multiplayer are fully playable.")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(handleClose).toHaveBeenCalledTimes(1);
 
     const overlay = screen.getByTestId("coming-soon-modal");
     fireEvent.click(overlay);
-    expect(handleBack).toHaveBeenCalledTimes(2);
+    expect(handleClose).toHaveBeenCalledTimes(2);
+
+    const okBtn = screen.getByTestId("notice-modal-ok-btn");
+    fireEvent.click(okBtn);
+    expect(handleClose).toHaveBeenCalledTimes(3);
   });
 
   it("FirstPlayerModal triggers onBack on Escape key or backdrop click", () => {

@@ -17,7 +17,7 @@ import { selectBeginnerMove, expertAIClient } from "../../engine/ai";
 import type { TurnResult } from "../../engine/game";
 import type { ClaimBonusResult } from "../../engine/bonus";
 import type { RoundSetupResult } from "../../engine/roundSetup";
-import type { RoundSettlementResult } from "../../engine/settlement";
+import { executeRoundSettlement, type RoundSettlementResult } from "../../engine/settlement";
 import {
   isMatchOver,
   checkAndHandleMatchEnd,
@@ -169,8 +169,15 @@ export function useChannemaneGame(
   const [lastActionError, setLastActionError] = useState<string | null>(null);
 
   const [settlementSummary, setSettlementSummary] =
-    useState<RoundSettlementResult | null>(null);
-  const lastSettlementRef = useRef<RoundSettlementResult | null>(null);
+    useState<RoundSettlementResult | null>(() => {
+      const s = gameRef.current.getState();
+      if (s.phase === "ROUND_SETTLEMENT" && !isMatchOver(s)) {
+        const res = executeRoundSettlement(s);
+        return res.success ? res.data : null;
+      }
+      return null;
+    });
+  const lastSettlementRef = useRef<RoundSettlementResult | null>(settlementSummary);
 
   const [matchSummary, setMatchSummary] = useState<MatchEndResult | null>(() => {
     const s = gameRef.current.getState();

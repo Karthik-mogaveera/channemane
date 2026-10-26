@@ -683,4 +683,365 @@ test.describe("Main Menu & Game Mode Selection E2E", () => {
   });
 });
 
+test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Suite", () => {
+  // Test 1: Complete 3-Player Board Setup & Architecture
+  test("3P-E2E-1: Launches 3-Player Local Multiplayer with complete 15-pit board, 3 storage bowls, and layout", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+
+    // Verify Board & Mode
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
+    await expect(page.getByTestId("round-indicator")).toContainText("Round 1");
+
+    // Dismiss initial turn popup if visible
+    const turnPopup = page.getByTestId("turn-notification-popup");
+    if (await turnPopup.isVisible()) {
+      await expect(turnPopup).toContainText("Player 1");
+      await turnPopup.click({ force: true });
+    }
+
+    // Verify all 15 pits exist and have 5 seeds initially
+    for (let i = 0; i < 15; i++) {
+      const pit = page.getByTestId(`pit-${i}`);
+      await expect(pit).toBeVisible();
+      await expect(pit).toHaveAttribute("data-seeds", "5");
+      await expect(pit).toHaveAttribute("data-status", "OPEN");
+    }
+
+    // Verify all 3 storage bowls exist with 0 captured seeds initially
+    await expect(page.getByTestId("storage-player1")).toBeVisible();
+    await expect(page.getByTestId("p1-captured-count")).toHaveText("0");
+
+    await expect(page.getByTestId("storage-player2")).toBeVisible();
+    await expect(page.getByTestId("p2-captured-count")).toHaveText("0");
+
+    await expect(page.getByTestId("storage-player3")).toBeVisible();
+    await expect(page.getByTestId("p3-captured-count")).toHaveText("0");
+
+    // Verify storage container architecture
+    await expect(page.getByTestId("p1-storage-container")).toBeVisible();
+    await expect(page.getByTestId("p2-p3-storage-container")).toBeVisible();
+
+    // Verify relative positions: P1 storage on left, P2 & P3 on right
+    const p1Box = await page.getByTestId("storage-player1").boundingBox();
+    const p2Box = await page.getByTestId("storage-player2").boundingBox();
+    const p3Box = await page.getByTestId("storage-player3").boundingBox();
+    const pit0Box = await page.getByTestId("pit-0").boundingBox();
+    const pit4Box = await page.getByTestId("pit-4").boundingBox();
+
+    expect(p1Box).not.toBeNull();
+    expect(p2Box).not.toBeNull();
+    expect(p3Box).not.toBeNull();
+    expect(pit0Box).not.toBeNull();
+    expect(pit4Box).not.toBeNull();
+
+    // P1 storage is to the left of the leftmost pits
+    expect(p1Box!.x + p1Box!.width).toBeLessThanOrEqual(pit0Box!.x + 2);
+    // P2 storage is to the right of the rightmost pits
+    expect(p2Box!.x).toBeGreaterThanOrEqual(pit4Box!.x);
+    // P3 storage is adjacent or to the right of P2 storage
+    expect(p3Box!.x).toBeGreaterThanOrEqual(p2Box!.x - 1);
+  });
+
+  // Test 2: Turn Sequence Cycling (Player 1 -> Player 2 -> Player 3)
+  test("3P-E2E-2: Turn announcements and sequential turn cycling across Player 1 -> Player 2 -> Player 3", async ({
+    page,
+  }) => {
+    // Inject custom 3-player state with animations disabled for instant deterministic moves.
+    // Pits 0, 5, 10 have 1 seed (the played pit).
+    // Destination pit receives 1 seed (pits 1, 6, 11).
+    // Next pit has 0 seeds (pits 2, 7, 12 - halts sowing).
+    // Following pit has 0 seeds (pits 3, 8, 13 - zero capture, halts turn).
+    // Anchor pit has 5 seeds (pits 4, 9, 14 - side remains active, round does not end).
+    await page.addInitScript(() => {
+      const pitCount = 15;
+      const pits = [];
+      for (let i = 0; i < pitCount; i++) {
+        const owner = i < 5 ? "PLAYER_1" : i < 10 ? "PLAYER_2" : "PLAYER_3";
+        let seeds = 0;
+        if (i === 0 || i === 5 || i === 10) {
+          seeds = 1;
+        } else if (i === 4 || i === 9 || i === 14) {
+          seeds = 5;
+        }
+        pits.push({
+          id: i,
+          owner,
+          seeds,
+          status: "OPEN",
+          bonusAvailable: false,
+        });
+      }
+      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+        initialScreen: "GAME",
+        initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
+        initialGameState: {
+          round: 1,
+          phase: "PLAYING",
+          turnPhase: "PLAYER_TURN",
+          currentPlayer: "PLAYER_1",
+          startingPlayer: "PLAYER_1",
+          playerCount: 3,
+          gameMode: "local",
+          aiDifficulty: null,
+          aiPlayer: "PLAYER_2",
+          seedsInHand: 0,
+          consecutiveTurnsWithoutCapture: 0,
+          disqualifiedPlayers: [],
+          roundWinner: null,
+          winner: null,
+          pits,
+          players: {
+            player1: { storage: 19, roundCaptured: 0, roundWins: 0 },
+            player2: { storage: 19, roundCaptured: 0, roundWins: 0 },
+            player3: { storage: 19, roundCaptured: 0, roundWins: 0 },
+          },
+        },
+      };
+    });
+
+    await page.goto("/");
+    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
+
+    // Dismiss initial turn announcement if present
+    const popup1 = page.getByTestId("turn-notification-popup");
+    if (await popup1.isVisible()) {
+      await popup1.click({ force: true });
+    }
+
+    // Step 1: Player 1 clicks pit 0 (1 seed -> drops in pit 1 -> next pit 2 empty -> turn ends)
+    await page.getByTestId("pit-0").click();
+
+    // Player 2's turn announcement appears
+    const popup2 = page.getByTestId("turn-notification-popup");
+    await expect(popup2).toBeVisible({ timeout: 5000 });
+    await expect(popup2).toContainText("Player 2");
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 2'S TURN");
+    await popup2.click({ force: true });
+
+    // Step 2: Player 2 clicks pit 5 (1 seed -> drops in pit 6 -> next pit 7 empty -> turn ends)
+    await page.getByTestId("pit-5").click();
+
+    // Player 3's turn announcement appears
+    const popup3 = page.getByTestId("turn-notification-popup");
+    await expect(popup3).toBeVisible({ timeout: 5000 });
+    await expect(popup3).toContainText("Player 3");
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 3'S TURN");
+    await popup3.click({ force: true });
+
+    // Step 3: Player 3 clicks pit 10 (1 seed -> drops in pit 11 -> next pit 12 empty -> turn ends)
+    await page.getByTestId("pit-10").click();
+
+    // Turn cycles back to Player 1!
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
+  });
+
+  // Test 3: 3-Player Round Settlement with Disqualification Flow
+  test("3P-E2E-3: Round settlement triggers disqualification modal and transitions to recovery round", async ({
+    page,
+  }) => {
+    // Inject state with Player 3 ineligible (< 5 storage seeds) at ROUND_SETTLEMENT
+    await page.addInitScript(() => {
+      const pits = [];
+      for (let i = 0; i < 15; i++) {
+        const owner = i < 5 ? "PLAYER_1" : i < 10 ? "PLAYER_2" : "PLAYER_3";
+        pits.push({
+          id: i,
+          owner,
+          seeds: 0,
+          status: "OPEN",
+          bonusAvailable: false,
+        });
+      }
+      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+        initialScreen: "GAME",
+        initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
+        initialGameState: {
+          round: 1,
+          phase: "ROUND_SETTLEMENT",
+          turnPhase: "TURN_END",
+          currentPlayer: "PLAYER_1",
+          startingPlayer: "PLAYER_1",
+          playerCount: 3,
+          gameMode: "local",
+          aiDifficulty: null,
+          aiPlayer: "PLAYER_2",
+          seedsInHand: 0,
+          consecutiveTurnsWithoutCapture: 0,
+          disqualifiedPlayers: [],
+          roundWinner: "PLAYER_1",
+          winner: null,
+          pits,
+          players: {
+            player1: { storage: 40, roundCaptured: 40, roundWins: 0 },
+            player2: { storage: 35, roundCaptured: 35, roundWins: 0 },
+            player3: { storage: 0, roundCaptured: 0, roundWins: 0 },
+          },
+        },
+      };
+    });
+
+    await page.goto("/");
+
+    // 1. Settlement modal opens
+    const settlementModal = page.getByTestId("settlement-modal");
+    await expect(settlementModal).toBeVisible();
+
+    // Verify winner banner
+    await expect(page.getByTestId("round-winner-banner")).toContainText("Player 1 Wins the Round!");
+
+    // Verify 3 player scores & Player 3 disqualification
+    await expect(page.getByTestId("settlement-p1-storage")).toHaveText("40");
+    await expect(page.getByTestId("settlement-p2-storage")).toHaveText("35");
+    await expect(page.getByTestId("settlement-p3-storage")).toHaveText("Disqualified");
+
+    // Verify next round setup explanation text
+    await expect(settlementModal).toContainText("Disqualified players are eliminated permanently");
+
+    // 2. Click "Start Next Round"
+    await page.getByTestId("start-next-round-btn").click();
+    await expect(settlementModal).not.toBeVisible();
+
+    // 3. Verify Round 2 starts with Player 3 eliminated
+    await expect(page.getByTestId("round-indicator")).toContainText("Round 2");
+
+    // Player 3 storage displays Disqualified
+    await expect(page.getByTestId("p3-captured-count")).toHaveText("Disqualified");
+
+    // Player 3 pits (10-14) are CLOSED and disabled
+    for (let i = 10; i < 15; i++) {
+      const p3Pit = page.getByTestId(`pit-${i}`);
+      await expect(p3Pit).toHaveAttribute("data-status", "CLOSED");
+      await expect(p3Pit).toBeDisabled();
+    }
+
+    // Player 1 & Player 2 pits are OPEN with 5 seeds each (recovery setup with 50 seeds)
+    for (let i = 0; i < 10; i++) {
+      const activePit = page.getByTestId(`pit-${i}`);
+      await expect(activePit).toHaveAttribute("data-status", "OPEN");
+      await expect(activePit).toHaveAttribute("data-seeds", "5");
+    }
+  });
+
+  // Test 4: 3-Player Match Completion Rankings & Return to Main Menu
+  test("3P-E2E-4: Match End modal displays 1st Place, 2nd Place, Lost rankings and Home navigation", async ({
+    page,
+  }) => {
+    // Inject state with Match End: Player 3 eliminated earlier, Player 2 eliminated, Player 1 is sole victor
+    await page.addInitScript(() => {
+      const pits = [];
+      for (let i = 0; i < 15; i++) {
+        const owner = i < 5 ? "PLAYER_1" : i < 10 ? "PLAYER_2" : "PLAYER_3";
+        pits.push({
+          id: i,
+          owner,
+          seeds: 0,
+          status: i >= 5 ? "CLOSED" : "OPEN",
+          bonusAvailable: false,
+        });
+      }
+      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+        initialScreen: "GAME",
+        initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
+        initialGameState: {
+          round: 2,
+          phase: "MATCH_END",
+          turnPhase: "TURN_END",
+          currentPlayer: "PLAYER_1",
+          startingPlayer: "PLAYER_1",
+          playerCount: 3,
+          gameMode: "local",
+          aiDifficulty: null,
+          aiPlayer: "PLAYER_2",
+          seedsInHand: 0,
+          consecutiveTurnsWithoutCapture: 0,
+          disqualifiedPlayers: ["PLAYER_3", "PLAYER_2"],
+          roundWinner: "PLAYER_1",
+          winner: "PLAYER_1",
+          pits,
+          players: {
+            player1: { storage: 45, roundCaptured: 45, roundWins: 2 },
+            player2: { storage: 30, roundCaptured: 30, roundWins: 0 },
+            player3: { storage: 0, roundCaptured: 0, roundWins: 0 },
+          },
+        },
+      };
+    });
+
+    await page.goto("/");
+
+    // 1. Match End modal appears
+    const matchModal = page.getByTestId("match-end-modal");
+    await expect(matchModal).toBeVisible();
+
+    // Verify Match Winner Banner
+    await expect(page.getByTestId("match-winner-banner")).toContainText("Player 1 Wins the Match!");
+
+    // Verify Rankings: 1st Place, 2nd Place, Lost
+    await expect(page.getByTestId("match-rankings")).toBeVisible();
+    await expect(page.getByTestId("ranking-badge-player_1")).toHaveText("1st Place");
+    await expect(page.getByTestId("ranking-storage-player_1")).toHaveText("45 seeds");
+
+    await expect(page.getByTestId("ranking-badge-player_2")).toHaveText("2nd Place");
+    await expect(page.getByTestId("ranking-storage-player_2")).toHaveText("30 seeds");
+
+    await expect(page.getByTestId("ranking-badge-player_3")).toHaveText("Lost");
+    await expect(page.getByTestId("ranking-storage-player_3")).toHaveText("0 seeds");
+
+    // 2. Return to Main Menu via Home button
+    const homeBtn = page.getByTestId("match-home-btn");
+    await expect(homeBtn).toBeVisible();
+    await homeBtn.click();
+
+    // Verify navigation back to Main Menu
+    await expect(page.getByTestId("main-menu")).toBeVisible();
+    await expect(matchModal).not.toBeVisible();
+  });
+
+  // Test 5: 3-Player Mobile Viewport Responsive Layout (Zero Horizontal Page Scroll)
+  test("3P-E2E-5: 3-Player board layout on mobile viewport fits without horizontal overflow", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/");
+
+    await page.getByTestId("menu-btn-local").click();
+    await page.getByTestId("player-count-btn-3").click();
+
+    // Verify board renders
+    const board = page.getByTestId("channemane-board");
+    await expect(board).toBeVisible();
+
+    // Verify all 3 storage bowls are visible
+    await expect(page.getByTestId("storage-player1")).toBeVisible();
+    await expect(page.getByTestId("storage-player2")).toBeVisible();
+    await expect(page.getByTestId("storage-player3")).toBeVisible();
+
+    // Dismiss turn notification popup if present
+    const popup = page.getByTestId("turn-notification-popup");
+    if (await popup.isVisible()) {
+      await popup.click({ force: true });
+    }
+
+    // Verify document does not suffer from horizontal page overflow
+    const hasHorizontalOverflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
+    });
+    expect(hasHorizontalOverflow).toBe(false);
+
+    // Verify all 15 pits are within viewport width
+    for (let i = 0; i < 15; i++) {
+      const pitBox = await page.getByTestId(`pit-${i}`).boundingBox();
+      expect(pitBox).not.toBeNull();
+      expect(pitBox!.x).toBeGreaterThanOrEqual(0);
+      expect(pitBox!.x + pitBox!.width).toBeLessThanOrEqual(375 + 5);
+    }
+  });
+});
+
 

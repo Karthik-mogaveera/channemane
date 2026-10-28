@@ -14,6 +14,7 @@ export interface StorageBowlProps {
   storageSeeds: number;
   className?: string;
   isDisqualified?: boolean;
+  orientation?: "vertical" | "horizontal";
 }
 
 export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
@@ -21,34 +22,55 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   storageSeeds,
   className = "",
   isDisqualified = false,
+  orientation = "vertical",
 }) => {
   const isP1 = player === "PLAYER_1";
   const isP2 = player === "PLAYER_2";
-  const playerLabel = isP1 ? "Player 1" : isP2 ? "Player 2" : "Player 3";
+  const isP3 = player === "PLAYER_3";
+  const playerLabel = isP1
+    ? "Player 1"
+    : isP2
+    ? "Player 2"
+    : isP3
+    ? "Player 3"
+    : "Player 4";
   const testId = isP1
     ? "storage-player1"
     : isP2
     ? "storage-player2"
-    : "storage-player3";
+    : isP3
+    ? "storage-player3"
+    : "storage-player4";
   const countTestId = isP1
     ? "p1-captured-count"
     : isP2
     ? "p2-captured-count"
-    : "p3-captured-count";
+    : isP3
+    ? "p3-captured-count"
+    : "p4-captured-count";
   const gradId = isP1
     ? "storage-seed-grad-p1"
     : isP2
     ? "storage-seed-grad-p2"
-    : "storage-seed-grad-p3";
+    : isP3
+    ? "storage-seed-grad-p3"
+    : "storage-seed-grad-p4";
+
+  const isHorizontal = orientation === "horizontal";
+  const geometry = useMemo(() => {
+    return isHorizontal
+      ? { width: 200, height: 50 }
+      : { width: 90, height: 180 };
+  }, [isHorizontal]);
 
   // Deterministic seed positions (up to 70 seeds)
   const seedPositions = useMemo(() => {
-    return calculateStorageSeedPositions(storageSeeds);
-  }, [storageSeeds]);
+    return calculateStorageSeedPositions(storageSeeds, geometry);
+  }, [storageSeeds, geometry]);
 
   return (
     <div
-      className={`storage-bowl ${className} ${isDisqualified ? "disqualified" : ""}`}
+      className={`storage-bowl ${className} ${orientation} ${isDisqualified ? "disqualified" : ""}`}
       data-testid={testId}
       aria-label={`${playerLabel} Storage, ${
         isDisqualified ? "Disqualified" : `${storageSeeds} seeds collected`
@@ -77,7 +99,7 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
           <svg
             className="storage-seeds-svg"
             data-testid={`storage-seeds-svg-${player.toLowerCase()}`}
-            viewBox="0 0 90 180"
+            viewBox={isHorizontal ? "0 0 200 50" : "0 0 90 180"}
             width="100%"
             height="100%"
             aria-hidden="true"

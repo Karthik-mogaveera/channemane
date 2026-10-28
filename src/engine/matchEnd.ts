@@ -4,8 +4,8 @@ import type { GameState, Player } from "./types";
 
 export interface PlayerMatchRanking {
   player: Player;
-  rank: 1 | 2 | 3;
-  label: "Winner" | "1st Place" | "2nd Place" | "Lost";
+  rank: 1 | 2 | 3 | 4;
+  label: "Winner" | "1st Place" | "2nd Place" | "3rd Place" | "Lost";
   storage: number;
 }
 
@@ -20,17 +20,115 @@ export interface MatchEndResult {
 function getPlayerStorage(state: GameState, player: Player): number {
   if (player === "PLAYER_1") return state.players.player1.storage;
   if (player === "PLAYER_2") return state.players.player2.storage;
-  return state.players.player3?.storage ?? 0;
+  if (player === "PLAYER_3") return state.players.player3?.storage ?? 0;
+  return state.players.player4?.storage ?? 0;
 }
 
 /**
- * Computes authoritative player rankings for 2-player and 3-player match ends.
+ * Computes authoritative player rankings for 2-player, 3-player, and 4-player match ends.
  */
 export function computeMatchRankings(
   state: GameState,
-  winner: Player | null,
-  loser: Player | null
+  winner: Player | null = state.winner ?? null,
+  loser: Player | null = null
 ): PlayerMatchRanking[] {
+  if (state.playerCount === 4) {
+    const dis = state.disqualifiedPlayers ?? [];
+    const allPlayers: Player[] = ["PLAYER_1", "PLAYER_2", "PLAYER_3", "PLAYER_4"];
+
+    if (winner) {
+      const nonWinners = allPlayers.filter((p) => p !== winner);
+      let secondPlace: Player;
+      let thirdPlace: Player;
+      let lastPlace: Player;
+
+      if (dis.length >= 3) {
+        lastPlace = dis[0];
+        thirdPlace = dis[1];
+        secondPlace = dis.find((p) => p !== winner && p !== lastPlace && p !== thirdPlace) ?? dis[2];
+      } else if (dis.length === 2) {
+        lastPlace = dis[0];
+        thirdPlace = dis[1];
+        secondPlace = nonWinners.find((p) => p !== lastPlace && p !== thirdPlace) ?? nonWinners[0];
+      } else if (dis.length === 1) {
+        lastPlace = dis[0];
+        const remainingNonWinners = nonWinners.filter((p) => p !== lastPlace);
+        const s0 = getPlayerStorage(state, remainingNonWinners[0]);
+        const s1 = getPlayerStorage(state, remainingNonWinners[1]);
+        if (s0 >= s1) {
+          secondPlace = remainingNonWinners[0];
+          thirdPlace = remainingNonWinners[1];
+        } else {
+          secondPlace = remainingNonWinners[1];
+          thirdPlace = remainingNonWinners[0];
+        }
+      } else {
+        const sortedNonWinners = [...nonWinners].sort(
+          (a, b) => getPlayerStorage(state, b) - getPlayerStorage(state, a)
+        );
+        secondPlace = sortedNonWinners[0];
+        thirdPlace = sortedNonWinners[1];
+        lastPlace = sortedNonWinners[2];
+      }
+
+      return [
+        {
+          player: winner,
+          rank: 1,
+          label: "1st Place",
+          storage: getPlayerStorage(state, winner),
+        },
+        {
+          player: secondPlace,
+          rank: 2,
+          label: "2nd Place",
+          storage: getPlayerStorage(state, secondPlace),
+        },
+        {
+          player: thirdPlace,
+          rank: 3,
+          label: "3rd Place",
+          storage: getPlayerStorage(state, thirdPlace),
+        },
+        {
+          player: lastPlace,
+          rank: 4,
+          label: "Lost",
+          storage: getPlayerStorage(state, lastPlace),
+        },
+      ];
+    } else {
+      const sorted = [...allPlayers].sort(
+        (a, b) => getPlayerStorage(state, b) - getPlayerStorage(state, a)
+      );
+      return [
+        {
+          player: sorted[0],
+          rank: 1,
+          label: "1st Place",
+          storage: getPlayerStorage(state, sorted[0]),
+        },
+        {
+          player: sorted[1],
+          rank: 2,
+          label: "2nd Place",
+          storage: getPlayerStorage(state, sorted[1]),
+        },
+        {
+          player: sorted[2],
+          rank: 3,
+          label: "3rd Place",
+          storage: getPlayerStorage(state, sorted[2]),
+        },
+        {
+          player: sorted[3],
+          rank: 4,
+          label: "Lost",
+          storage: getPlayerStorage(state, sorted[3]),
+        },
+      ];
+    }
+  }
   if (state.playerCount === 3) {
     const dis = state.disqualifiedPlayers ?? [];
     const allPlayers: Player[] = ["PLAYER_1", "PLAYER_2", "PLAYER_3"];
@@ -149,6 +247,21 @@ export function computeMatchRankings(
  * - 3-player: if 2 players remain and either has < 5, match ends. If 3 active players, match continues (recovery occurs).
  */
 export function isMatchOver(state: GameState): boolean {
+  if (state.playerCount === 4) {
+    const active = getActivePlayers(state);
+    if (active.length <= 1) return true;
+    if (active.length === 2) {
+      return (
+        getPlayerStorage(state, active[0]) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY ||
+        getPlayerStorage(state, active[1]) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+      );
+    }
+    const eligible = active.filter(
+      (p) => getPlayerStorage(state, p) >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+    );
+    return eligible.length <= 1;
+  }
+
   if (state.playerCount === 3) {
     const active = getActivePlayers(state);
     if (active.length <= 1) return true;
@@ -175,6 +288,134 @@ export function isMatchOver(state: GameState): boolean {
  * Evaluates and transitions the game state if match-end condition is met.
  */
 export function checkAndHandleMatchEnd(state: GameState): MatchEndResult {
+  if (state.playerCount === 4) {
+    const active = getActivePlayers(state);
+    if (active.length <= 1) {
+      state.phase = "MATCH_END";
+      state.winner = active[0] ?? null;
+      const winner = active[0] ?? null;
+      return {
+        isMatchEnd: true,
+        winner,
+        loser: null,
+        reason: `${active[0]} is the sole remaining active player`,
+        rankings: computeMatchRankings(state, winner, null),
+      };
+    }
+    if (active.length === 2) {
+      const pA = active[0];
+      const pB = active[1];
+      const sA = getPlayerStorage(state, pA);
+      const sB = getPlayerStorage(state, pB);
+      const canA = sA >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY;
+      const canB = sB >= MIN_STORAGE_FOR_MATCH_ELIGIBILITY;
+
+      if (!canA && !canB) {
+        state.phase = "MATCH_END";
+        state.winner = null;
+        return {
+          isMatchEnd: true,
+          winner: null,
+          loser: null,
+          reason: "Both remaining players have fewer than 5 seeds in storage",
+          rankings: computeMatchRankings(state, null, null),
+        };
+      }
+      if (!canA) {
+        if (!state.disqualifiedPlayers?.includes(pA)) {
+          state.disqualifiedPlayers = [
+            ...(state.disqualifiedPlayers ?? []),
+            pA,
+          ];
+        }
+        state.phase = "MATCH_END";
+        state.winner = pB;
+        return {
+          isMatchEnd: true,
+          winner: pB,
+          loser: pA,
+          reason: `${pA} has only ${sA} seeds (fewer than 5) and cannot fund G1`,
+          rankings: computeMatchRankings(state, pB, pA),
+        };
+      }
+      if (!canB) {
+        if (!state.disqualifiedPlayers?.includes(pB)) {
+          state.disqualifiedPlayers = [
+            ...(state.disqualifiedPlayers ?? []),
+            pB,
+          ];
+        }
+        state.phase = "MATCH_END";
+        state.winner = pA;
+        return {
+          isMatchEnd: true,
+          winner: pA,
+          loser: pB,
+          reason: `${pB} has only ${sB} seeds (fewer than 5) and cannot fund G1`,
+          rankings: computeMatchRankings(state, pA, pB),
+        };
+      }
+      return {
+        isMatchEnd: false,
+        winner: null,
+        loser: null,
+        reason: null,
+      };
+    }
+
+    // active.length >= 3: Check for disqualifications that leave <= 1 player
+    const ineligible = active.filter(
+      (p) => getPlayerStorage(state, p) < MIN_STORAGE_FOR_MATCH_ELIGIBILITY
+    );
+
+    if (active.length - ineligible.length <= 1) {
+      const sortedIneligible = [...ineligible].sort(
+        (a, b) => getPlayerStorage(state, a) - getPlayerStorage(state, b)
+      );
+
+      const newlyDisqualified = sortedIneligible.filter(
+        (p) => !state.disqualifiedPlayers?.includes(p)
+      );
+      state.disqualifiedPlayers = [
+        ...(state.disqualifiedPlayers ?? []),
+        ...newlyDisqualified,
+      ];
+
+      for (const d of newlyDisqualified) {
+        for (const pit of state.pits) {
+          if (pit.owner === d) {
+            pit.status = "CLOSED";
+            pit.seeds = 0;
+            pit.bonusAvailable = false;
+          }
+        }
+      }
+
+      const remaining = active.filter((p) => !ineligible.includes(p));
+      const winner = remaining.length === 1 ? remaining[0] : null;
+
+      state.phase = "MATCH_END";
+      state.winner = winner;
+      return {
+        isMatchEnd: true,
+        winner,
+        loser: null,
+        reason:
+          remaining.length === 1
+            ? `${winner} is the sole remaining active player after disqualification of ${ineligible.join(", ")}`
+            : "All remaining players have fewer than 5 seeds in storage",
+        rankings: computeMatchRankings(state, winner, null),
+      };
+    }
+
+    return {
+      isMatchEnd: false,
+      winner: null,
+      loser: null,
+      reason: null,
+    };
+  }
+
   if (state.playerCount === 3) {
     const active = getActivePlayers(state);
     if (active.length <= 1) {

@@ -33,6 +33,14 @@ const THREE_PLAYER_ROW_1_PITS = [0, 1, 2, 3, 4];
 const THREE_PLAYER_ROW_2_PITS = [9, 8, 7, 6, 5];
 const THREE_PLAYER_ROW_3_PITS = [10, 11, 12, 13, 14];
 
+// 4-Player physical layout constants (2x8 rectangular board, Section 2 & Image 3)
+// Top Row: P0–P3 (Player 1) [gap] P4–P7 (Player 2)
+const FOUR_PLAYER_TOP_LEFT = [0, 1, 2, 3];
+const FOUR_PLAYER_TOP_RIGHT = [4, 5, 6, 7];
+// Bottom Row: P15–P12 (Player 4) [gap] P11–P8 (Player 3)
+const FOUR_PLAYER_BOTTOM_LEFT = [15, 14, 13, 12];
+const FOUR_PLAYER_BOTTOM_RIGHT = [11, 10, 9, 8];
+
 export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   gameState,
   selectablePits,
@@ -45,8 +53,124 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   onConfirmCapture,
   onClaimBonus,
 }) => {
+  const isFourPlayer =
+    gameState.playerCount === 4 || gameState.pits.length === 16;
   const isThreePlayer =
     gameState.playerCount === 3 || gameState.pits.length === 15;
+
+  const renderPitItem = (pitId: number, countPos: "above" | "below") => {
+    const pit = gameState.pits[pitId]!;
+    return (
+      <Pit
+        key={pitId}
+        pitId={pitId}
+        owner={pit.owner}
+        seeds={pit.seeds}
+        status={pit.status}
+        bonusAvailable={pit.bonusAvailable}
+        isSelectable={selectablePits.includes(pitId)}
+        isActiveDrop={activeDropPit === pitId}
+        isAnimating={isAnimating}
+        isContinuationTarget={highlightedContinuationPit === pitId}
+        isCaptureTarget={highlightedCapturePit === pitId}
+        countPosition={countPos}
+        onSelect={onSelectPit}
+        onConfirmContinuation={onConfirmContinuation}
+        onConfirmCapture={onConfirmCapture}
+        onClaimBonus={onClaimBonus}
+      />
+    );
+  };
+
+  if (isFourPlayer) {
+    return (
+      <div className="board-wrapper">
+        <div
+          className="channemane-board four-player-board"
+          data-testid="channemane-board"
+          role="region"
+          aria-label="4-Player Channemane Game Board"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* Top Storages Row: Player 1 (Left) & Player 2 (Right) */}
+          <div className="four-player-storage-top-row">
+            <div className="four-player-storage-half left" data-testid="p1-storage-container">
+              <StorageBowl
+                player="PLAYER_1"
+                storageSeeds={gameState.players.player1.storage}
+                className="board-storage-p1"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_1")}
+              />
+            </div>
+            <div className="board-center-gap-spacer" aria-hidden="true" />
+            <div className="four-player-storage-half right" data-testid="p2-storage-container">
+              <StorageBowl
+                player="PLAYER_2"
+                storageSeeds={gameState.players.player2.storage}
+                className="board-storage-p2"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_2")}
+              />
+            </div>
+          </div>
+
+          {/* Center 2x8 Pits Grid */}
+          <div
+            className="four-player-pits-container"
+            data-testid="four-player-pits-container"
+            role="grid"
+            aria-label="4-Player 16 Pits Grid"
+          >
+            {/* Top Row: P0–P3 (Player 1) [gap] P4–P7 (Player 2) */}
+            <div className="four-player-pits-row top-row" role="row">
+              <div className="four-player-pit-group p1-group" data-testid="p1-pit-group">
+                {FOUR_PLAYER_TOP_LEFT.map((pitId) => renderPitItem(pitId, "above"))}
+              </div>
+              <div className="board-center-gap" data-testid="board-center-gap-top" aria-hidden="true" />
+              <div className="four-player-pit-group p2-group" data-testid="p2-pit-group">
+                {FOUR_PLAYER_TOP_RIGHT.map((pitId) => renderPitItem(pitId, "above"))}
+              </div>
+            </div>
+
+            {/* Bottom Row: P15–P12 (Player 4) [gap] P11–P8 (Player 3) */}
+            <div className="four-player-pits-row bottom-row" role="row">
+              <div className="four-player-pit-group p4-group" data-testid="p4-pit-group">
+                {FOUR_PLAYER_BOTTOM_LEFT.map((pitId) => renderPitItem(pitId, "below"))}
+              </div>
+              <div className="board-center-gap" data-testid="board-center-gap-bottom" aria-hidden="true" />
+              <div className="four-player-pit-group p3-group" data-testid="p3-pit-group">
+                {FOUR_PLAYER_BOTTOM_RIGHT.map((pitId) => renderPitItem(pitId, "below"))}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Storages Row: Player 4 (Left) & Player 3 (Right) */}
+          <div className="four-player-storage-bottom-row">
+            <div className="four-player-storage-half left" data-testid="p4-storage-container">
+              <StorageBowl
+                player="PLAYER_4"
+                storageSeeds={gameState.players.player4?.storage ?? 0}
+                className="board-storage-p4"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_4")}
+              />
+            </div>
+            <div className="board-center-gap-spacer" aria-hidden="true" />
+            <div className="four-player-storage-half right" data-testid="p3-storage-container">
+              <StorageBowl
+                player="PLAYER_3"
+                storageSeeds={gameState.players.player3?.storage ?? 0}
+                className="board-storage-p3"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_3")}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isThreePlayer) {
     return (

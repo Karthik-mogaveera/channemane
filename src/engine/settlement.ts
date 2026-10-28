@@ -10,9 +10,11 @@ export interface RoundSettlementResult {
   player1RemainingTransferred: number;
   player2RemainingTransferred: number;
   player3RemainingTransferred?: number;
+  player4RemainingTransferred?: number;
   player1FinalStorage: number;
   player2FinalStorage: number;
   player3FinalStorage?: number;
+  player4FinalStorage?: number;
   roundWinner: Player | null;
   preSettlementState?: GameState;
   disqualifiedPlayers?: Player[];
@@ -39,13 +41,20 @@ export function executeRoundSettlement(
   const p1Remaining = getPlayerSideSeeds(state, "PLAYER_1");
   const p2Remaining = getPlayerSideSeeds(state, "PLAYER_2");
   const p3Remaining =
-    state.playerCount === 3 ? getPlayerSideSeeds(state, "PLAYER_3") : 0;
+    state.playerCount === 3 || state.playerCount === 4
+      ? getPlayerSideSeeds(state, "PLAYER_3")
+      : 0;
+  const p4Remaining =
+    state.playerCount === 4 ? getPlayerSideSeeds(state, "PLAYER_4") : 0;
 
   // Transfer remaining seeds to owners
   state.players.player1.storage += p1Remaining;
   state.players.player2.storage += p2Remaining;
-  if (state.playerCount === 3 && state.players.player3) {
+  if ((state.playerCount === 3 || state.playerCount === 4) && state.players.player3) {
     state.players.player3.storage += p3Remaining;
+  }
+  if (state.playerCount === 4 && state.players.player4) {
+    state.players.player4.storage += p4Remaining;
   }
 
   // Clear all pits
@@ -69,6 +78,7 @@ export function executeRoundSettlement(
     PLAYER_1: state.players.player1.storage,
     PLAYER_2: state.players.player2.storage,
     PLAYER_3: state.players.player3?.storage ?? 0,
+    PLAYER_4: state.players.player4?.storage ?? 0,
   };
 
   let maxStorage = -1;
@@ -92,6 +102,8 @@ export function executeRoundSettlement(
     state.players.player2.roundWins += 1;
   } else if (roundWinner === "PLAYER_3" && state.players.player3) {
     state.players.player3.roundWins += 1;
+  } else if (roundWinner === "PLAYER_4" && state.players.player4) {
+    state.players.player4.roundWins += 1;
   }
 
   state.roundWinner = roundWinner;
@@ -102,12 +114,16 @@ export function executeRoundSettlement(
   const disqualifiedPlayers: Player[] = [
     ...(state.disqualifiedPlayers ?? []),
   ];
-  if (state.playerCount === 3) {
+  if (state.playerCount === 3 || state.playerCount === 4) {
     const active = getActivePlayers(state);
-    for (const p of active) {
-      if (storageMap[p] < 5 && !disqualifiedPlayers.includes(p)) {
-        disqualifiedPlayers.push(p);
-      }
+    // Find newly ineligible players (< 5 seeds)
+    const newlyIneligible = active.filter(
+      (p) => storageMap[p] < 5 && !disqualifiedPlayers.includes(p)
+    );
+    // Sort newly ineligible players ascending by storage (fewer seeds eliminated earlier)
+    newlyIneligible.sort((a, b) => storageMap[a] - storageMap[b]);
+    for (const p of newlyIneligible) {
+      disqualifiedPlayers.push(p);
     }
   }
 
@@ -117,14 +133,19 @@ export function executeRoundSettlement(
       player1RemainingTransferred: p1Remaining,
       player2RemainingTransferred: p2Remaining,
       player3RemainingTransferred:
-        state.playerCount === 3 ? p3Remaining : undefined,
+        state.playerCount === 3 || state.playerCount === 4 ? p3Remaining : undefined,
+      player4RemainingTransferred:
+        state.playerCount === 4 ? p4Remaining : undefined,
       player1FinalStorage: state.players.player1.storage,
       player2FinalStorage: state.players.player2.storage,
       player3FinalStorage: state.players.player3?.storage,
+      player4FinalStorage: state.players.player4?.storage,
       roundWinner,
       preSettlementState,
       disqualifiedPlayers:
-        state.playerCount === 3 ? disqualifiedPlayers : undefined,
+        state.playerCount === 3 || state.playerCount === 4
+          ? disqualifiedPlayers
+          : undefined,
     },
   };
 }

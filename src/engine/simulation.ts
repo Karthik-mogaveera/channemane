@@ -92,9 +92,9 @@ export class ChannemaneGame {
     gameMode: GameMode = "local",
     aiDifficulty: AIDifficulty | null = null,
     aiPlayer: Player = "PLAYER_2",
-    playerCount: 2 | 3 = 2
+    playerCount: 2 | 3 | 4 = 2
   ) {
-    const effectivePlayerCount: 2 | 3 = gameMode === "ai" ? 2 : playerCount;
+    const effectivePlayerCount: 2 | 3 | 4 = gameMode === "ai" ? 2 : playerCount;
     this.state = initialState
       ? cloneGameState(initialState)
       : createInitialGame(startingPlayer, gameMode, aiDifficulty, aiPlayer, effectivePlayerCount);
@@ -453,7 +453,9 @@ export class ChannemaneGame {
             ? this.state.players.player1.storage
             : this.state.currentPlayer === "PLAYER_2"
             ? this.state.players.player2.storage
-            : this.state.players.player3?.storage ?? 0,
+            : this.state.currentPlayer === "PLAYER_3"
+            ? this.state.players.player3?.storage ?? 0
+            : this.state.players.player4?.storage ?? 0,
       });
     }
 
@@ -502,7 +504,8 @@ export class ChannemaneGame {
       } else {
         let candidate = getNextActivePlayer(this.state, nextActive);
         let found = false;
-        const maxChecks = this.state.playerCount === 3 ? 3 : 2;
+        const maxChecks =
+          this.state.playerCount === 4 ? 4 : this.state.playerCount === 3 ? 3 : 2;
         for (let i = 0; i < maxChecks; i++) {
           if (hasAnyValidMove(this.state, candidate)) {
             this.state.currentPlayer = candidate;

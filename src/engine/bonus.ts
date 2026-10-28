@@ -113,6 +113,8 @@ export function claimBonus(
     state.players.player2.storage += BONUS_CLAIM_SEEDS;
   } else if (owner === "PLAYER_3" && state.players.player3) {
     state.players.player3.storage += BONUS_CLAIM_SEEDS;
+  } else if (owner === "PLAYER_4" && state.players.player4) {
+    state.players.player4.storage += BONUS_CLAIM_SEEDS;
   }
 
   // Check round-ending conditions after bonus collection (Issue 1)

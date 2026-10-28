@@ -11,6 +11,8 @@ import {
   THREE_PLAYER_TOTAL_PITS,
   THREE_PLAYER_TOTAL_SEEDS,
   THREE_PLAYER_RECOVERY_SEEDS,
+  FOUR_PLAYER_TOTAL_PITS,
+  FOUR_PLAYER_TOTAL_SEEDS,
 } from "./constants";
 import type { GameState, Pit, Player, GameMode, AIDifficulty } from "./types";
 
@@ -18,17 +20,23 @@ import type { GameState, Pit, Player, GameMode, AIDifficulty } from "./types";
  * Creates the initial game state for Round 1.
  * For 2-player: all 14 pits are OPEN with 5 seeds each (70 total seeds).
  * For 3-player: all 15 pits are OPEN with 5 seeds each (75 total seeds).
+ * For 4-player: all 16 pits are OPEN with 5 seeds each (80 total seeds).
  */
 export function createInitialGame(
   startingPlayer: Player = "PLAYER_1",
   gameMode: GameMode = "local",
   aiDifficulty: AIDifficulty | null = null,
   aiPlayer: Player = "PLAYER_2",
-  playerCount: 2 | 3 = 2
+  playerCount: 2 | 3 | 4 = 2
 ): GameState {
-  const effectivePlayerCount: 2 | 3 = gameMode === "ai" ? 2 : playerCount;
+  const effectivePlayerCount: 2 | 3 | 4 = gameMode === "ai" ? 2 : playerCount;
+  const isFourPlayer = effectivePlayerCount === 4;
   const isThreePlayer = effectivePlayerCount === 3;
-  const pitCount = isThreePlayer ? THREE_PLAYER_TOTAL_PITS : TOTAL_PITS;
+  const pitCount = isFourPlayer
+    ? FOUR_PLAYER_TOTAL_PITS
+    : isThreePlayer
+    ? THREE_PLAYER_TOTAL_PITS
+    : TOTAL_PITS;
   const pits: Pit[] = [];
 
   for (let i = 0; i < pitCount; i++) {
@@ -63,7 +71,7 @@ export function createInitialGame(
         roundCaptured: 0,
         roundWins: 0,
       },
-      ...(isThreePlayer
+      ...(isThreePlayer || isFourPlayer
         ? {
             player3: {
               storage: 0,
@@ -72,9 +80,19 @@ export function createInitialGame(
             },
           }
         : {}),
+      ...(isFourPlayer
+        ? {
+            player4: {
+              storage: 0,
+              roundCaptured: 0,
+              roundWins: 0,
+            },
+          }
+        : {}),
     },
     playerCount: effectivePlayerCount,
-    disqualifiedPlayers: isThreePlayer ? [] : undefined,
+    disqualifiedPlayers: isThreePlayer || isFourPlayer ? [] : undefined,
+    removedSeeds: isFourPlayer ? 0 : undefined,
     seedsInHand: 0,
     selectedPit: null,
     lastPit: null,
@@ -103,8 +121,8 @@ export function getPlayerSideSeeds(state: GameState, player: Player): number {
 }
 
 /**
- * Calculates the grand total of all seeds in the game:
- * sum(all pit seeds) + Player 1 storage + Player 2 storage + (Player 3 storage) + seedsInHand
+ * Calculates the grand total of all seeds currently in active play:
+ * sum(all pit seeds) + Player 1 storage + Player 2 storage + (Player 3 storage) + (Player 4 storage) + seedsInHand
  */
 export function getTotalSeeds(state: GameState): number {
   const boardSeeds = getTotalBoardSeeds(state);
@@ -113,6 +131,7 @@ export function getTotalSeeds(state: GameState): number {
     state.players.player1.storage +
     state.players.player2.storage +
     (state.players.player3?.storage ?? 0) +
+    (state.players.player4?.storage ?? 0) +
     (state.seedsInHand ?? 0)
   );
 }
@@ -122,8 +141,12 @@ export function getTotalSeeds(state: GameState): number {
  * - 2-player: exactly 70 seeds.
  * - 3-player normal: exactly 75 seeds.
  * - 3-player recovery (after 1 disqualification): exactly 50 seeds.
+ * - 4-player: active seeds + explicitly removed seeds === 80 seeds.
  */
 export function verifySeedConservation(state: GameState): boolean {
+  if (state.playerCount === 4) {
+    return getTotalSeeds(state) + (state.removedSeeds ?? 0) === FOUR_PLAYER_TOTAL_SEEDS;
+  }
   if (state.playerCount === 3) {
     const expected =
       state.disqualifiedPlayers && state.disqualifiedPlayers.length > 0
@@ -147,10 +170,14 @@ export function cloneGameState(state: GameState): GameState {
       ...(state.players.player3
         ? { player3: { ...state.players.player3 } }
         : {}),
+      ...(state.players.player4
+        ? { player4: { ...state.players.player4 } }
+        : {}),
     },
     disqualifiedPlayers: state.disqualifiedPlayers
       ? [...state.disqualifiedPlayers]
       : undefined,
+    removedSeeds: state.removedSeeds,
   };
 }
 
@@ -159,7 +186,9 @@ export function cloneGameState(state: GameState): GameState {
  */
 export function getActivePlayers(state: GameState): Player[] {
   const all: Player[] =
-    state.playerCount === 3
+    state.playerCount === 4
+      ? ["PLAYER_1", "PLAYER_2", "PLAYER_3", "PLAYER_4"]
+      : state.playerCount === 3
       ? ["PLAYER_1", "PLAYER_2", "PLAYER_3"]
       : ["PLAYER_1", "PLAYER_2"];
   const disqualified = state.disqualifiedPlayers ?? [];

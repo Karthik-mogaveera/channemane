@@ -1309,6 +1309,120 @@ When the user clicks **"Local Multiplayer"** on the Main Menu, the application n
 - **Vite Production Build**:
   - `tsc && vite build`: Succeeded in 3.08s with 0 errors.
 
+---
+
+## 32. Four-Player Local Multiplayer Implementation (Authoritative Rules)
+
+### 32.1 Overview & Architecture
+Implemented the complete, authoritative 4-player local multiplayer game mode based strictly on the three handwritten reference images and existing Channemane rules:
+- **Board Specification**: 16 pits arranged in a 2x8 rectangular grid. 5 seeds per pit = 80 initial seeds.
+- **Player Ownership**:
+  - Player 1: P0–P3 (Top row, left).
+  - Player 2: P4–P7 (Top row, right).
+  - Player 3: P8–P11 (Bottom row, right).
+  - Player 4: P12–P15 (Bottom row, left).
+- **Storage Layout**:
+  - Player 1 storage: Horizontal bowl above P0–P3.
+  - Player 2 storage: Horizontal bowl above P4–P7.
+  - Player 4 storage: Horizontal bowl below P15–P12.
+  - Player 3 storage: Horizontal bowl below P11–P8.
+- **Center Gaps**: Clear visual and ornamental gaps separating Player 1 from Player 2 (top) and Player 4 from Player 3 (bottom).
+- **Traversal & Sowing Direction**:
+  - Clockwise rectangular loop matching Image 3 arrows:
+    `P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10 → P11 → P12 → P13 → P14 → P15 → P0`.
+  - Single traversal function (`getNextOpenPit` / `getFollowingOpenPit`) used across sowing, continuous sowing, capture inspection, and closed-pit skipping.
+- **Turn Order**: `Player 1 → Player 2 → Player 3 → Player 4 → Player 1`.
+
+### 32.2 Authoritative Pit Group Mappings (Images 1 & 2)
+Represented all 11 pit-group configurations as explicit engine data structures in `src/engine/constants.ts`:
+- **A. All 4 Players Active**:
+  - G1: `[P0, P4, P11, P15]`
+  - G2: `[P1, P5, P10, P14]`
+  - G3: `[P2, P6, P9, P13]`
+  - G4: `[P3, P7, P8, P12]`
+- **B. Player 1 Disqualified**:
+  - G1: `[P4, P11, P15]`, G2: `[P5, P10, P14]`, G3: `[P6, P9, P13]`, G4: `[P7, P8, P12]`
+- **C. Player 2 Disqualified**:
+  - G1: `[P0, P11, P15]`, G2: `[P1, P10, P14]`, G3: `[P2, P9, P13]`, G4: `[P3, P8, P12]`
+- **D. Player 3 Disqualified**:
+  - G1: `[P0, P4, P15]`, G2: `[P1, P5, P14]`, G3: `[P2, P6, P13]`, G4: `[P3, P7, P12]`
+- **E. Player 4 Disqualified**:
+  - G1: `[P0, P4, P11]`, G2: `[P1, P5, P10]`, G3: `[P2, P6, P9]`, G4: `[P3, P7, P8]`
+- **F. Players 3 and 4 Disqualified**:
+  - G1: `[P0, P4]`, G2: `[P1, P5]`, G3: `[P2, P6]`, G4: `[P3, P7]`
+- **G. Players 1 and 2 Disqualified**:
+  - G1: `[P15, P11]`, G2: `[P14, P10]`, G3: `[P13, P9]`, G4: `[P12, P8]`
+- **H. Players 1 and 3 Disqualified**:
+  - G1: `[P4, P15]`, G2: `[P5, P14]`, G3: `[P6, P13]`, G4: `[P7, P12]`
+- **I. Players 1 and 4 Disqualified**:
+  - G1: `[P4, P11]`, G2: `[P5, P10]`, G3: `[P6, P9]`, G4: `[P7, P8]`
+- **J. Players 2 and 3 Disqualified**:
+  - G1: `[P0, P15]`, G2: `[P1, P14]`, G3: `[P2, P13]`, G4: `[P3, P12]`
+- **K. Players 2 and 4 Disqualified**:
+  - G1: `[P0, P11]`, G2: `[P1, P10]`, G3: `[P2, P9]`, G4: `[P3, P8]`
+
+**Validation Guarantee**: Verified that each group in all 11 configurations contains exactly one pit per active player, that every pit belongs to an active player, and that pits belonging to disqualified players are never included or reopened.
+
+### 32.3 Atomic Group Opening, Insufficient Storage, and Disqualification
+- **Disqualification Check (< 5 seeds)**:
+  - Evaluated only during round setup at settlement eligibility check, never prematurely during gameplay.
+  - **First Elimination (4 -> 3 players)**: 20 seeds permanently removed from active game (`removedSeeds = 20`). 60 active seeds remain. Disqualified player's pits and storage remain permanently closed.
+  - **Second Elimination (3 -> 2 players)**: Additional 20 seeds removed (`removedSeeds = 40`). 40 active seeds remain.
+  - **Third Elimination (2 -> 1 player)**: Match terminates immediately. Sole remaining active player is declared the winner.
+- **Atomic Group Opening**:
+  - For each applicable group G1..G4: checks whether every represented active player has $\ge 5$ seeds in storage.
+  - If all can contribute: places 5 seeds in each pit and deducts 5 seeds from each player's storage.
+  - If any represented player cannot fund the group: that group and all subsequent groups are closed with zero storage deductions.
+  - Unspent seeds remain in players' storage for subsequent rounds.
+
+### 32.4 Seed Conservation Ledger
+- Maintained invariant across all game actions:
+  $$\text{Initial Seeds (80)} = \text{Active Pit Seeds} + \text{Active Storage Seeds} + \text{Explicitly Removed Seeds}$$
+- Verified via `verifySeedConservation(state)` after sowing, continuous sowing, bonus claims, captures, settlement, group openings, and eliminations.
+
+### 32.5 Match Placement Rankings
+- Computed via `computeMatchRankings(state, winner, loser)` in `src/engine/matchEnd.ts`:
+  - `1st Place`: Match winner.
+  - `2nd Place`: Player eliminated immediately prior to the winner.
+  - `3rd Place`: Player eliminated before the 2nd place player.
+  - `Lost`: Earliest eliminated player.
+- Rankings strictly derived from recorded elimination order (`state.disqualifiedPlayers`) and final winner.
+
+### 32.6 Files Created or Modified
+- `src/engine/types.ts`: Updated `Player` to include `"PLAYER_4"`, `playerCount` to `2 | 3 | 4`, and `removedSeeds?: number`.
+- `src/engine/constants.ts`: Added 4-player constants, pit ownership ranges, all 11 pit-group arrays, and `getFourPlayerGroups()`.
+- `src/engine/board.ts`: Updated `createInitialGame`, `getTotalSeeds`, `verifySeedConservation`, `getActivePlayers`, and clone utilities.
+- `src/engine/capture.ts`: Added Player 4 storage and capture credit.
+- `src/engine/bonus.ts`: Added Player 4 bonus ownership credit.
+- `src/engine/settlement.ts`: Added Player 4 side-seed sweep, settlement scores, and disqualification detection.
+- `src/engine/roundSetup.ts`: Implemented `setupNextRoundFourPlayer`, atomic group funding, seed removal, and `eliminatedPlayers` reporting.
+- `src/engine/matchEnd.ts`: Implemented 4-player ranking calculations for 1st, 2nd, 3rd Place, and Lost.
+- `src/engine/game.ts` & `src/engine/simulation.ts`: Updated turn cycles and simulation checks for 4 players.
+- `src/ui/hooks/useChannemaneGame.ts`: Added 4-player options, mode initialization, and restart parameters.
+- `src/ui/components/MultiplayerSelect.tsx`: Enabled 4-Player mode option card.
+- `src/App.tsx`: Wired 4-player game initialization, mode badge, and PlayerPanels props.
+- `src/ui/components/Header.tsx`: Added `👥 LOCAL 4P` tag.
+- `src/ui/components/PlayerPanels.tsx`: Added Player 4 card with amber theme.
+- `src/ui/components/TurnNotification.tsx`: Added Player 4 turn announcement popup.
+- `src/ui/components/Pit.tsx`: Added Player 4 pit and counter styling.
+- `src/ui/components/StorageBowl.tsx`: Added Player 4 support and horizontal orientation support with dynamic SVG viewBox.
+- `src/ui/utils/storageSeedPacking.ts`: Added horizontal grid packing algorithm for $W > H$.
+- `src/ui/components/GameBoard.tsx`: Implemented authoritative 2x8 rectangular board layout, top/bottom horizontal storages, and center gaps.
+- `src/ui/components/SettlementModal.tsx`: Added 4-column settlement scores for 4 players.
+- `src/ui/components/MatchEndModal.tsx`: Added 4-player ranking displays with 3rd Place badges.
+- `src/ui/styles/index.css`: Added complete 4-player board layout styles, horizontal storage styles, center ornamental dividers, and responsive media queries.
+- `tests/engine/fourPlayerRules.test.ts`: Added 24 unit/engine tests for 4-player rules.
+- `tests/ui/fourPlayerIntegration.test.tsx`: Added 3 UI integration tests for 4-player flow and mode isolation.
+
+### 32.7 Test Verification Outcomes
+- **Full Test Suite Results (`npm test`)**:
+  - **58 test files passed (58/58)**.
+  - **448 tests passed (448/448)**.
+  - 0 failed, 0 regressions across 2-player, 3-player, AI, and 4-player modes.
+- **Production Build (`npm run build`)**:
+  - `tsc && vite build`: Succeeded in 2.79s with 0 errors. Production bundle: `dist/index.html` 0.98 kB, `dist/assets/index.js` 352 kB.
+
+
 
 
 

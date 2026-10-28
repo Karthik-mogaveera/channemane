@@ -32,6 +32,8 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
       ? "Player 2 Wins the Match!"
       : matchResult.winner === "PLAYER_3"
       ? "Player 3 Wins the Match!"
+      : matchResult.winner === "PLAYER_4"
+      ? "Player 4 Wins the Match!"
       : "Match Tied!";
 
   return (
@@ -69,27 +71,36 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
                 const isWinner =
                   ranking.label === "Winner" || ranking.label === "1st Place";
                 const isSecond = ranking.label === "2nd Place";
+                const isThird = ranking.label === "3rd Place";
                 const playerName =
                   ranking.player === "PLAYER_1"
                     ? "Player 1"
                     : ranking.player === "PLAYER_2"
                     ? "Player 2"
-                    : "Player 3";
+                    : ranking.player === "PLAYER_3"
+                    ? "Player 3"
+                    : "Player 4";
 
                 const badgeBg = isWinner
                   ? "rgba(234, 179, 8, 0.25)"
                   : isSecond
                   ? "rgba(148, 163, 184, 0.2)"
+                  : isThird
+                  ? "rgba(245, 158, 11, 0.2)"
                   : "rgba(239, 68, 68, 0.2)";
                 const badgeBorder = isWinner
                   ? "#eab308"
                   : isSecond
                   ? "#94a3b8"
+                  : isThird
+                  ? "#f59e0b"
                   : "#ef4444";
                 const badgeColor = isWinner
                   ? "#fef08a"
                   : isSecond
                   ? "#e2e8f0"
+                  : isThird
+                  ? "#fed7aa"
                   : "#fca5a5";
 
                 return (

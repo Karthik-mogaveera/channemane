@@ -127,7 +127,8 @@ export function playTurn(
         // Find if any other active player has valid moves
         let candidate = getNextActivePlayer(state, state.currentPlayer);
         let found = false;
-        const maxChecks = state.playerCount === 3 ? 3 : 2;
+        const maxChecks =
+          state.playerCount === 4 ? 4 : state.playerCount === 3 ? 3 : 2;
         for (let i = 0; i < maxChecks; i++) {
           if (hasAnyValidMove(state, candidate)) {
             state.currentPlayer = candidate;

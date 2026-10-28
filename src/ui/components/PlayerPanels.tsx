@@ -14,6 +14,7 @@ export interface PlayerPanelsProps {
   player1: PlayerState;
   player2: PlayerState;
   player3?: PlayerState;
+  player4?: PlayerState;
   disqualifiedPlayers?: Player[];
 }
 
@@ -22,11 +23,13 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
   player1,
   player2,
   player3,
+  player4,
   disqualifiedPlayers = [],
 }) => {
   const isP1Dis = disqualifiedPlayers.includes("PLAYER_1");
   const isP2Dis = disqualifiedPlayers.includes("PLAYER_2");
   const isP3Dis = disqualifiedPlayers.includes("PLAYER_3");
+  const isP4Dis = disqualifiedPlayers.includes("PLAYER_4");
 
   return (
     <div className="players-bar" role="region" aria-label="Players status">
@@ -60,7 +63,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
         </div>
       </div>
 
-      {/* Player 3 Card (rendered if 3-player mode) */}
+      {/* Player 3 Card (rendered if 3-player or 4-player mode) */}
       {player3 && (
         <div
           className={`player-card p3 ${currentPlayer === "PLAYER_3" ? "active" : ""} ${isP3Dis ? "disqualified" : ""}`}
@@ -73,6 +76,23 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           <div className="player-stats">
             <span>Round Wins: </span>
             <strong data-testid="p3-wins-count">{player3.roundWins}</strong>
+          </div>
+        </div>
+      )}
+
+      {/* Player 4 Card (rendered if 4-player mode) */}
+      {player4 && (
+        <div
+          className={`player-card p4 ${currentPlayer === "PLAYER_4" ? "active" : ""} ${isP4Dis ? "disqualified" : ""}`}
+          data-testid="player-card-4"
+        >
+          <div className="player-name">
+            <span style={{ color: "var(--p4-amber, #f59e0b)" }}>●</span>
+            <span>Player 4 {isP4Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
+          </div>
+          <div className="player-stats">
+            <span>Round Wins: </span>
+            <strong data-testid="p4-wins-count">{player4.roundWins}</strong>
           </div>
         </div>
       )}

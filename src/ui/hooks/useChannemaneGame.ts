@@ -107,7 +107,7 @@ export interface UseChannemaneGameReturn {
     mode?: GameMode,
     difficulty?: AIDifficulty | null,
     aiPlayer?: Player,
-    playerCount?: 2 | 3
+    playerCount?: 2 | 3 | 4
   ) => void;
   clearError: () => void;
 }
@@ -119,7 +119,7 @@ export function useChannemaneGame(
   initialGameMode: GameMode = "local",
   initialDifficulty: AIDifficulty | null = null,
   initialAIPlayer: Player = "PLAYER_2",
-  initialPlayerCount: 2 | 3 = 2
+  initialPlayerCount: 2 | 3 | 4 = 2
 ): UseChannemaneGameReturn {
   const [gameMode, setGameModeState] = useState<GameMode>(
     () => initialGameState?.gameMode ?? initialGameMode
@@ -130,7 +130,7 @@ export function useChannemaneGame(
   const [aiPlayer, setAiPlayerState] = useState<Player>(
     () => initialGameState?.aiPlayer ?? initialAIPlayer
   );
-  const [playerCount, setPlayerCount] = useState<2 | 3>(
+  const [playerCount, setPlayerCount] = useState<2 | 3 | 4>(
     () => initialGameState?.playerCount ?? initialPlayerCount
   );
 
@@ -900,7 +900,7 @@ export function useChannemaneGame(
       mode?: GameMode,
       difficulty?: AIDifficulty | null,
       newAiPlayer?: Player,
-      newPlayerCount?: 2 | 3
+      newPlayerCount?: 2 | 3 | 4
     ) => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
       animationTimeoutsRef.current = [];
@@ -937,7 +937,7 @@ export function useChannemaneGame(
       const chosenMode = mode ?? gameMode;
       const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
       const chosenAiPlayer = newAiPlayer ?? aiPlayer;
-      const chosenPlayerCount: 2 | 3 =
+      const chosenPlayerCount: 2 | 3 | 4 =
         chosenMode === "ai"
           ? 2
           : (newPlayerCount ?? (mode ? 2 : playerCount));

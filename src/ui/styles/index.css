@@ -34,6 +34,10 @@
   --p3-emerald-bg: rgba(16, 185, 129, 0.15);
   --p3-emerald-border: #34d399;
 
+  --p4-amber: #f59e0b;
+  --p4-amber-bg: rgba(245, 158, 11, 0.15);
+  --p4-amber-border: #fbbf24;
+
   /* Seeds */
   --seed-ivory: #faf3e0;
   --seed-tamarind: #b48348;
@@ -783,6 +787,232 @@ body {
   }
 }
 
+/* ==========================================================================
+   4-Player Board Styles (2x8 Grid, Symmetric Top/Bottom Horizontal Storages)
+   Authoritative Reference: Image 3
+   ========================================================================== */
+.four-player-board {
+  --p4-pit-size: clamp(46px, 5.2vw, 76px);
+  --p4-pit-cell-width: var(--p4-pit-size);
+  --p4-pit-cell-height: calc(var(--p4-pit-size) + 26px);
+  --p4-col-gap: clamp(8px, 1.2vw, 16px);
+  --p4-center-gap: clamp(24px, 3.6vw, 44px);
+  --p4-row-gap: clamp(10px, 1.5vw, 18px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 24px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.four-player-storage-top-row,
+.four-player-storage-bottom-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap));
+  gap: var(--p4-center-gap);
+  box-sizing: border-box;
+}
+
+.four-player-storage-half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.four-player-storage-half.left {
+  justify-content: flex-start;
+}
+
+.four-player-storage-half.right {
+  justify-content: flex-end;
+}
+
+.board-center-gap-spacer {
+  width: var(--p4-center-gap);
+  flex-shrink: 0;
+}
+
+/* Horizontal Storage Bowl (Compact pill bar positioned above / below pit groups) */
+.storage-bowl.horizontal {
+  width: 100%;
+  max-width: calc(4 * var(--p4-pit-cell-width) + 3 * var(--p4-col-gap));
+  height: 64px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 20px;
+  padding: 6px 14px;
+  gap: 10px;
+  contain: layout;
+}
+
+.storage-bowl.horizontal .storage-header {
+  flex-direction: column;
+  align-items: flex-start;
+  width: auto;
+  min-width: 68px;
+  gap: 1px;
+}
+
+.storage-bowl.horizontal .storage-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.8px;
+}
+
+.storage-bowl.horizontal .storage-count {
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.storage-bowl.horizontal .storage-seeds-reservoir {
+  flex: 1;
+  width: auto;
+  height: 48px;
+  margin: 0 4px;
+  border-radius: 12px;
+}
+
+.storage-bowl.horizontal .storage-pill {
+  font-size: 0.6rem;
+  writing-mode: vertical-rl;
+  letter-spacing: 1px;
+  opacity: 0.65;
+}
+
+/* 4-Player 2x8 Pits Container */
+.four-player-pits-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p4-row-gap);
+  width: 100%;
+  max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap));
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.four-player-pits-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.four-player-pit-group {
+  display: grid;
+  grid-template-columns: repeat(4, var(--p4-pit-cell-width));
+  gap: var(--p4-col-gap);
+  align-items: center;
+  justify-items: center;
+}
+
+.four-player-pit-group .pit-cell {
+  width: var(--p4-pit-cell-width);
+  height: var(--p4-pit-cell-height);
+}
+
+.four-player-pit-group .channemane-pit {
+  width: var(--p4-pit-size);
+  height: var(--p4-pit-size);
+}
+
+.board-center-gap {
+  width: var(--p4-center-gap);
+  height: 100%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.board-center-gap::after {
+  content: "";
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.35), transparent);
+}
+
+/* Distinct Ownership Highlights for 4-Player groups */
+.p1-group .channemane-pit {
+  border-color: rgba(224, 74, 63, 0.45);
+}
+
+.p2-group .channemane-pit {
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+.p3-group .channemane-pit {
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.p4-group .channemane-pit {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+/* Responsive 4-Player Breakpoints */
+@media (max-width: 960px) {
+  .four-player-board {
+    --p4-pit-size: clamp(38px, 4.6vw, 56px);
+    --p4-col-gap: 8px;
+    --p4-center-gap: 20px;
+    padding: 14px 12px;
+  }
+
+  .storage-bowl.horizontal {
+    height: 54px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .four-player-board {
+    --p4-pit-size: 32px;
+    --p4-col-gap: 4px;
+    --p4-center-gap: 12px;
+    padding: 10px 4px;
+  }
+
+  .four-player-pit-group .pit-cell {
+    height: calc(var(--p4-pit-size) + 18px);
+  }
+
+  .four-player-pit-group .pit-external-count {
+    font-size: 0.8rem;
+    height: 16px;
+    min-height: 16px;
+  }
+
+  .storage-bowl.horizontal {
+    height: 46px;
+    padding: 2px 6px;
+    gap: 4px;
+  }
+
+  .storage-bowl.horizontal .storage-header {
+    min-width: 50px;
+  }
+
+  .storage-bowl.horizontal .storage-label {
+    font-size: 0.55rem;
+  }
+
+  .storage-bowl.horizontal .storage-count {
+    font-size: 0.95rem;
+  }
+}
+
 /* Pit Cell & External Counters (Issues 4, 5, 9) */
 .pit-cell {
   display: flex;
@@ -833,6 +1063,10 @@ body {
 
 .pit-external-count.p3-count {
   color: #a7f3d0;
+}
+
+.pit-external-count.p4-count {
+  color: #fde68a;
 }
 
 /* Pit Component (Circular, enlarged fixed diameter to clearly showcase up to 70 seeds) */
@@ -2461,6 +2695,13 @@ body {
   border: 2px solid var(--p3-emerald, #10b981);
   color: #ecfdf5;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(16, 185, 129, 0.4);
+}
+
+.turn-notification-p4 {
+  background: linear-gradient(135deg, rgba(85, 60, 20, 0.95) 0%, rgba(50, 35, 10, 0.95) 100%);
+  border: 2px solid var(--p4-amber, #f59e0b);
+  color: #fffbeb;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(245, 158, 11, 0.4);
 }
 
 .turn-notification-ai {

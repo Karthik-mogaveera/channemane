@@ -50,23 +50,38 @@ export function calculateStorageSeedPositions(
   const W = geometry.width;
   const H = geometry.height;
 
-  // Choose optimal grid columns based on count:
-  // e.g. for small counts, 3-4 cols; for 70 seeds, 5 or 6 cols (e.g. 5 cols x 14 rows, or 6 cols x 12 rows)
   let cols: number;
-  if (seedCount <= 4) {
-    cols = Math.min(seedCount, 2);
-  } else if (seedCount <= 12) {
-    cols = 3;
-  } else if (seedCount <= 28) {
-    cols = 4;
-  } else if (seedCount <= 45) {
-    cols = 5;
-  } else {
-    // Up to 70 seeds: 5 or 6 cols
-    cols = 5;
-  }
+  let rows: number;
 
-  const rows = Math.ceil(seedCount / cols);
+  if (W > H) {
+    // Horizontal storage orientation (e.g., 4-player top/bottom bowls)
+    if (seedCount <= 8) {
+      rows = 1;
+      cols = Math.max(1, seedCount);
+    } else if (seedCount <= 24) {
+      rows = 2;
+      cols = Math.ceil(seedCount / 2);
+    } else {
+      rows = 3;
+      cols = Math.ceil(seedCount / 3);
+    }
+  } else {
+    // Choose optimal grid columns based on count:
+    // e.g. for small counts, 3-4 cols; for 70 seeds, 5 or 6 cols (e.g. 5 cols x 14 rows, or 6 cols x 12 rows)
+    if (seedCount <= 4) {
+      cols = Math.min(seedCount, 2);
+    } else if (seedCount <= 12) {
+      cols = 3;
+    } else if (seedCount <= 28) {
+      cols = 4;
+    } else if (seedCount <= 45) {
+      cols = 5;
+    } else {
+      // Up to 70 seeds: 5 or 6 cols
+      cols = 5;
+    }
+    rows = Math.ceil(seedCount / cols);
+  }
 
   // Available space per cell
   const cellWidth = W / cols;

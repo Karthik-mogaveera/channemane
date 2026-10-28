@@ -55,7 +55,7 @@ describe("Local Multiplayer Player Count Selection", () => {
 
     expect(btn4).toBeInTheDocument();
     expect(btn4).toHaveTextContent("4 Players");
-    expect(btn4).toHaveTextContent("Coming Soon");
+    expect(btn4).toHaveTextContent("Play Now");
 
     expect(btn5).toBeInTheDocument();
     expect(btn5).toHaveTextContent("5 Players");
@@ -150,38 +150,53 @@ describe("Local Multiplayer Player Count Selection", () => {
     expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
   });
 
-  it("Requirement 8-11: Selecting 4, 5, or 6 Players displays Work in Progress dialog with exact text", () => {
+  it("Requirement 5c: Selecting 4 Players opens 4-Player gameplay flow and renders 16 pits and 4 player cards", () => {
+    render(<App />);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("menu-btn-local"));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("player-count-btn-4"));
+    });
+
+    // Directly on game board with 4-Player Board
+    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 4P/i);
+
+    // Verify 4 player cards and 16 pits
+    expect(screen.getByTestId("player-card-1")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-2")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-3")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-4")).toBeInTheDocument();
+    expect(screen.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
+    expect(screen.getByTestId("pit-15")).toHaveAttribute("data-seeds", "5");
+    expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
+  });
+
+  it("Requirement 8-11: Selecting 5 or 6 Players displays Work in Progress dialog with exact text", () => {
     render(<App />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
     });
 
-    // Test 4 Players
+    // Test 5 Players
     act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-4"));
+      fireEvent.click(screen.getByTestId("player-count-btn-5"));
     });
     expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Work in Progress" })).toBeInTheDocument();
     expect(screen.getByTestId("wip-message")).toHaveTextContent(
       "Multiplayer for this player count is currently under development. Stay tuned for future updates!"
     );
-    expect(screen.getByTestId("wip-player-count")).toHaveTextContent("4-Player Multiplayer");
+    expect(screen.getByTestId("wip-player-count")).toHaveTextContent("5-Player Multiplayer");
     act(() => {
       fireEvent.click(screen.getByTestId("wip-modal-ok-btn"));
     });
     expect(screen.queryByTestId("wip-modal")).not.toBeInTheDocument();
     expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
-
-    // Test 5 Players
-    act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-5"));
-    });
-    expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("wip-player-count")).toHaveTextContent("5-Player Multiplayer");
-    act(() => {
-      fireEvent.click(screen.getByTestId("wip-modal-ok-btn"));
-    });
 
     // Test 6 Players
     act(() => {
@@ -202,9 +217,9 @@ describe("Local Multiplayer Player Count Selection", () => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
     });
 
-    // Open WIP modal with 4 Players
+    // Open WIP modal with 5 Players
     act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-4"));
+      fireEvent.click(screen.getByTestId("player-count-btn-5"));
     });
     expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
 
@@ -215,9 +230,9 @@ describe("Local Multiplayer Player Count Selection", () => {
     expect(screen.queryByTestId("wip-modal")).not.toBeInTheDocument();
     expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
 
-    // Open again with 4 Players and click backdrop overlay
+    // Open again with 5 Players and click backdrop overlay
     act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-4"));
+      fireEvent.click(screen.getByTestId("player-count-btn-5"));
     });
     const overlay = screen.getByTestId("wip-modal");
     act(() => {
@@ -227,7 +242,7 @@ describe("Local Multiplayer Player Count Selection", () => {
 
     // Clicking card content does not dismiss (event propagation stopped)
     act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-5"));
+      fireEvent.click(screen.getByTestId("player-count-btn-6"));
     });
     const card = screen.getByTestId("wip-card");
     act(() => {

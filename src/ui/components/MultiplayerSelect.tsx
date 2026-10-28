@@ -105,13 +105,13 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             </span>
           </button>
 
-          {/* 3. 4 Players (WIP) */}
+          {/* 3. 4 Players (Playable) */}
           <button
             type="button"
-            className="multiplayer-option-btn multiplayer-option-wip"
+            className="multiplayer-option-btn multiplayer-option-4p multiplayer-option-active"
             onClick={() => onSelectPlayerCount(4)}
             data-testid="player-count-btn-4"
-            aria-label="4 Players mode, coming soon"
+            aria-label="4 Players mode, fully playable"
           >
             <div className="menu-btn-icon" aria-hidden="true">
               👨‍👩‍👧‍👦
@@ -119,12 +119,12 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">4 Players</span>
-                <span className="coming-soon-pill" aria-label="Under development">
-                  Coming Soon
+                <span className="multiplayer-ready-pill" aria-label="Playable mode">
+                  Play Now
                 </span>
               </div>
               <span className="menu-btn-desc">
-                4-player quadrant rotation and team sowing
+                Authoritative 4-player Karnataka rules with 16 pits &amp; 80 seeds
               </span>
             </div>
             <span className="menu-btn-arrow" aria-hidden="true">

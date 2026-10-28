@@ -1422,15 +1422,43 @@ Represented all 11 pit-group configurations as explicit engine data structures i
 - **Production Build (`npm run build`)**:
   - `tsc && vite build`: Succeeded in 2.79s with 0 errors. Production bundle: `dist/index.html` 0.98 kB, `dist/assets/index.js` 352 kB.
 
+---
 
+## 33. 4-Player Board Visual Restructuring & Layout Optimization
 
+### 33.1 Objectives & Scope Protection
+- **Scope Isolation**: Exclusively restructured the 4-player board layout and its dedicated styles (`.four-player-board`, `.four-player-storage-top-row`, `.four-player-storage-bottom-row`, `.four-player-pits-row`, `.four-player-pit-group`, `.storage-bowl.horizontal`).
+- **Zero Infiltration**: 2-player and 3-player board styling, engine rules, sowing loops, captures, bonus claims, settlement logic, disqualification flows, and player color palettes are strictly protected and unchanged.
 
+### 33.2 Layout Restructuring & Spacing Improvements
+1. **Synchronized 3-Column Grid for Storages and Pits**:
+   - Both `.four-player-storage-top-row` / `.four-player-storage-bottom-row` and `.four-player-pits-row` now share the exact same 3-column layout:
+     `grid-template-columns: 1fr var(--p4-center-gap) 1fr;`
+   - Perfectly aligns each horizontal storage bowl directly above or below its corresponding 4-pit group without lateral drift.
+   - P1 Storage is centered and flush above P0–P3; P2 Storage is flush above P4–P7; P4 Storage is flush below P15–P12; P3 Storage is flush below P11–P8.
+2. **Pit Spacing & Circularity**:
+   - Increased pit spacing `--p4-col-gap` from `clamp(8px, 1.2vw, 16px)` to `clamp(12px, 1.6vw, 22px)` to prevent seeds and pit borders from crowding.
+   - Standardized uniform pit distribution within each quadrant using `grid-template-columns: repeat(4, 1fr)`.
+   - Pits maintain strict `aspect-ratio: 1 / 1` circular geometry (`clamp(50px, 5.5vw, 72px)`).
+3. **Player Quadrant Enclosures & Boundaries**:
+   - Styled `.four-player-pit-group` with a subtle bounded container (`background: rgba(0, 0, 0, 0.18)`, `border-radius: 18px`, padding `6px 8px`).
+   - Added subtle quadrant borders themed to each player's established palette (`.p1-group`: red tint, `.p2-group`: blue tint, `.p3-group`: emerald tint, `.p4-group`: amber tint).
+   - Added a subtle horizontal center divider line across the center between top and bottom rows (`.four-player-pits-container::before`).
+4. **Prominent Ornamental Center Divider**:
+   - Enhanced `.board-center-gap` with a golden ornamental vertical divider line (`background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.7) 50%, transparent)`) and a golden ambient glow (`box-shadow: 0 0 6px rgba(212, 175, 55, 0.3)`).
+5. **Blank Space Reduction & Horizontal Storage Proportions**:
+   - Adjusted storage bowl height to a compact 56px (down from 64px) with crisp horizontal text badges (`.storage-pill`), tabular numbers, and streamlined padding.
+   - Reduced excessive vertical container gaps (`--p4-section-gap: clamp(8px, 1.2vw, 14px)`) and tightened pit external counter margins.
+   - Capped board maximum width with `--p4-board-max-width` to prevent unwanted stretching across ultra-wide viewports.
+6. **Responsive Layouts**:
+   - Responsive breakpoints at `max-width: 960px`, `max-width: 640px`, and mobile landscape (`max-height: 520px`).
+   - Adapts pit dimensions, gaps, and storage reservoirs gracefully without overflow or clipping.
 
-
-
-
-
-
-
-
+### 33.3 Verification
+- `tests/ui/fourPlayerBoardLayout.test.tsx`: 3/3 tests passed.
+- `tests/ui/fourPlayerIntegration.test.tsx`: 3/3 tests passed.
+- `tests/engine/fourPlayerRules.test.ts`: 24/24 tests passed.
+- `tests/ui/gameBoard.test.tsx`: 3/3 tests passed.
+- `tests/ui/gameModeSwitching.test.tsx`: 4/4 tests passed.
+- `npm run build`: Compiled with 0 errors in 3.58s.
 

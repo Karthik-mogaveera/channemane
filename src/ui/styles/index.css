@@ -792,100 +792,125 @@ body {
    Authoritative Reference: Image 3
    ========================================================================== */
 .four-player-board {
-  --p4-pit-size: clamp(46px, 5.2vw, 76px);
+  --p4-pit-size: clamp(50px, 5.5vw, 72px);
   --p4-pit-cell-width: var(--p4-pit-size);
-  --p4-pit-cell-height: calc(var(--p4-pit-size) + 26px);
-  --p4-col-gap: clamp(8px, 1.2vw, 16px);
-  --p4-center-gap: clamp(24px, 3.6vw, 44px);
-  --p4-row-gap: clamp(10px, 1.5vw, 18px);
+  --p4-pit-cell-height: calc(var(--p4-pit-size) + 22px);
+  --p4-col-gap: clamp(12px, 1.6vw, 22px);
+  --p4-center-gap: clamp(32px, 4vw, 56px);
+  --p4-row-gap: clamp(12px, 1.8vw, 20px);
+  --p4-section-gap: clamp(8px, 1.2vw, 14px);
+  --p4-board-max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap) + 48px);
 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 20px 24px;
-  max-width: 100%;
+  gap: var(--p4-section-gap);
+  padding: 16px 20px;
+  width: 100%;
+  max-width: var(--p4-board-max-width);
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
 .four-player-storage-top-row,
 .four-player-storage-bottom-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr var(--p4-center-gap) 1fr;
   width: 100%;
-  max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap));
-  gap: var(--p4-center-gap);
+  align-items: center;
   box-sizing: border-box;
 }
 
 .four-player-storage-half {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
   box-sizing: border-box;
 }
 
 .four-player-storage-half.left {
-  justify-content: flex-start;
+  justify-content: stretch;
 }
 
 .four-player-storage-half.right {
-  justify-content: flex-end;
+  justify-content: stretch;
 }
 
 .board-center-gap-spacer {
   width: var(--p4-center-gap);
+  height: 100%;
   flex-shrink: 0;
 }
 
-/* Horizontal Storage Bowl (Compact pill bar positioned above / below pit groups) */
+/* Horizontal Storage Bowl (Full width of the player's 4-pit quadrant) */
 .storage-bowl.horizontal {
   width: 100%;
-  max-width: calc(4 * var(--p4-pit-cell-width) + 3 * var(--p4-col-gap));
-  height: 64px;
+  max-width: 100%;
+  height: 56px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  border-radius: 20px;
-  padding: 6px 14px;
-  gap: 10px;
+  border-radius: 16px;
+  padding: 5px 12px;
+  gap: 8px;
+  box-sizing: border-box;
   contain: layout;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .storage-bowl.horizontal .storage-header {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   width: auto;
-  min-width: 68px;
+  min-width: 62px;
   gap: 1px;
+  flex-shrink: 0;
 }
 
 .storage-bowl.horizontal .storage-label {
-  font-size: 0.65rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: 0.8px;
+  color: var(--gold-light);
+  opacity: 0.85;
 }
 
 .storage-bowl.horizontal .storage-count {
-  font-size: 1.25rem;
-  line-height: 1.1;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--gold-light);
 }
 
 .storage-bowl.horizontal .storage-seeds-reservoir {
   flex: 1;
   width: auto;
-  height: 48px;
-  margin: 0 4px;
-  border-radius: 12px;
+  height: 42px;
+  margin: 0 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  overflow: hidden;
 }
 
 .storage-bowl.horizontal .storage-pill {
-  font-size: 0.6rem;
-  writing-mode: vertical-rl;
-  letter-spacing: 1px;
-  opacity: 0.65;
+  font-size: 0.62rem;
+  font-weight: 800;
+  writing-mode: horizontal-tb;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--brass-gold);
+  opacity: 0.8;
+  flex-shrink: 0;
+  padding: 3px 7px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 /* 4-Player 2x8 Pits Container */
@@ -894,39 +919,82 @@ body {
   flex-direction: column;
   gap: var(--p4-row-gap);
   width: 100%;
-  max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap));
   align-items: center;
   box-sizing: border-box;
+  position: relative;
+}
+
+/* Subtle horizontal divider between top row (P1/P2) and bottom row (P4/P3) */
+.four-player-pits-container::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 2%;
+  right: 2%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(212, 175, 55, 0.12) 15%,
+    rgba(212, 175, 55, 0.28) 50%,
+    rgba(212, 175, 55, 0.12) 85%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .four-player-pits-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr var(--p4-center-gap) 1fr;
   width: 100%;
+  align-items: center;
   box-sizing: border-box;
 }
 
+/* Player Pit Quadrant Container: subtle bounded grouping */
 .four-player-pit-group {
   display: grid;
-  grid-template-columns: repeat(4, var(--p4-pit-cell-width));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--p4-col-gap);
   align-items: center;
   justify-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
 }
 
 .four-player-pit-group .pit-cell {
-  width: var(--p4-pit-cell-width);
+  width: 100%;
+  max-width: var(--p4-pit-cell-width);
   height: var(--p4-pit-cell-height);
+  justify-content: center;
 }
 
 .four-player-pit-group .channemane-pit {
   width: var(--p4-pit-size);
   height: var(--p4-pit-size);
+  aspect-ratio: 1 / 1;
 }
 
+.four-player-pit-group .pit-external-count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  height: 18px;
+  min-height: 18px;
+  line-height: 18px;
+  margin: 1px 0;
+}
+
+/* Prominent Ornamental Center Divider between Left and Right Groups */
 .board-center-gap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--p4-center-gap);
   height: 100%;
   flex-shrink: 0;
@@ -936,15 +1004,40 @@ body {
 .board-center-gap::after {
   content: "";
   position: absolute;
-  top: 15%;
-  bottom: 15%;
+  top: 8%;
+  bottom: 8%;
   left: 50%;
   width: 2px;
   transform: translateX(-50%);
-  background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.35), transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(212, 175, 55, 0.5) 25%,
+    rgba(212, 175, 55, 0.7) 50%,
+    rgba(212, 175, 55, 0.5) 75%,
+    transparent 100%
+  );
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.3);
+  border-radius: 1px;
 }
 
-/* Distinct Ownership Highlights for 4-Player groups */
+/* Subtle ownership quadrant borders matching established player colors */
+.four-player-pit-group.p1-group {
+  border-color: rgba(224, 74, 63, 0.3);
+}
+
+.four-player-pit-group.p2-group {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.four-player-pit-group.p3-group {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.four-player-pit-group.p4-group {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
 .p1-group .channemane-pit {
   border-color: rgba(224, 74, 63, 0.45);
 }
@@ -964,52 +1057,102 @@ body {
 /* Responsive 4-Player Breakpoints */
 @media (max-width: 960px) {
   .four-player-board {
-    --p4-pit-size: clamp(38px, 4.6vw, 56px);
-    --p4-col-gap: 8px;
-    --p4-center-gap: 20px;
-    padding: 14px 12px;
+    --p4-pit-size: clamp(40px, 5vw, 58px);
+    --p4-col-gap: clamp(8px, 1.2vw, 14px);
+    --p4-center-gap: clamp(22px, 3vw, 36px);
+    --p4-row-gap: 12px;
+    --p4-section-gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .four-player-pit-group {
+    padding: 4px 6px;
+    border-radius: 14px;
   }
 
   .storage-bowl.horizontal {
-    height: 54px;
-    padding: 4px 8px;
+    height: 50px;
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .storage-bowl.horizontal .storage-seeds-reservoir {
+    height: 36px;
   }
 }
 
 @media (max-width: 640px) {
   .four-player-board {
-    --p4-pit-size: 32px;
-    --p4-col-gap: 4px;
-    --p4-center-gap: 12px;
-    padding: 10px 4px;
+    --p4-pit-size: clamp(34px, 4.4vw, 42px);
+    --p4-col-gap: 6px;
+    --p4-center-gap: 16px;
+    --p4-row-gap: 8px;
+    --p4-section-gap: 6px;
+    padding: 8px 8px;
+  }
+
+  .four-player-pit-group {
+    padding: 3px 4px;
+    border-radius: 10px;
   }
 
   .four-player-pit-group .pit-cell {
-    height: calc(var(--p4-pit-size) + 18px);
+    height: calc(var(--p4-pit-size) + 16px);
   }
 
   .four-player-pit-group .pit-external-count {
-    font-size: 0.8rem;
-    height: 16px;
-    min-height: 16px;
+    font-size: 0.75rem;
+    height: 14px;
+    min-height: 14px;
+    line-height: 14px;
   }
 
   .storage-bowl.horizontal {
-    height: 46px;
+    height: 44px;
     padding: 2px 6px;
     gap: 4px;
+    border-radius: 12px;
   }
 
   .storage-bowl.horizontal .storage-header {
-    min-width: 50px;
+    min-width: 48px;
   }
 
   .storage-bowl.horizontal .storage-label {
-    font-size: 0.55rem;
+    font-size: 0.54rem;
   }
 
   .storage-bowl.horizontal .storage-count {
-    font-size: 0.95rem;
+    font-size: 1rem;
+  }
+
+  .storage-bowl.horizontal .storage-seeds-reservoir {
+    height: 32px;
+    margin: 0 4px;
+  }
+
+  .storage-bowl.horizontal .storage-pill {
+    font-size: 0.52rem;
+    padding: 2px 4px;
+  }
+}
+
+/* Mobile landscape optimization for 4-Player board */
+@media (max-height: 520px) and (orientation: landscape) {
+  .four-player-board {
+    --p4-pit-size: clamp(34px, 4.2vw, 48px);
+    --p4-row-gap: 6px;
+    --p4-section-gap: 6px;
+    padding: 6px 12px;
+  }
+
+  .storage-bowl.horizontal {
+    height: 42px;
+    padding: 2px 6px;
+  }
+
+  .storage-bowl.horizontal .storage-seeds-reservoir {
+    height: 30px;
   }
 }
 

@@ -792,14 +792,14 @@ body {
    Authoritative Reference: Image 3
    ========================================================================== */
 .four-player-board {
-  --p4-pit-size: clamp(50px, 5.5vw, 72px);
+  --p4-pit-size: clamp(70px, 7.5vw, 80px);
   --p4-pit-cell-width: var(--p4-pit-size);
   --p4-pit-cell-height: calc(var(--p4-pit-size) + 22px);
   --p4-col-gap: clamp(12px, 1.6vw, 22px);
   --p4-center-gap: clamp(32px, 4vw, 56px);
   --p4-row-gap: clamp(12px, 1.8vw, 20px);
   --p4-section-gap: clamp(8px, 1.2vw, 14px);
-  --p4-board-max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap) + 48px);
+  --p4-board-max-width: calc(8 * var(--p4-pit-cell-width) + 6 * var(--p4-col-gap) + var(--p4-center-gap) + 200px);
 
   display: flex;
   flex-direction: column;
@@ -1022,7 +1022,7 @@ body {
 }
 
 /* Subtle ownership quadrant borders matching established player colors */
-.four-player-pit-group.p1-group {
+/* .four-player-pit-group.p1-group {
   border-color: rgba(224, 74, 63, 0.3);
 }
 
@@ -1052,7 +1052,7 @@ body {
 
 .p4-group .channemane-pit {
   border-color: rgba(245, 158, 11, 0.45);
-}
+} */
 
 /* Responsive 4-Player Breakpoints */
 @media (max-width: 960px) {

@@ -24,9 +24,10 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
     onEscape: onClose,
   });
 
-  const isFourPlayer = settlement.player4FinalStorage !== undefined;
-  const isThreePlayer = !isFourPlayer && settlement.player3FinalStorage !== undefined;
-  const isMultiplayer = isFourPlayer || isThreePlayer;
+  const isFivePlayer = settlement.player5FinalStorage !== undefined;
+  const isFourPlayer = !isFivePlayer && settlement.player4FinalStorage !== undefined;
+  const isThreePlayer = !isFivePlayer && !isFourPlayer && settlement.player3FinalStorage !== undefined;
+  const isMultiplayer = isFivePlayer || isFourPlayer || isThreePlayer;
 
   const winnerText =
     settlement.roundWinner === "PLAYER_1"
@@ -37,6 +38,8 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
       ? "Player 3 Wins the Round!"
       : settlement.roundWinner === "PLAYER_4"
       ? "Player 4 Wins the Round!"
+      : settlement.roundWinner === "PLAYER_5"
+      ? "Player 5 Wins the Round!"
       : "Round Tied!";
 
   const openPairs = Math.min(
@@ -54,7 +57,9 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
   const isP3Disqualified =
     isMultiplayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_3"));
   const isP4Disqualified =
-    isFourPlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_4"));
+    (isFourPlayer || isFivePlayer) && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_4"));
+  const isP5Disqualified =
+    isFivePlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_5"));
 
   return (
     <div
@@ -80,7 +85,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           <div
             className="settlement-score-grid"
             style={
-              isFourPlayer
+              isFivePlayer || isFourPlayer
                 ? { gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }
                 : isThreePlayer
                 ? { gridTemplateColumns: "1fr 1fr 1fr" }
@@ -117,7 +122,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </small>
             </div>
 
-            {(isThreePlayer || isFourPlayer) && (
+            {(isThreePlayer || isFourPlayer || isFivePlayer) && (
               <div className={`score-box ${isP3Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 3 Total Storage</h5>
                 <div
@@ -134,7 +139,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </div>
             )}
 
-            {isFourPlayer && (
+            {(isFourPlayer || isFivePlayer) && (
               <div className={`score-box ${isP4Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 4 Total Storage</h5>
                 <div
@@ -150,9 +155,33 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
                 </small>
               </div>
             )}
+
+            {isFivePlayer && (
+              <div className={`score-box ${isP5Disqualified ? "disqualified-box" : ""}`}>
+                <h5>Player 5 Total Storage</h5>
+                <div
+                  className={`score-val ${isP5Disqualified ? "storage-disqualified-text" : ""}`}
+                  data-testid="settlement-p5-storage"
+                >
+                  {isP5Disqualified ? "Disqualified" : settlement.player5FinalStorage}
+                </div>
+                <small>
+                  {isP5Disqualified
+                    ? `Eliminated (< 5 seeds in storage)`
+                    : `Seeds swept from Player 5 side: +${settlement.player5RemainingTransferred ?? 0}`}
+                </small>
+              </div>
+            )}
           </div>
 
-          {isFourPlayer ? (
+          {isFivePlayer ? (
+            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+              <strong>Next Round Setup:</strong>{" "}
+              {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
+                ? "Disqualified players are eliminated permanently. The remaining active players will continue with their allocations."
+                : "Authoritative pit groups G1–G4 will open atomically if all active players can contribute 5 seeds per group."}
+            </p>
+          ) : isFourPlayer ? (
             <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0

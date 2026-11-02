@@ -27,34 +27,43 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   const isP1 = player === "PLAYER_1";
   const isP2 = player === "PLAYER_2";
   const isP3 = player === "PLAYER_3";
+  const isP4 = player === "PLAYER_4";
   const playerLabel = isP1
     ? "Player 1"
     : isP2
     ? "Player 2"
     : isP3
     ? "Player 3"
-    : "Player 4";
+    : isP4
+    ? "Player 4"
+    : "Player 5";
   const testId = isP1
     ? "storage-player1"
     : isP2
     ? "storage-player2"
     : isP3
     ? "storage-player3"
-    : "storage-player4";
+    : isP4
+    ? "storage-player4"
+    : "storage-player5";
   const countTestId = isP1
     ? "p1-captured-count"
     : isP2
     ? "p2-captured-count"
     : isP3
     ? "p3-captured-count"
-    : "p4-captured-count";
+    : isP4
+    ? "p4-captured-count"
+    : "p5-captured-count";
   const gradId = isP1
     ? "storage-seed-grad-p1"
     : isP2
     ? "storage-seed-grad-p2"
     : isP3
     ? "storage-seed-grad-p3"
-    : "storage-seed-grad-p4";
+    : isP4
+    ? "storage-seed-grad-p4"
+    : "storage-seed-grad-p5";
 
   const isHorizontal = orientation === "horizontal";
   const geometry = useMemo(() => {

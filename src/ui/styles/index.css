@@ -38,6 +38,10 @@
   --p4-amber-bg: rgba(245, 158, 11, 0.15);
   --p4-amber-border: #fbbf24;
 
+  --p5-purple: #a855f7;
+  --p5-purple-bg: rgba(168, 85, 247, 0.15);
+  --p5-purple-border: #c084fc;
+
   /* Seeds */
   --seed-ivory: #faf3e0;
   --seed-tamarind: #b48348;
@@ -328,13 +332,31 @@ body {
   background: var(--p2-indigo-bg);
 }
 
-.players-bar:has(.player-card.p3) {
+.players-bar:has(.player-card.p5) {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.players-bar:has(.player-card.p4):not(:has(.player-card.p5)) {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.players-bar:has(.player-card.p3):not(:has(.player-card.p4)) {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
 .player-card.p3.active {
   border-color: var(--p3-emerald-border);
   background: var(--p3-emerald-bg);
+}
+
+.player-card.p4.active {
+  border-color: var(--p4-amber-border);
+  background: var(--p4-amber-bg);
+}
+
+.player-card.p5.active {
+  border-color: var(--p5-purple-border);
+  background: var(--p5-purple-bg);
 }
 
 .player-card.disqualified {
@@ -1156,6 +1178,166 @@ body {
   }
 }
 
+/* ==========================================================================
+   5-Player Traditional Heritage Board Layout (Sections 1 & 2)
+   Authoritative Reference: Image 2 (3 Horizontal Rows, 20 Circular Pits)
+   Top Row: P0–P3 (P1) [gap] P4–P7 (P2)
+   Middle Row: P11–P8 (P3) [gap] Player 3 Storage (aligned under P4–P7)
+   Bottom Row: P12–P15 (P4) [gap] P16–P19 (P5)
+   ========================================================================== */
+.five-player-board {
+  --p5-pit-size: clamp(55px, 6vw, 72px);
+  --p5-pit-cell-width: var(--p5-pit-size);
+  --p5-pit-cell-height: calc(var(--p5-pit-size) + 20px);
+  --p5-col-gap: clamp(10px, 1.4vw, 18px);
+  --p5-center-gap: clamp(28px, 3.5vw, 48px);
+  --p5-row-gap: clamp(10px, 1.4vw, 16px);
+  --p5-section-gap: clamp(8px, 1.2vw, 12px);
+  --p5-board-max-width: calc(8 * var(--p5-pit-cell-width) + 6 * var(--p5-col-gap) + var(--p5-center-gap) + 200px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p5-section-gap);
+  padding: 14px 18px;
+  width: 100%;
+  max-width: var(--p5-board-max-width);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.five-player-storage-top-row,
+.five-player-storage-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr var(--p5-center-gap) 1fr;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.five-player-storage-half {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.five-player-storage-half.left,
+.five-player-storage-half.right {
+  justify-content: stretch;
+}
+
+.five-player-pits-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p5-row-gap);
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.five-player-pits-row {
+  display: grid;
+  grid-template-columns: 1fr var(--p5-center-gap) 1fr;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.five-player-pit-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--p5-col-gap);
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.five-player-pit-group .pit-cell {
+  width: 100%;
+  max-width: var(--p5-pit-cell-width);
+  height: var(--p5-pit-cell-height);
+  justify-content: center;
+}
+
+.five-player-pit-group .channemane-pit {
+  width: var(--p5-pit-size);
+  height: var(--p5-pit-size);
+  aspect-ratio: 1 / 1;
+}
+
+.five-player-pit-group .pit-external-count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  height: 18px;
+  min-height: 18px;
+  line-height: 18px;
+}
+
+.p5-group .channemane-pit {
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+.board-storage-p5 {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+@media (max-width: 960px) {
+  .five-player-board {
+    --p5-pit-size: clamp(38px, 4.8vw, 54px);
+    --p5-col-gap: clamp(6px, 1.1vw, 12px);
+    --p5-center-gap: clamp(18px, 2.5vw, 30px);
+    --p5-row-gap: 8px;
+    --p5-section-gap: 6px;
+    padding: 10px 12px;
+  }
+  .five-player-pit-group {
+    padding: 4px 6px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .five-player-board {
+    --p5-pit-size: clamp(28px, 4vw, 36px);
+    --p5-col-gap: 4px;
+    --p5-center-gap: 12px;
+    --p5-row-gap: 5px;
+    --p5-section-gap: 4px;
+    padding: 6px 6px;
+  }
+  .five-player-pit-group {
+    padding: 2px 4px;
+    border-radius: 10px;
+  }
+  .five-player-pit-group .pit-cell {
+    height: calc(var(--p5-pit-size) + 14px);
+  }
+  .five-player-pit-group .pit-external-count {
+    font-size: 0.7rem;
+    height: 12px;
+    min-height: 12px;
+    line-height: 12px;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .five-player-board {
+    --p5-pit-size: clamp(28px, 3.6vw, 40px);
+    --p5-row-gap: 4px;
+    --p5-section-gap: 4px;
+    padding: 4px 8px;
+  }
+}
+
 /* Pit Cell & External Counters (Issues 4, 5, 9) */
 .pit-cell {
   display: flex;
@@ -1210,6 +1392,10 @@ body {
 
 .pit-external-count.p4-count {
   color: #fde68a;
+}
+
+.pit-external-count.p5-count {
+  color: #e9d5ff;
 }
 
 /* Pit Component (Circular, enlarged fixed diameter to clearly showcase up to 70 seeds) */
@@ -2845,6 +3031,13 @@ body {
   border: 2px solid var(--p4-amber, #f59e0b);
   color: #fffbeb;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(245, 158, 11, 0.4);
+}
+
+.turn-notification-p5 {
+  background: linear-gradient(135deg, rgba(75, 25, 95, 0.95) 0%, rgba(45, 15, 60, 0.95) 100%);
+  border: 2px solid var(--p5-purple, #a855f7);
+  color: #faf5ff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(168, 85, 247, 0.4);
 }
 
 .turn-notification-ai {

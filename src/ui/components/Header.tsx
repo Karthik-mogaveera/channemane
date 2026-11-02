@@ -15,7 +15,7 @@ export interface HeaderProps {
   onReturnToMenu?: () => void;
   gameMode?: GameMode | null;
   aiDifficulty?: AIDifficulty | null;
-  playerCount?: 2 | 3 | 4;
+  playerCount?: 2 | 3 | 4 | 5;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="game-mode-tag" data-testid="game-mode-tag">
               {gameMode === "ai"
                 ? `🤖 AI (${aiDifficulty ? aiDifficulty.toUpperCase() : "STANDARD"})`
+                : playerCount === 5
+                ? "👥 LOCAL 5P"
                 : playerCount === 4
                 ? "👥 LOCAL 4P"
                 : playerCount === 3

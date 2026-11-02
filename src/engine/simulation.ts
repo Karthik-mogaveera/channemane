@@ -92,9 +92,9 @@ export class ChannemaneGame {
     gameMode: GameMode = "local",
     aiDifficulty: AIDifficulty | null = null,
     aiPlayer: Player = "PLAYER_2",
-    playerCount: 2 | 3 | 4 = 2
+    playerCount: 2 | 3 | 4 | 5 = 2
   ) {
-    const effectivePlayerCount: 2 | 3 | 4 = gameMode === "ai" ? 2 : playerCount;
+    const effectivePlayerCount: 2 | 3 | 4 | 5 = gameMode === "ai" ? 2 : playerCount;
     this.state = initialState
       ? cloneGameState(initialState)
       : createInitialGame(startingPlayer, gameMode, aiDifficulty, aiPlayer, effectivePlayerCount);

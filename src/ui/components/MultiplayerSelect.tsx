@@ -132,13 +132,13 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             </span>
           </button>
 
-          {/* 4. 5 Players (WIP) */}
+          {/* 4. 5 Players (Playable) */}
           <button
             type="button"
-            className="multiplayer-option-btn multiplayer-option-wip"
+            className="multiplayer-option-btn multiplayer-option-5p multiplayer-option-active"
             onClick={() => onSelectPlayerCount(5)}
             data-testid="player-count-btn-5"
-            aria-label="5 Players mode, coming soon"
+            aria-label="5 Players mode, fully playable"
           >
             <div className="menu-btn-icon" aria-hidden="true">
               👥👥👤
@@ -146,12 +146,12 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">5 Players</span>
-                <span className="coming-soon-pill" aria-label="Under development">
-                  Coming Soon
+                <span className="multiplayer-ready-pill" aria-label="Playable mode">
+                  Play Now
                 </span>
               </div>
               <span className="menu-btn-desc">
-                5-player extended coastal heritage board setup
+                Authoritative 5-player Karnataka rules with 20 pits &amp; 100 seeds
               </span>
             </div>
             <span className="menu-btn-arrow" aria-hidden="true">

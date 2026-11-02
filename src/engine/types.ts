@@ -3,7 +3,7 @@
  * Strictly follows Phase 1 & Phase 2 Specification
  */
 
-export type Player = "PLAYER_1" | "PLAYER_2" | "PLAYER_3" | "PLAYER_4";
+export type Player = "PLAYER_1" | "PLAYER_2" | "PLAYER_3" | "PLAYER_4" | "PLAYER_5";
 
 export type PitStatus = "OPEN" | "CLOSED";
 
@@ -64,12 +64,13 @@ export interface GameState {
     player2: PlayerState;
     player3?: PlayerState;
     player4?: PlayerState;
+    player5?: PlayerState;
   };
 
   /**
-   * Number of players in the match (default 2, 3, or 4)
+   * Number of players in the match (default 2, 3, 4, or 5)
    */
-  playerCount?: 2 | 3 | 4;
+  playerCount?: 2 | 3 | 4 | 5;
 
   /**
    * List of permanently disqualified players

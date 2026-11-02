@@ -41,6 +41,16 @@ const FOUR_PLAYER_TOP_RIGHT = [4, 5, 6, 7];
 const FOUR_PLAYER_BOTTOM_LEFT = [15, 14, 13, 12];
 const FOUR_PLAYER_BOTTOM_RIGHT = [11, 10, 9, 8];
 
+// 5-Player physical layout constants (3 rows, Image 2)
+// Top Row: P0–P3 (Player 1) [gap] P4–P7 (Player 2)
+const FIVE_PLAYER_TOP_LEFT = [0, 1, 2, 3];
+const FIVE_PLAYER_TOP_RIGHT = [4, 5, 6, 7];
+// Middle Row: P11, P10, P9, P8 (Player 3) [gap] Player 3 Storage
+const FIVE_PLAYER_MIDDLE_LEFT = [11, 10, 9, 8];
+// Bottom Row: P12–P15 (Player 4) [gap] P16–P19 (Player 5)
+const FIVE_PLAYER_BOTTOM_LEFT = [12, 13, 14, 15];
+const FIVE_PLAYER_BOTTOM_RIGHT = [16, 17, 18, 19];
+
 export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   gameState,
   selectablePits,
@@ -53,10 +63,12 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   onConfirmCapture,
   onClaimBonus,
 }) => {
+  const isFivePlayer =
+    gameState.playerCount === 5 || gameState.pits.length === 20;
   const isFourPlayer =
-    gameState.playerCount === 4 || gameState.pits.length === 16;
+    !isFivePlayer && (gameState.playerCount === 4 || gameState.pits.length === 16);
   const isThreePlayer =
-    gameState.playerCount === 3 || gameState.pits.length === 15;
+    !isFivePlayer && !isFourPlayer && (gameState.playerCount === 3 || gameState.pits.length === 15);
 
   const renderPitItem = (pitId: number, countPos: "above" | "below") => {
     const pit = gameState.pits[pitId]!;
@@ -81,6 +93,113 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(({
       />
     );
   };
+
+  if (isFivePlayer) {
+    return (
+      <div className="board-wrapper">
+        <div
+          className="channemane-board five-player-board"
+          data-testid="channemane-board"
+          role="region"
+          aria-label="5-Player Channemane Game Board"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* Top Storages Row: Player 1 (Left) & Player 2 (Right) */}
+          <div className="five-player-storage-top-row">
+            <div className="five-player-storage-half left" data-testid="p1-storage-container">
+              <StorageBowl
+                player="PLAYER_1"
+                storageSeeds={gameState.players.player1.storage}
+                className="board-storage-p1"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_1")}
+              />
+            </div>
+            <div className="board-center-gap-spacer" aria-hidden="true" />
+            <div className="five-player-storage-half right" data-testid="p2-storage-container">
+              <StorageBowl
+                player="PLAYER_2"
+                storageSeeds={gameState.players.player2.storage}
+                className="board-storage-p2"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_2")}
+              />
+            </div>
+          </div>
+
+          {/* Center 3-Row Pits & P3 Storage Container */}
+          <div
+            className="five-player-pits-container"
+            data-testid="five-player-pits-container"
+            role="grid"
+            aria-label="5-Player 20 Pits Grid"
+          >
+            {/* Top Row: P0–P3 (Player 1) [gap] P4–P7 (Player 2) */}
+            <div className="five-player-pits-row top-row" role="row">
+              <div className="five-player-pit-group p1-group" data-testid="p1-pit-group">
+                {FIVE_PLAYER_TOP_LEFT.map((pitId) => renderPitItem(pitId, "above"))}
+              </div>
+              <div className="board-center-gap" data-testid="board-center-gap-top" aria-hidden="true" />
+              <div className="five-player-pit-group p2-group" data-testid="p2-pit-group">
+                {FIVE_PLAYER_TOP_RIGHT.map((pitId) => renderPitItem(pitId, "above"))}
+              </div>
+            </div>
+
+            {/* Middle Row: P11–P8 (Player 3) [gap] Player 3 Storage */}
+            <div className="five-player-pits-row middle-row" role="row">
+              <div className="five-player-pit-group p3-group" data-testid="p3-pit-group">
+                {FIVE_PLAYER_MIDDLE_LEFT.map((pitId) => renderPitItem(pitId, "below"))}
+              </div>
+              <div className="board-center-gap" data-testid="board-center-gap-middle" aria-hidden="true" />
+              <div className="five-player-storage-half p3-storage-wrapper" data-testid="p3-storage-container">
+                <StorageBowl
+                  player="PLAYER_3"
+                  storageSeeds={gameState.players.player3?.storage ?? 0}
+                  className="board-storage-p3"
+                  orientation="horizontal"
+                  isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_3")}
+                />
+              </div>
+            </div>
+
+            {/* Bottom Row: P12–P15 (Player 4) [gap] P16–P19 (Player 5) */}
+            <div className="five-player-pits-row bottom-row" role="row">
+              <div className="five-player-pit-group p4-group" data-testid="p4-pit-group">
+                {FIVE_PLAYER_BOTTOM_LEFT.map((pitId) => renderPitItem(pitId, "below"))}
+              </div>
+              <div className="board-center-gap" data-testid="board-center-gap-bottom" aria-hidden="true" />
+              <div className="five-player-pit-group p5-group" data-testid="p5-pit-group">
+                {FIVE_PLAYER_BOTTOM_RIGHT.map((pitId) => renderPitItem(pitId, "below"))}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Storages Row: Player 4 (Left) & Player 5 (Right) */}
+          <div className="five-player-storage-bottom-row">
+            <div className="five-player-storage-half left" data-testid="p4-storage-container">
+              <StorageBowl
+                player="PLAYER_4"
+                storageSeeds={gameState.players.player4?.storage ?? 0}
+                className="board-storage-p4"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_4")}
+              />
+            </div>
+            <div className="board-center-gap-spacer" aria-hidden="true" />
+            <div className="five-player-storage-half right" data-testid="p5-storage-container">
+              <StorageBowl
+                player="PLAYER_5"
+                storageSeeds={gameState.players.player5?.storage ?? 0}
+                className="board-storage-p5"
+                orientation="horizontal"
+                isDisqualified={gameState.disqualifiedPlayers?.includes("PLAYER_5")}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isFourPlayer) {
     return (

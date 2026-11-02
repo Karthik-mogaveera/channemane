@@ -155,7 +155,7 @@ export const App: React.FC<AppProps> = ({
     setCurrentScreen("DIFFICULTY_SELECT");
   };
 
-  const handlePlayLocal = (playerCount: 2 | 3 | 4 = 2) => {
+  const handlePlayLocal = (playerCount: 2 | 3 | 4 | 5 = 2) => {
     setChosenStartingPlayer("PLAYER_1");
     setSelectedDifficultyForFirstPlayer(null);
     setComingSoonNotice(null);
@@ -179,6 +179,8 @@ export const App: React.FC<AppProps> = ({
       handlePlayLocal(3);
     } else if (count === 4) {
       handlePlayLocal(4);
+    } else if (count === 5) {
+      handlePlayLocal(5);
     } else {
       setWipPlayerCount(count);
     }
@@ -418,6 +420,7 @@ export const App: React.FC<AppProps> = ({
             player2={gameState.players.player2}
             player3={gameState.players.player3}
             player4={gameState.players.player4}
+            player5={gameState.players.player5}
             disqualifiedPlayers={gameState.disqualifiedPlayers}
           />
 

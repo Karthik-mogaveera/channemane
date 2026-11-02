@@ -15,6 +15,7 @@ export interface PlayerPanelsProps {
   player2: PlayerState;
   player3?: PlayerState;
   player4?: PlayerState;
+  player5?: PlayerState;
   disqualifiedPlayers?: Player[];
 }
 
@@ -24,12 +25,14 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
   player2,
   player3,
   player4,
+  player5,
   disqualifiedPlayers = [],
 }) => {
   const isP1Dis = disqualifiedPlayers.includes("PLAYER_1");
   const isP2Dis = disqualifiedPlayers.includes("PLAYER_2");
   const isP3Dis = disqualifiedPlayers.includes("PLAYER_3");
   const isP4Dis = disqualifiedPlayers.includes("PLAYER_4");
+  const isP5Dis = disqualifiedPlayers.includes("PLAYER_5");
 
   return (
     <div className="players-bar" role="region" aria-label="Players status">
@@ -80,7 +83,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
         </div>
       )}
 
-      {/* Player 4 Card (rendered if 4-player mode) */}
+      {/* Player 4 Card (rendered if 4-player or 5-player mode) */}
       {player4 && (
         <div
           className={`player-card p4 ${currentPlayer === "PLAYER_4" ? "active" : ""} ${isP4Dis ? "disqualified" : ""}`}
@@ -93,6 +96,23 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           <div className="player-stats">
             <span>Round Wins: </span>
             <strong data-testid="p4-wins-count">{player4.roundWins}</strong>
+          </div>
+        </div>
+      )}
+
+      {/* Player 5 Card (rendered if 5-player mode) */}
+      {player5 && (
+        <div
+          className={`player-card p5 ${currentPlayer === "PLAYER_5" ? "active" : ""} ${isP5Dis ? "disqualified" : ""}`}
+          data-testid="player-card-5"
+        >
+          <div className="player-name">
+            <span style={{ color: "var(--p5-purple, #a855f7)" }}>●</span>
+            <span>Player 5 {isP5Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
+          </div>
+          <div className="player-stats">
+            <span>Round Wins: </span>
+            <strong data-testid="p5-wins-count">{player5.roundWins}</strong>
           </div>
         </div>
       )}

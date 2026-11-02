@@ -1462,3 +1462,67 @@ Represented all 11 pit-group configurations as explicit engine data structures i
 - `tests/ui/gameModeSwitching.test.tsx`: 4/4 tests passed.
 - `npm run build`: Compiled with 0 errors in 3.58s.
 
+---
+
+## 34. Complete 5-Player Local Multiplayer Implementation
+
+### 34.1 Objectives & Authoritative Grounding
+- Implemented a complete 5-player local multiplayer game mode strictly grounded in the 3 handwritten reference images (`media_1793585120073_e0e1eb55.jpg`, `media_1793585120074_eb390bef.jpg`, `media_1793585120072_99d22014.jpg`).
+- **Initial Configuration**:
+  - 5 active players: `PLAYER_1`, `PLAYER_2`, `PLAYER_3`, `PLAYER_4`, `PLAYER_5`.
+  - 20 circular pits, 5 seeds per pit = 100 total seeds.
+  - 5 storage bowls, all initially 0.
+  - All 20 pits initially open.
+  - Player 1 starts the game.
+  - Invariant strictly maintained: $100 = \text{active pit seeds} + \text{storage seeds} + \text{removedSeeds}$.
+
+### 34.2 3-Row Board Layout & Storage Placement (Image 2)
+- **Top Row (Left to Right)**:
+  - `P0, P1, P2, P3` (Player 1) [Ornamental Center Gap] `P4, P5, P6, P7` (Player 2).
+  - Player 1 Storage bowl: horizontally aligned above P0–P3.
+  - Player 2 Storage bowl: horizontally aligned above P4–P7.
+- **Middle Row (Left to Right)**:
+  - `P11, P10, P9, P8` (Player 3) [Ornamental Center Gap] Player 3 Storage Bowl (horizontally aligned on right half under P4–P7).
+  - Logical pit numbering preserved despite visually reversed arrangement.
+- **Bottom Row (Left to Right)**:
+  - `P12, P13, P14, P15` (Player 4) [Ornamental Center Gap] `P16, P17, P18, P19` (Player 5).
+  - Player 4 Storage bowl: horizontally aligned below P12–P15.
+  - Player 5 Storage bowl: horizontally aligned below P16–P19.
+- Visual hierarchy preserves existing color palettes and adds purple accents (`--p5-purple: #a855f7`) for Player 5 without disturbing established royal heritage theme.
+
+### 34.3 Sowing Traversal & Turn Order
+- Authoritative clockwise circular loop: `P0 → P1 → P2 → ... → P19 → P0` via `(pitId + 1) % 20`, skipping closed pits.
+- Turn sequence: `Player 1 → Player 2 → Player 3 → Player 4 → Player 5 → Player 1`.
+- Skips disqualified players cleanly.
+
+### 34.4 Authoritative Pit-Group Mappings (Images 1 & 3)
+- Authoritative pit groupings G1..G4 configured for:
+  - All 5 players active: G1 [0,4,11,12,16], G2 [1,5,10,13,17], G3 [2,6,9,14,18], G4 [3,7,8,15,19].
+  - All 5 single-player disqualifications (P1..P5 eliminated).
+  - All 10 two-player disqualifications: (1,2), (1,3), (1,4), (1,5), (2,3), (2,4), (2,5), (3,4), (3,5), (4,5).
+  - All 10 three-player disqualifications: (1,2,3), (1,2,4), (1,2,5), (1,3,4), (1,3,5), (1,4,5), (2,3,4), (2,3,5), (2,4,5), (3,4,5).
+- Disqualified players' pits remain permanently closed with 0 seeds.
+
+### 34.5 Disqualification Progression & Seed Accounting
+- Players with $< 5$ seeds in storage are eliminated permanently at round settlement.
+- **1st Disqualification (5 -> 4)**: 20 seeds permanently removed (`removedSeeds += 20`). 4 players continue with 80 active seeds.
+- **2nd Disqualification (4 -> 3)**: 20 seeds permanently removed (`removedSeeds += 20`). 3 players continue with 60 active seeds.
+- **3rd Disqualification (3 -> 2)**: 20 seeds permanently removed (`removedSeeds += 20`). 2 players continue with 40 active seeds.
+- **4th Disqualification (2 -> 1)**: Match ends immediately. Sole survivor is declared winner.
+- **Match Rankings**:
+  - `1st Place`: Winner (sole survivor or highest storage).
+  - `2nd Place`: Player eliminated immediately before winner.
+  - `3rd Place`: Player eliminated before 2nd place.
+  - `Lost`: The two players eliminated earliest.
+
+### 34.6 Verification & Zero Regressions
+- **Test Suite Results**:
+  - `tests/engine/fivePlayerRules.test.ts`: 18/18 tests passed.
+  - `tests/ui/fivePlayerBoardLayout.test.tsx`: 3/3 tests passed.
+  - `tests/ui/fivePlayerIntegration.test.tsx`: 3/3 tests passed.
+  - Entire suite (`npm test`): **62 test files passed (62/62), 476 tests passed (476/476)**.
+- **TypeScript & Build**:
+  - `npm run typecheck`: Passed with 0 errors.
+  - `npm run build`: Production bundle generated cleanly in 2.36s.
+
+

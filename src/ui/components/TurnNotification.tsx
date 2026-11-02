@@ -23,6 +23,7 @@ export const TurnNotification: React.FC<TurnNotificationProps> = ({
   const isP2 = notification.includes("Player 2");
   const isP3 = notification.includes("Player 3");
   const isP4 = notification.includes("Player 4");
+  const isP5 = notification.includes("Player 5");
 
   const playerClass = isAI
     ? "turn-notification-ai"
@@ -34,6 +35,8 @@ export const TurnNotification: React.FC<TurnNotificationProps> = ({
     ? "turn-notification-p3"
     : isP4
     ? "turn-notification-p4"
+    : isP5
+    ? "turn-notification-p5"
     : "turn-notification-human";
 
   const icon = isAI
@@ -46,6 +49,8 @@ export const TurnNotification: React.FC<TurnNotificationProps> = ({
     ? "🟢"
     : isP4
     ? "🟡"
+    : isP5
+    ? "🟣"
     : "👤";
 
   return (

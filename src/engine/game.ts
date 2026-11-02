@@ -128,7 +128,13 @@ export function playTurn(
         let candidate = getNextActivePlayer(state, state.currentPlayer);
         let found = false;
         const maxChecks =
-          state.playerCount === 4 ? 4 : state.playerCount === 3 ? 3 : 2;
+          state.playerCount === 5
+            ? 5
+            : state.playerCount === 4
+            ? 4
+            : state.playerCount === 3
+            ? 3
+            : 2;
         for (let i = 0; i < maxChecks; i++) {
           if (hasAnyValidMove(state, candidate)) {
             state.currentPlayer = candidate;
@@ -157,15 +163,19 @@ export function playTurn(
   ];
 
   if (captureResult.capturedSeeds > 0 && captureResult.capturedPitId !== null) {
+    let newStorageTotal = 0;
+    if (turnPlayer === "PLAYER_1") newStorageTotal = state.players.player1.storage;
+    else if (turnPlayer === "PLAYER_2") newStorageTotal = state.players.player2.storage;
+    else if (turnPlayer === "PLAYER_3") newStorageTotal = state.players.player3?.storage ?? 0;
+    else if (turnPlayer === "PLAYER_4") newStorageTotal = state.players.player4?.storage ?? 0;
+    else if (turnPlayer === "PLAYER_5") newStorageTotal = state.players.player5?.storage ?? 0;
+
     animationEvents.push({
       type: "CAPTURE",
       capturedPitId: captureResult.capturedPitId,
       capturingPlayer: turnPlayer,
       seedsCaptured: captureResult.capturedSeeds,
-      newStorageTotal:
-        turnPlayer === "PLAYER_1"
-          ? state.players.player1.storage
-          : state.players.player2.storage,
+      newStorageTotal,
     });
   }
 

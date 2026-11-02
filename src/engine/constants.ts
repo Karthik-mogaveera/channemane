@@ -217,6 +217,218 @@ export const FOUR_PLAYER_GROUPS_P2_P4_DISQUALIFIED = [
 ] as const;
 
 /**
+ * 5-Player Board Constants (20 pits, 4 per player, 100 seeds total)
+ */
+export const FIVE_PLAYER_TOTAL_PITS = 20;
+export const FIVE_PLAYER_PITS_PER_PLAYER = 4;
+export const FIVE_PLAYER_TOTAL_SEEDS = 100;
+export const FIVE_PLAYER_FIRST_ELIMINATION_SEEDS = 80;
+export const FIVE_PLAYER_SECOND_ELIMINATION_SEEDS = 60;
+export const FIVE_PLAYER_THIRD_ELIMINATION_SEEDS = 40;
+
+export const FIVE_PLAYER_P1_PITS = [0, 1, 2, 3] as const;
+export const FIVE_PLAYER_P2_PITS = [4, 5, 6, 7] as const;
+export const FIVE_PLAYER_P3_PITS = [8, 9, 10, 11] as const;
+export const FIVE_PLAYER_P4_PITS = [12, 13, 14, 15] as const;
+export const FIVE_PLAYER_P5_PITS = [16, 17, 18, 19] as const;
+
+export const FIVE_PLAYER_TOP_LEFT = [0, 1, 2, 3] as const;
+export const FIVE_PLAYER_TOP_RIGHT = [4, 5, 6, 7] as const;
+export const FIVE_PLAYER_MIDDLE_LEFT = [11, 10, 9, 8] as const; // visually left to right (P11..P8)
+export const FIVE_PLAYER_BOTTOM_LEFT = [12, 13, 14, 15] as const;
+export const FIVE_PLAYER_BOTTOM_RIGHT = [16, 17, 18, 19] as const;
+
+/**
+ * 5-Player Pit-Group Mappings (Authoritative References: Images 1, 2, 3)
+ */
+
+// A. All five players active
+export const FIVE_PLAYER_GROUPS_ALL = [
+  [0, 4, 11, 12, 16],
+  [1, 5, 10, 13, 17],
+  [2, 6, 9, 14, 18],
+  [3, 7, 8, 15, 19],
+] as const;
+
+// B. Single player disqualified (Image 3)
+export const FIVE_PLAYER_GROUPS_P1_DISQUALIFIED = [
+  [4, 11, 12, 16],
+  [5, 10, 13, 17],
+  [6, 9, 14, 18],
+  [7, 8, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_DISQUALIFIED = [
+  [0, 11, 12, 16],
+  [1, 10, 13, 17],
+  [2, 9, 14, 18],
+  [3, 8, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P3_DISQUALIFIED = [
+  [0, 4, 12, 16],
+  [1, 5, 13, 17],
+  [2, 6, 14, 18],
+  [3, 7, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P4_DISQUALIFIED = [
+  [0, 4, 11, 16],
+  [1, 5, 10, 17],
+  [2, 6, 9, 18],
+  [3, 7, 8, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P5_DISQUALIFIED = [
+  [0, 4, 11, 12],
+  [1, 5, 10, 13],
+  [2, 6, 9, 14],
+  [3, 7, 8, 15],
+] as const;
+
+// C. Two players disqualified (Images 1 & 3)
+export const FIVE_PLAYER_GROUPS_P1_P2_DISQUALIFIED = [
+  [11, 12, 16],
+  [10, 13, 17],
+  [9, 14, 18],
+  [8, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P3_DISQUALIFIED = [
+  [4, 12, 16],
+  [5, 13, 17],
+  [6, 14, 18],
+  [7, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P4_DISQUALIFIED = [
+  [4, 11, 16],
+  [5, 10, 17],
+  [6, 9, 18],
+  [7, 8, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P5_DISQUALIFIED = [
+  [4, 11, 12],
+  [5, 10, 13],
+  [6, 9, 14],
+  [7, 8, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P3_DISQUALIFIED = [
+  [0, 12, 16],
+  [1, 13, 17],
+  [2, 14, 18],
+  [3, 15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P4_DISQUALIFIED = [
+  [0, 11, 16],
+  [1, 10, 17],
+  [2, 9, 18],
+  [3, 8, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P5_DISQUALIFIED = [
+  [0, 11, 12],
+  [1, 10, 13],
+  [2, 9, 14],
+  [3, 8, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P3_P4_DISQUALIFIED = [
+  [0, 4, 16],
+  [1, 5, 17],
+  [2, 6, 18],
+  [3, 7, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P3_P5_DISQUALIFIED = [
+  [0, 4, 12],
+  [1, 5, 13],
+  [2, 6, 14],
+  [3, 7, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P4_P5_DISQUALIFIED = [
+  [0, 4, 11],
+  [1, 5, 10],
+  [2, 6, 9],
+  [3, 7, 8],
+] as const;
+
+// D. Three players disqualified (Images 1 & 3)
+export const FIVE_PLAYER_GROUPS_P1_P2_P3_DISQUALIFIED = [
+  [12, 16],
+  [13, 17],
+  [14, 18],
+  [15, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P2_P4_DISQUALIFIED = [
+  [11, 16],
+  [10, 17],
+  [9, 18],
+  [8, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P2_P5_DISQUALIFIED = [
+  [11, 12],
+  [10, 13],
+  [9, 14],
+  [8, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P3_P4_DISQUALIFIED = [
+  [4, 16],
+  [5, 17],
+  [6, 18],
+  [7, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P3_P5_DISQUALIFIED = [
+  [4, 12],
+  [5, 13],
+  [6, 14],
+  [7, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P1_P4_P5_DISQUALIFIED = [
+  [4, 11],
+  [5, 10],
+  [6, 9],
+  [7, 8],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P3_P4_DISQUALIFIED = [
+  [0, 16],
+  [1, 17],
+  [2, 18],
+  [3, 19],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P3_P5_DISQUALIFIED = [
+  [0, 12],
+  [1, 13],
+  [2, 14],
+  [3, 15],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P2_P4_P5_DISQUALIFIED = [
+  [0, 11],
+  [1, 10],
+  [2, 9],
+  [3, 8],
+] as const;
+
+export const FIVE_PLAYER_GROUPS_P3_P4_P5_DISQUALIFIED = [
+  [0, 4],
+  [1, 5],
+  [2, 6],
+  [3, 7],
+] as const;
+
+/**
  * Check if a pit ID is valid (0 to maxPits - 1 integer)
  */
 export function isValidPitId(pitId: number, maxPits: number = TOTAL_PITS): boolean {
@@ -224,10 +436,18 @@ export function isValidPitId(pitId: number, maxPits: number = TOTAL_PITS): boole
 }
 
 /**
- * Determine the owner of a given pit ID ("PLAYER_1" | "PLAYER_2" | "PLAYER_3" | "PLAYER_4" | null)
+ * Determine the owner of a given pit ID ("PLAYER_1" | "PLAYER_2" | "PLAYER_3" | "PLAYER_4" | "PLAYER_5" | null)
  */
 export function getPitOwner(pitId: number, maxPits: number = TOTAL_PITS): Player | null {
   if (!isValidPitId(pitId, maxPits)) {
+    return null;
+  }
+  if (maxPits === FIVE_PLAYER_TOTAL_PITS) {
+    if (pitId >= 0 && pitId <= 3) return "PLAYER_1";
+    if (pitId >= 4 && pitId <= 7) return "PLAYER_2";
+    if (pitId >= 8 && pitId <= 11) return "PLAYER_3";
+    if (pitId >= 12 && pitId <= 15) return "PLAYER_4";
+    if (pitId >= 16 && pitId <= 19) return "PLAYER_5";
     return null;
   }
   if (maxPits === FOUR_PLAYER_TOTAL_PITS) {
@@ -258,6 +478,13 @@ export function getThreePlayerPitOwner(pitId: number): Player | null {
  */
 export function getFourPlayerPitOwner(pitId: number): Player | null {
   return getPitOwner(pitId, FOUR_PLAYER_TOTAL_PITS);
+}
+
+/**
+ * Convenience helper for 5-player pit ownership
+ */
+export function getFivePlayerPitOwner(pitId: number): Player | null {
+  return getPitOwner(pitId, FIVE_PLAYER_TOTAL_PITS);
 }
 
 /**
@@ -306,6 +533,65 @@ export function getFourPlayerGroups(disqualified: readonly Player[] = []): reado
 
   // All four players active
   return FOUR_PLAYER_GROUPS_ALL;
+}
+
+/**
+ * Returns the authoritative pit group mapping based on currently disqualified players (5-player mode)
+ * Follows exact mappings from Images 1, 2, and 3.
+ */
+export function getFivePlayerGroups(disqualified: readonly Player[] = []): readonly (readonly number[])[] {
+  const isP1Dis = disqualified.includes("PLAYER_1");
+  const isP2Dis = disqualified.includes("PLAYER_2");
+  const isP3Dis = disqualified.includes("PLAYER_3");
+  const isP4Dis = disqualified.includes("PLAYER_4");
+  const isP5Dis = disqualified.includes("PLAYER_5");
+
+  const disCount =
+    (isP1Dis ? 1 : 0) +
+    (isP2Dis ? 1 : 0) +
+    (isP3Dis ? 1 : 0) +
+    (isP4Dis ? 1 : 0) +
+    (isP5Dis ? 1 : 0);
+
+  // Three players disqualified (2 active players)
+  if (disCount >= 3) {
+    if (isP1Dis && isP2Dis && isP3Dis) return FIVE_PLAYER_GROUPS_P1_P2_P3_DISQUALIFIED;
+    if (isP1Dis && isP2Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P1_P2_P4_DISQUALIFIED;
+    if (isP1Dis && isP2Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P1_P2_P5_DISQUALIFIED;
+    if (isP1Dis && isP3Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P1_P3_P4_DISQUALIFIED;
+    if (isP1Dis && isP3Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P1_P3_P5_DISQUALIFIED;
+    if (isP1Dis && isP4Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P1_P4_P5_DISQUALIFIED;
+    if (isP2Dis && isP3Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P2_P3_P4_DISQUALIFIED;
+    if (isP2Dis && isP3Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P2_P3_P5_DISQUALIFIED;
+    if (isP2Dis && isP4Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P2_P4_P5_DISQUALIFIED;
+    if (isP3Dis && isP4Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P3_P4_P5_DISQUALIFIED;
+  }
+
+  // Two players disqualified (3 active players)
+  if (disCount === 2) {
+    if (isP1Dis && isP2Dis) return FIVE_PLAYER_GROUPS_P1_P2_DISQUALIFIED;
+    if (isP1Dis && isP3Dis) return FIVE_PLAYER_GROUPS_P1_P3_DISQUALIFIED;
+    if (isP1Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P1_P4_DISQUALIFIED;
+    if (isP1Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P1_P5_DISQUALIFIED;
+    if (isP2Dis && isP3Dis) return FIVE_PLAYER_GROUPS_P2_P3_DISQUALIFIED;
+    if (isP2Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P2_P4_DISQUALIFIED;
+    if (isP2Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P2_P5_DISQUALIFIED;
+    if (isP3Dis && isP4Dis) return FIVE_PLAYER_GROUPS_P3_P4_DISQUALIFIED;
+    if (isP3Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P3_P5_DISQUALIFIED;
+    if (isP4Dis && isP5Dis) return FIVE_PLAYER_GROUPS_P4_P5_DISQUALIFIED;
+  }
+
+  // Single player disqualified (4 active players)
+  if (disCount === 1) {
+    if (isP1Dis) return FIVE_PLAYER_GROUPS_P1_DISQUALIFIED;
+    if (isP2Dis) return FIVE_PLAYER_GROUPS_P2_DISQUALIFIED;
+    if (isP3Dis) return FIVE_PLAYER_GROUPS_P3_DISQUALIFIED;
+    if (isP4Dis) return FIVE_PLAYER_GROUPS_P4_DISQUALIFIED;
+    if (isP5Dis) return FIVE_PLAYER_GROUPS_P5_DISQUALIFIED;
+  }
+
+  // All five players active
+  return FIVE_PLAYER_GROUPS_ALL;
 }
 
 /**

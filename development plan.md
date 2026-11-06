@@ -1525,4 +1525,71 @@ Represented all 11 pit-group configurations as explicit engine data structures i
   - `npm run typecheck`: Passed with 0 errors.
   - `npm run build`: Production bundle generated cleanly in 2.36s.
 
+---
+
+## 35. Complete 6-Player Local Multiplayer Implementation (Section 35)
+
+### 35.1 Overview & Initial Configuration
+- **Players**: 6 (`PLAYER_1`, `PLAYER_2`, `PLAYER_3`, `PLAYER_4`, `PLAYER_5`, `PLAYER_6`).
+- **Pits**: 24 circular pits (`P0` through `P23`), 4 pits per player.
+  - Player 1: `P0, P1, P2, P3`
+  - Player 2: `P4, P5, P6, P7`
+  - Player 3: `P8, P9, P10, P11`
+  - Player 4: `P12, P13, P14, P15`
+  - Player 5: `P16, P17, P18, P19`
+  - Player 6: `P20, P21, P22, P23`
+- **Initial Seeds**: 5 seeds per pit = 120 total seeds.
+- **Storages**: 6 individual storage bowls, initially 0 for all players.
+- **First Turn**: Player 1 starts round 1; subsequent round starters are determined by round winner (or first remaining active player).
+- **Seed Invariant**: `120 === total active seeds + removedSeeds`.
+
+### 35.2 Board Architecture & Visual Layout (Page 11 Reference)
+- **Top Storage Row**:
+  - Player 1 Storage: upper-left, horizontally aligned above P0–P3.
+  - Player 2 Storage: upper-right, horizontally aligned above P4–P7.
+- **Center Section**:
+  - Flanked on the left by **Player 4 Storage** (vertical orientation).
+  - Flanked on the right by **Player 3 Storage** (vertical orientation).
+  - 3 rows of pits in between:
+    - **Top Row (L to R)**: `P0 → P1 → P2 → P3` [gap] `P4 → P5 → P6 → P7`
+    - **Middle Row (visually L to R)**: `P15, P14, P13, P12` (Player 4) [gap] `P11, P10, P9, P8` (Player 3)
+      - Sowing path in middle row moves right-to-left: `P8 ← P9 ← P10 ← P11 ← P12 ← P13 ← P14 ← P15`.
+    - **Bottom Row (L to R)**: `P16 → P17 → P18 → P19` [gap] `P20 → P21 → P22 → P23`
+- **Bottom Storage Row**:
+  - Player 5 Storage: bottom-left, horizontally aligned below P16–P19.
+  - Player 6 Storage: bottom-right, horizontally aligned below P20–P23.
+- Visual hierarchy uses `--p6-teal: #0d9488` for Player 6 with full theme consistency.
+
+### 35.3 Dynamic Pit-Group Calculation (Pages 1–10 Reference)
+- Original 4 pit groups stored as immutable configuration (`SIX_PLAYER_GROUPS_ALL`):
+  - **G1**: `[0, 4, 11, 15, 16, 20]`
+  - **G2**: `[1, 5, 10, 14, 17, 21]`
+  - **G3**: `[2, 6, 9, 13, 18, 22]`
+  - **G4**: `[3, 7, 8, 12, 19, 23]`
+- Dynamically derived via `getSixPlayerGroups(disqualified)` by filtering out pits belonging to disqualified players while strictly preserving the relative sequence.
+- Atomic group funding: For each group G1..G4, open only if every active represented player has $\ge 5$ seeds in storage; otherwise close this group and all subsequent groups.
+
+### 35.4 Elimination Progression & Match Rankings
+- Players with $< 5$ storage seeds at round settlement are disqualified permanently.
+- Each elimination permanently removes 20 seeds (`removedSeeds += 20`).
+- Progression: 6 players (120 seeds) $\rightarrow$ 5 players (100 seeds) $\rightarrow$ 4 players (80 seeds) $\rightarrow$ 3 players (60 seeds) $\rightarrow$ 2 players (40 seeds) $\rightarrow$ 1 survivor (Winner).
+- **Match Rankings**:
+  - `1st Place`: Surviving winner.
+  - `2nd Place`: Last player eliminated.
+  - `3rd Place`: 2nd-last player eliminated.
+  - `4th Place`: 3rd-last player eliminated.
+  - `5th Place`: 4th-last player eliminated.
+  - `6th Place`: 1st player eliminated.
+
+### 35.5 Verification & Regression Testing
+- **Test Suites**:
+  - `tests/engine/sixPlayerRules.test.ts`: 21/21 tests passed.
+  - `tests/ui/sixPlayerBoardLayout.test.tsx`: 2/2 tests passed.
+  - `tests/ui/sixPlayerIntegration.test.tsx`: 3/3 tests passed.
+  - Full repo test suite (`npx vitest run`): **65/65 test files passed, 501/501 tests passed**.
+- **Build & Quality**:
+  - `npm run typecheck`: 0 errors.
+  - `npm run build`: Production build succeeded in 3.97s.
+
+
 

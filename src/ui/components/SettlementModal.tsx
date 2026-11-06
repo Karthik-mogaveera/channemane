@@ -24,10 +24,11 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
     onEscape: onClose,
   });
 
-  const isFivePlayer = settlement.player5FinalStorage !== undefined;
-  const isFourPlayer = !isFivePlayer && settlement.player4FinalStorage !== undefined;
-  const isThreePlayer = !isFivePlayer && !isFourPlayer && settlement.player3FinalStorage !== undefined;
-  const isMultiplayer = isFivePlayer || isFourPlayer || isThreePlayer;
+  const isSixPlayer = settlement.player6FinalStorage !== undefined;
+  const isFivePlayer = !isSixPlayer && settlement.player5FinalStorage !== undefined;
+  const isFourPlayer = !isSixPlayer && !isFivePlayer && settlement.player4FinalStorage !== undefined;
+  const isThreePlayer = !isSixPlayer && !isFivePlayer && !isFourPlayer && settlement.player3FinalStorage !== undefined;
+  const isMultiplayer = isSixPlayer || isFivePlayer || isFourPlayer || isThreePlayer;
 
   const winnerText =
     settlement.roundWinner === "PLAYER_1"
@@ -40,6 +41,8 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
       ? "Player 4 Wins the Round!"
       : settlement.roundWinner === "PLAYER_5"
       ? "Player 5 Wins the Round!"
+      : settlement.roundWinner === "PLAYER_6"
+      ? "Player 6 Wins the Round!"
       : "Round Tied!";
 
   const openPairs = Math.min(
@@ -57,9 +60,11 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
   const isP3Disqualified =
     isMultiplayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_3"));
   const isP4Disqualified =
-    (isFourPlayer || isFivePlayer) && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_4"));
+    (isFourPlayer || isFivePlayer || isSixPlayer) && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_4"));
   const isP5Disqualified =
-    isFivePlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_5"));
+    (isFivePlayer || isSixPlayer) && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_5"));
+  const isP6Disqualified =
+    isSixPlayer && Boolean(settlement.disqualifiedPlayers?.includes("PLAYER_6"));
 
   return (
     <div
@@ -122,7 +127,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </small>
             </div>
 
-            {(isThreePlayer || isFourPlayer || isFivePlayer) && (
+            {(isThreePlayer || isFourPlayer || isFivePlayer || isSixPlayer) && (
               <div className={`score-box ${isP3Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 3 Total Storage</h5>
                 <div
@@ -139,7 +144,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </div>
             )}
 
-            {(isFourPlayer || isFivePlayer) && (
+            {(isFourPlayer || isFivePlayer || isSixPlayer) && (
               <div className={`score-box ${isP4Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 4 Total Storage</h5>
                 <div
@@ -156,7 +161,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               </div>
             )}
 
-            {isFivePlayer && (
+            {(isFivePlayer || isSixPlayer) && (
               <div className={`score-box ${isP5Disqualified ? "disqualified-box" : ""}`}>
                 <h5>Player 5 Total Storage</h5>
                 <div
@@ -172,9 +177,33 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
                 </small>
               </div>
             )}
+
+            {isSixPlayer && (
+              <div className={`score-box ${isP6Disqualified ? "disqualified-box" : ""}`}>
+                <h5>Player 6 Total Storage</h5>
+                <div
+                  className={`score-val ${isP6Disqualified ? "storage-disqualified-text" : ""}`}
+                  data-testid="settlement-p6-storage"
+                >
+                  {isP6Disqualified ? "Disqualified" : settlement.player6FinalStorage}
+                </div>
+                <small>
+                  {isP6Disqualified
+                    ? `Eliminated (< 5 seeds in storage)`
+                    : `Seeds swept from Player 6 side: +${settlement.player6RemainingTransferred ?? 0}`}
+                </small>
+              </div>
+            )}
           </div>
 
-          {isFivePlayer ? (
+          {isSixPlayer ? (
+            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+              <strong>Next Round Setup:</strong>{" "}
+              {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
+                ? "Disqualified players are eliminated permanently. The remaining active players will continue with their allocations."
+                : "Authoritative pit groups G1–G4 will open atomically if all active players can contribute 5 seeds per group."}
+            </p>
+          ) : isFivePlayer ? (
             <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0

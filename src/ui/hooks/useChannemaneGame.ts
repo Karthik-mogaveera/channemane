@@ -107,7 +107,7 @@ export interface UseChannemaneGameReturn {
     mode?: GameMode,
     difficulty?: AIDifficulty | null,
     aiPlayer?: Player,
-    playerCount?: 2 | 3 | 4 | 5
+    playerCount?: 2 | 3 | 4 | 5 | 6
   ) => void;
   clearError: () => void;
 }
@@ -119,7 +119,7 @@ export function useChannemaneGame(
   initialGameMode: GameMode = "local",
   initialDifficulty: AIDifficulty | null = null,
   initialAIPlayer: Player = "PLAYER_2",
-  initialPlayerCount: 2 | 3 | 4 | 5 = 2
+  initialPlayerCount: 2 | 3 | 4 | 5 | 6 = 2
 ): UseChannemaneGameReturn {
   const [gameMode, setGameModeState] = useState<GameMode>(
     () => initialGameState?.gameMode ?? initialGameMode
@@ -130,7 +130,7 @@ export function useChannemaneGame(
   const [aiPlayer, setAiPlayerState] = useState<Player>(
     () => initialGameState?.aiPlayer ?? initialAIPlayer
   );
-  const [playerCount, setPlayerCount] = useState<2 | 3 | 4 | 5>(
+  const [playerCount, setPlayerCount] = useState<2 | 3 | 4 | 5 | 6>(
     () => initialGameState?.playerCount ?? initialPlayerCount
   );
 
@@ -900,7 +900,7 @@ export function useChannemaneGame(
       mode?: GameMode,
       difficulty?: AIDifficulty | null,
       newAiPlayer?: Player,
-      newPlayerCount?: 2 | 3 | 4 | 5
+      newPlayerCount?: 2 | 3 | 4 | 5 | 6
     ) => {
       animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
       animationTimeoutsRef.current = [];
@@ -937,7 +937,7 @@ export function useChannemaneGame(
       const chosenMode = mode ?? gameMode;
       const chosenDiff = difficulty !== undefined ? difficulty : aiDifficulty;
       const chosenAiPlayer = newAiPlayer ?? aiPlayer;
-      const chosenPlayerCount: 2 | 3 | 4 | 5 =
+      const chosenPlayerCount: 2 | 3 | 4 | 5 | 6 =
         chosenMode === "ai"
           ? 2
           : (newPlayerCount ?? (mode ? 2 : playerCount));
@@ -1013,7 +1013,9 @@ export function useChannemaneGame(
           ? "Player 3's Turn"
           : gameState.currentPlayer === "PLAYER_4"
           ? "Player 4's Turn"
-          : "Player 5's Turn";
+          : gameState.currentPlayer === "PLAYER_5"
+          ? "Player 5's Turn"
+          : "Player 6's Turn";
     }
 
     setTurnNotification(notificationText);

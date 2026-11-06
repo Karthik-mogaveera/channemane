@@ -50,6 +50,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
   const isPlayer2 = owner === "PLAYER_2";
   const isPlayer3 = owner === "PLAYER_3";
   const isPlayer4 = owner === "PLAYER_4";
+  const isPlayer5 = owner === "PLAYER_5";
   const ownerLabel = isPlayer1
     ? "Player 1"
     : isPlayer2
@@ -58,7 +59,9 @@ export const Pit: React.FC<PitProps> = React.memo(({
     ? "Player 3"
     : isPlayer4
     ? "Player 4"
-    : "Player 5";
+    : isPlayer5
+    ? "Player 5"
+    : "Player 6";
   const pitCellClass = isPlayer1
     ? "p1-pit-cell"
     : isPlayer2
@@ -67,7 +70,9 @@ export const Pit: React.FC<PitProps> = React.memo(({
     ? "p3-pit-cell"
     : isPlayer4
     ? "p4-pit-cell"
-    : "p5-pit-cell";
+    : isPlayer5
+    ? "p5-pit-cell"
+    : "p6-pit-cell";
   const countClass = isPlayer1
     ? "p1-count"
     : isPlayer2
@@ -76,7 +81,9 @@ export const Pit: React.FC<PitProps> = React.memo(({
     ? "p3-count"
     : isPlayer4
     ? "p4-count"
-    : "p5-count";
+    : isPlayer5
+    ? "p5-count"
+    : "p6-count";
   const renderCountPosition = countPosition ?? (isPlayer1 ? "above" : "below");
 
   // Long-press gesture state & refs

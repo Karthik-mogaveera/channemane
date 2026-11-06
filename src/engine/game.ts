@@ -128,7 +128,9 @@ export function playTurn(
         let candidate = getNextActivePlayer(state, state.currentPlayer);
         let found = false;
         const maxChecks =
-          state.playerCount === 5
+          state.playerCount === 6
+            ? 6
+            : state.playerCount === 5
             ? 5
             : state.playerCount === 4
             ? 4
@@ -169,6 +171,7 @@ export function playTurn(
     else if (turnPlayer === "PLAYER_3") newStorageTotal = state.players.player3?.storage ?? 0;
     else if (turnPlayer === "PLAYER_4") newStorageTotal = state.players.player4?.storage ?? 0;
     else if (turnPlayer === "PLAYER_5") newStorageTotal = state.players.player5?.storage ?? 0;
+    else if (turnPlayer === "PLAYER_6") newStorageTotal = state.players.player6?.storage ?? 0;
 
     animationEvents.push({
       type: "CAPTURE",

@@ -5,6 +5,7 @@ import {
   getThreePlayerGroups,
   getFourPlayerGroups,
   getFivePlayerGroups,
+  getSixPlayerGroups,
 } from "./constants";
 import { verifySeedConservation, getActivePlayers } from "./board";
 import type { ActionResult, GameState, Player } from "./types";
@@ -18,6 +19,7 @@ export interface RoundSetupResult {
   player3RemainingStorage?: number;
   player4RemainingStorage?: number;
   player5RemainingStorage?: number;
+  player6RemainingStorage?: number;
   disqualifiedPlayers?: Player[];
   eliminatedPlayers?: Player[];
   recovered?: boolean;
@@ -30,7 +32,8 @@ function getPlayerStorage(state: GameState, player: Player): number {
   if (player === "PLAYER_2") return state.players.player2.storage;
   if (player === "PLAYER_3") return state.players.player3?.storage ?? 0;
   if (player === "PLAYER_4") return state.players.player4?.storage ?? 0;
-  return state.players.player5?.storage ?? 0;
+  if (player === "PLAYER_5") return state.players.player5?.storage ?? 0;
+  return state.players.player6?.storage ?? 0;
 }
 
 function deductPlayerStorage(state: GameState, player: Player, amount: number): void {
@@ -38,7 +41,8 @@ function deductPlayerStorage(state: GameState, player: Player, amount: number): 
   else if (player === "PLAYER_2") state.players.player2.storage -= amount;
   else if (player === "PLAYER_3" && state.players.player3) state.players.player3.storage -= amount;
   else if (player === "PLAYER_4" && state.players.player4) state.players.player4.storage -= amount;
-  else if (state.players.player5) state.players.player5.storage -= amount;
+  else if (player === "PLAYER_5" && state.players.player5) state.players.player5.storage -= amount;
+  else if (state.players.player6) state.players.player6.storage -= amount;
 }
 
 function setPlayerStorage(state: GameState, player: Player, amount: number): void {
@@ -46,7 +50,8 @@ function setPlayerStorage(state: GameState, player: Player, amount: number): voi
   else if (player === "PLAYER_2") state.players.player2.storage = amount;
   else if (player === "PLAYER_3" && state.players.player3) state.players.player3.storage = amount;
   else if (player === "PLAYER_4" && state.players.player4) state.players.player4.storage = amount;
-  else if (state.players.player5) state.players.player5.storage = amount;
+  else if (player === "PLAYER_5" && state.players.player5) state.players.player5.storage = amount;
+  else if (state.players.player6) state.players.player6.storage = amount;
 }
 
 /**
@@ -660,9 +665,184 @@ export function setupNextRoundFivePlayer(
 }
 
 /**
+ * 6-Player Round Setup implementation according to the handwritten specifications.
+ */
+export function setupNextRoundSixPlayer(
+  state: GameState
+): ActionResult<RoundSetupResult> {
+  const activePlayers = getActivePlayers(state);
+
+  // Identify active players who cannot fund G1 (< 5 seeds in storage)
+  const ineligiblePlayers = activePlayers.filter(
+    (p) => getPlayerStorage(state, p) < INITIAL_SEEDS_PER_PIT
+  );
+
+  const newlyDisqualified: Player[] = [];
+
+  if (ineligiblePlayers.length > 0) {
+    // Sort ascending by storage seeds (fewer seeds eliminated earlier)
+    const sortedIneligible = [...ineligiblePlayers].sort(
+      (a, b) => getPlayerStorage(state, a) - getPlayerStorage(state, b)
+    );
+
+    for (const d of sortedIneligible) {
+      if (!state.disqualifiedPlayers?.includes(d)) {
+        newlyDisqualified.push(d);
+        state.disqualifiedPlayers = [
+          ...(state.disqualifiedPlayers ?? []),
+          d,
+        ];
+        state.removedSeeds = (state.removedSeeds ?? 0) + 20;
+      }
+      for (const pit of state.pits) {
+        if (pit.owner === d) {
+          pit.status = "CLOSED";
+          pit.seeds = 0;
+          pit.bonusAvailable = false;
+        }
+      }
+      setPlayerStorage(state, d, 0);
+    }
+
+    const remainingActive = getActivePlayers(state);
+    if (remainingActive.length <= 1) {
+      // 5 players disqualified -> Match ends!
+      const winner = remainingActive.length === 1 ? remainingActive[0] : null;
+      state.phase = "MATCH_END";
+      state.turnPhase = "TURN_END";
+      state.winner = winner;
+
+      return {
+        success: true,
+        data: {
+          round: state.round,
+          openGroups: 0,
+          player1RemainingStorage: state.players.player1.storage,
+          player2RemainingStorage: state.players.player2.storage,
+          player3RemainingStorage: state.players.player3?.storage,
+          player4RemainingStorage: state.players.player4?.storage,
+          player5RemainingStorage: state.players.player5?.storage,
+          player6RemainingStorage: state.players.player6?.storage,
+          disqualifiedPlayers: state.disqualifiedPlayers,
+          eliminatedPlayers: newlyDisqualified,
+          matchEnded: true,
+          winner,
+        },
+      };
+    }
+
+    // When an elimination occurs and remaining players continue (5, 4, 3, or 2 active players),
+    // begin the next round with their allocations (20 seeds per active player)
+    for (const p of remainingActive) {
+      setPlayerStorage(state, p, 20);
+    }
+  }
+
+  // Get authoritative dynamic pit groups for current disqualification state
+  const groups = getSixPlayerGroups(state.disqualifiedPlayers ?? []);
+  let openGroups = 0;
+
+  for (let g = 0; g < groups.length; g++) {
+    const groupPits = groups[g];
+    const representedPlayers = Array.from(
+      new Set(groupPits.map((pitId) => state.pits[pitId].owner))
+    ).filter((p) => !state.disqualifiedPlayers?.includes(p));
+
+    const canFund = representedPlayers.every(
+      (p) => getPlayerStorage(state, p) >= INITIAL_SEEDS_PER_PIT
+    );
+
+    if (canFund) {
+      for (const pitId of groupPits) {
+        state.pits[pitId].status = "OPEN";
+        state.pits[pitId].seeds = INITIAL_SEEDS_PER_PIT;
+        state.pits[pitId].bonusAvailable = false;
+      }
+      for (const p of representedPlayers) {
+        deductPlayerStorage(state, p, INITIAL_SEEDS_PER_PIT);
+      }
+      openGroups++;
+    } else {
+      // Close this group and every subsequent group
+      for (let remG = g; remG < groups.length; remG++) {
+        for (const pitId of groups[remG]) {
+          state.pits[pitId].status = "CLOSED";
+          state.pits[pitId].seeds = 0;
+          state.pits[pitId].bonusAvailable = false;
+        }
+      }
+      break;
+    }
+  }
+
+  // Ensure permanently disqualified players' pits stay closed
+  if (state.disqualifiedPlayers) {
+    for (const d of state.disqualifiedPlayers) {
+      for (const pit of state.pits) {
+        if (pit.owner === d) {
+          pit.status = "CLOSED";
+          pit.seeds = 0;
+          pit.bonusAvailable = false;
+        }
+      }
+    }
+  }
+
+  if (!verifySeedConservation(state)) {
+    return {
+      success: false,
+      error: "Seed conservation invariant violated during 6-player round setup",
+    };
+  }
+
+  const activePlayersAfter = getActivePlayers(state);
+  if (state.roundWinner && activePlayersAfter.includes(state.roundWinner)) {
+    state.currentPlayer = state.roundWinner;
+    state.startingPlayer = state.roundWinner;
+  } else {
+    state.currentPlayer = activePlayersAfter[0];
+    state.startingPlayer = activePlayersAfter[0];
+  }
+
+  state.roundWinner = null;
+  state.players.player1.roundCaptured = 0;
+  state.players.player2.roundCaptured = 0;
+  if (state.players.player3) state.players.player3.roundCaptured = 0;
+  if (state.players.player4) state.players.player4.roundCaptured = 0;
+  if (state.players.player5) state.players.player5.roundCaptured = 0;
+  if (state.players.player6) state.players.player6.roundCaptured = 0;
+  state.selectedPit = null;
+  state.lastPit = null;
+  state.seedsInHand = 0;
+
+  state.round += 1;
+  state.phase = "PLAYING";
+  state.turnPhase = "PLAYER_TURN";
+
+  return {
+    success: true,
+    data: {
+      round: state.round,
+      openGroups,
+      player1RemainingStorage: state.players.player1.storage,
+      player2RemainingStorage: state.players.player2.storage,
+      player3RemainingStorage: state.players.player3?.storage,
+      player4RemainingStorage: state.players.player4?.storage,
+      player5RemainingStorage: state.players.player5?.storage,
+      player6RemainingStorage: state.players.player6?.storage,
+      disqualifiedPlayers: state.disqualifiedPlayers,
+      eliminatedPlayers: newlyDisqualified.length > 0 ? newlyDisqualified : undefined,
+    },
+  };
+}
+
+/**
  * Sets up a new round using players' storage seeds (Section 18 & 19).
  */
 export function setupNextRound(state: GameState): ActionResult<RoundSetupResult> {
+  if (state.playerCount === 6) {
+    return setupNextRoundSixPlayer(state);
+  }
   if (state.playerCount === 5) {
     return setupNextRoundFivePlayer(state);
   }

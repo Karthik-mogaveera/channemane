@@ -442,6 +442,15 @@ export function getPitOwner(pitId: number, maxPits: number = TOTAL_PITS): Player
   if (!isValidPitId(pitId, maxPits)) {
     return null;
   }
+  if (maxPits === SIX_PLAYER_TOTAL_PITS) {
+    if (pitId >= 0 && pitId <= 3) return "PLAYER_1";
+    if (pitId >= 4 && pitId <= 7) return "PLAYER_2";
+    if (pitId >= 8 && pitId <= 11) return "PLAYER_3";
+    if (pitId >= 12 && pitId <= 15) return "PLAYER_4";
+    if (pitId >= 16 && pitId <= 19) return "PLAYER_5";
+    if (pitId >= 20 && pitId <= 23) return "PLAYER_6";
+    return null;
+  }
   if (maxPits === FIVE_PLAYER_TOTAL_PITS) {
     if (pitId >= 0 && pitId <= 3) return "PLAYER_1";
     if (pitId >= 4 && pitId <= 7) return "PLAYER_2";
@@ -485,6 +494,76 @@ export function getFourPlayerPitOwner(pitId: number): Player | null {
  */
 export function getFivePlayerPitOwner(pitId: number): Player | null {
   return getPitOwner(pitId, FIVE_PLAYER_TOTAL_PITS);
+}
+
+/**
+ * Convenience helper for 6-player pit ownership
+ */
+export function getSixPlayerPitOwner(pitId: number): Player | null {
+  return getPitOwner(pitId, SIX_PLAYER_TOTAL_PITS);
+}
+
+/**
+ * 6-Player Mode Constants
+ */
+export const SIX_PLAYER_TOTAL_PITS = 24;
+export const SIX_PLAYER_TOTAL_SEEDS = 120;
+export const SIX_PLAYER_PITS_PER_PLAYER = 4;
+
+export const SIX_PLAYER_P1_PITS = [0, 1, 2, 3] as const;
+export const SIX_PLAYER_P2_PITS = [4, 5, 6, 7] as const;
+export const SIX_PLAYER_P3_PITS = [8, 9, 10, 11] as const;
+export const SIX_PLAYER_P4_PITS = [12, 13, 14, 15] as const;
+export const SIX_PLAYER_P5_PITS = [16, 17, 18, 19] as const;
+export const SIX_PLAYER_P6_PITS = [20, 21, 22, 23] as const;
+
+// 6-Player visual row definitions (Image: Page 11)
+// Top row (P1 and P2, left to right): P0..P7
+export const SIX_PLAYER_TOP_ROW = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+// Middle row (P4 and P3, left to right visually): P15, P14, P13, P12, P11, P10, P9, P8
+export const SIX_PLAYER_MIDDLE_ROW = [15, 14, 13, 12, 11, 10, 9, 8] as const;
+// Bottom row (P5 and P6, left to right): P16..P23
+export const SIX_PLAYER_BOTTOM_ROW = [16, 17, 18, 19, 20, 21, 22, 23] as const;
+
+export const SIX_PLAYER_TOP_LEFT = [0, 1, 2, 3] as const;
+export const SIX_PLAYER_TOP_RIGHT = [4, 5, 6, 7] as const;
+export const SIX_PLAYER_MIDDLE_LEFT = [15, 14, 13, 12] as const;
+export const SIX_PLAYER_MIDDLE_RIGHT = [11, 10, 9, 8] as const;
+export const SIX_PLAYER_BOTTOM_LEFT = [16, 17, 18, 19] as const;
+export const SIX_PLAYER_BOTTOM_RIGHT = [20, 21, 22, 23] as const;
+
+/**
+ * 6-Player Original Pit Groups G1-G4 (Immutable Configuration)
+ * G1: [P0, P4, P11, P15, P16, P20]
+ * G2: [P1, P5, P10, P14, P17, P21]
+ * G3: [P2, P6, P9, P13, P18, P22]
+ * G4: [P3, P7, P8, P12, P19, P23]
+ */
+export const SIX_PLAYER_GROUPS_ALL = [
+  [0, 4, 11, 15, 16, 20],
+  [1, 5, 10, 14, 17, 21],
+  [2, 6, 9, 13, 18, 22],
+  [3, 7, 8, 12, 19, 23],
+] as const;
+
+/**
+ * Dynamic calculation of 6-player pit groups based on disqualified players.
+ * Strictly follows Section 5 instructions:
+ * 1. Store original 4 groups as immutable configuration.
+ * 2. Maintain list of active and disqualified players.
+ * 3. Identify which pits belong to disqualified players.
+ * 4. Remove those pits from each group.
+ * 5. Preserve original order of remaining pits.
+ * 6. Use resulting groups for settlement and next-round initialization.
+ */
+export function getSixPlayerGroups(disqualified: readonly Player[] = []): number[][] {
+  const disSet = new Set(disqualified);
+  return SIX_PLAYER_GROUPS_ALL.map((group) =>
+    group.filter((pitId) => {
+      const owner = getSixPlayerPitOwner(pitId);
+      return owner !== null && !disSet.has(owner);
+    })
+  );
 }
 
 /**

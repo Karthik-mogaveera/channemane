@@ -59,9 +59,9 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             data-testid="player-count-btn-2"
             aria-label="2 Players mode, fully playable"
           >
-            <div className="menu-btn-icon" aria-hidden="true">
+            {/* <div className="menu-btn-icon" aria-hidden="true">
               👥
-            </div>
+            </div> */}
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">2 Players</span>
@@ -86,9 +86,9 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             data-testid="player-count-btn-3"
             aria-label="3 Players mode, fully playable"
           >
-            <div className="menu-btn-icon" aria-hidden="true">
+            {/* <div className="menu-btn-icon" aria-hidden="true">
               👥👤
-            </div>
+            </div> */}
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">3 Players</span>
@@ -113,9 +113,9 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             data-testid="player-count-btn-4"
             aria-label="4 Players mode, fully playable"
           >
-            <div className="menu-btn-icon" aria-hidden="true">
+            {/* <div className="menu-btn-icon" aria-hidden="true">
               👨‍👩‍👧‍👦
-            </div>
+            </div> */}
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">4 Players</span>
@@ -140,9 +140,9 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             data-testid="player-count-btn-5"
             aria-label="5 Players mode, fully playable"
           >
-            <div className="menu-btn-icon" aria-hidden="true">
+            {/* <div className="menu-btn-icon" aria-hidden="true">
               👥👥👤
-            </div>
+            </div> */}
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">5 Players</span>
@@ -159,26 +159,26 @@ export const MultiplayerSelect: React.FC<MultiplayerSelectProps> = ({
             </span>
           </button>
 
-          {/* 5. 6 Players (WIP) */}
+          {/* 5. 6 Players (Playable) */}
           <button
             type="button"
-            className="multiplayer-option-btn multiplayer-option-wip"
+            className="multiplayer-option-btn multiplayer-option-6p multiplayer-option-active"
             onClick={() => onSelectPlayerCount(6)}
             data-testid="player-count-btn-6"
-            aria-label="6 Players mode, coming soon"
+            aria-label="6 Players mode, fully playable"
           >
-            <div className="menu-btn-icon" aria-hidden="true">
+            {/* <div className="menu-btn-icon" aria-hidden="true">
               👥👥👥
-            </div>
+            </div> */}
             <div className="menu-btn-content">
               <div className="multiplayer-title-row">
                 <span className="menu-btn-title">6 Players</span>
-                <span className="coming-soon-pill" aria-label="Under development">
-                  Coming Soon
+                <span className="multiplayer-ready-pill" aria-label="Playable mode">
+                  Play Now
                 </span>
               </div>
               <span className="menu-btn-desc">
-                6-player grand family match with circular turn order
+                Grand 6-player Karnataka rules with 24 pits &amp; 120 seeds
               </span>
             </div>
             <span className="menu-btn-arrow" aria-hidden="true">

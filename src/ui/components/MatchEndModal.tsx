@@ -36,6 +36,8 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
       ? "Player 4 Wins the Match!"
       : matchResult.winner === "PLAYER_5"
       ? "Player 5 Wins the Match!"
+      : matchResult.winner === "PLAYER_6"
+      ? "Player 6 Wins the Match!"
       : "Match Tied!";
 
   return (
@@ -83,7 +85,9 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
                     ? "Player 3"
                     : ranking.player === "PLAYER_4"
                     ? "Player 4"
-                    : "Player 5";
+                    : ranking.player === "PLAYER_5"
+                    ? "Player 5"
+                    : "Player 6";
 
                 const badgeBg = isWinner
                   ? "rgba(234, 179, 8, 0.25)"

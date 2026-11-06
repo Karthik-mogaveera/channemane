@@ -42,6 +42,10 @@
   --p5-purple-bg: rgba(168, 85, 247, 0.15);
   --p5-purple-border: #c084fc;
 
+  --p6-teal: #0d9488;
+  --p6-teal-bg: rgba(13, 148, 136, 0.15);
+  --p6-teal-border: #2dd4bf;
+
   /* Seeds */
   --seed-ivory: #faf3e0;
   --seed-tamarind: #b48348;
@@ -332,11 +336,15 @@ body {
   background: var(--p2-indigo-bg);
 }
 
-.players-bar:has(.player-card.p5) {
+.players-bar:has(.player-card.p6) {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.players-bar:has(.player-card.p5):not(:has(.player-card.p6)) {
   grid-template-columns: repeat(5, 1fr);
 }
 
-.players-bar:has(.player-card.p4):not(:has(.player-card.p5)) {
+.players-bar:has(.player-card.p4):not(:has(.player-card.p5)):not(:has(.player-card.p6)) {
   grid-template-columns: 1fr 1fr 1fr 1fr;
 }
 
@@ -357,6 +365,11 @@ body {
 .player-card.p5.active {
   border-color: var(--p5-purple-border);
   background: var(--p5-purple-bg);
+}
+
+.player-card.p6.active {
+  border-color: var(--p6-teal-border);
+  background: var(--p6-teal-bg);
 }
 
 .player-card.disqualified {
@@ -1282,13 +1295,13 @@ body {
   line-height: 18px;
 }
 
-.p5-group .channemane-pit {
+/* .p5-group .channemane-pit {
   border-color: rgba(168, 85, 247, 0.45);
 }
 
 .board-storage-p5 {
   border-color: rgba(168, 85, 247, 0.4);
-}
+} */
 
 @media (max-width: 960px) {
   .five-player-board {
@@ -1334,6 +1347,192 @@ body {
     --p5-pit-size: clamp(28px, 3.6vw, 40px);
     --p5-row-gap: 4px;
     --p5-section-gap: 4px;
+    padding: 4px 8px;
+  }
+}
+
+/* ==========================================================================
+   6-Player Channemane Board Layout (Page 11 Reference)
+   Top Row: P0–P3 (P1) [gap] P4–P7 (P2)
+   Middle Row: P15–P12 (P4) [gap] P11–P8 (P3), flanked by P4 storage (left) & P3 storage (right)
+   Bottom Row: P16–P19 (P5) [gap] P20–P23 (P6)
+   ========================================================================== */
+.six-player-board {
+  --p6-pit-size: clamp(52px, 5.5vw, 68px);
+  --p6-pit-cell-width: var(--p6-pit-size);
+  --p6-pit-cell-height: calc(var(--p6-pit-size) + 20px);
+  --p6-col-gap: clamp(8px, 1.2vw, 16px);
+  --p6-center-gap: clamp(24px, 3vw, 44px);
+  --p6-row-gap: clamp(8px, 1.2vw, 14px);
+  --p6-section-gap: clamp(8px, 1vw, 12px);
+  --p6-side-gap: clamp(10px, 1.4vw, 18px);
+  --p6-side-storage-width: clamp(80px, 8.5vw, 104px);
+  --p6-board-max-width: calc(8 * var(--p6-pit-cell-width) + 6 * var(--p6-col-gap) + var(--p6-center-gap) + 2 * var(--p6-side-storage-width) + 2 * var(--p6-side-gap) + 40px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p6-section-gap);
+  padding: 14px 18px;
+  width: 100%;
+  max-width: var(--p6-board-max-width);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.six-player-storage-top-row,
+.six-player-storage-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr var(--p6-center-gap) 1fr;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+  padding-left: calc(var(--p6-side-storage-width) + var(--p6-side-gap));
+  padding-right: calc(var(--p6-side-storage-width) + var(--p6-side-gap));
+}
+
+.six-player-storage-half {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.six-player-storage-half.left,
+.six-player-storage-half.right {
+  justify-content: stretch;
+}
+
+.six-player-center-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p6-side-gap);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.six-player-storage-side {
+  width: var(--p6-side-storage-width);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.six-player-storage-side .storage-bowl {
+  width: 100%;
+  height: calc(3 * var(--p6-pit-cell-height) + 2 * var(--p6-row-gap) + 12px);
+  max-height: 270px;
+}
+
+.six-player-pits-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p6-row-gap);
+  flex: 1;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.six-player-pits-row {
+  display: grid;
+  grid-template-columns: 1fr var(--p6-center-gap) 1fr;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.six-player-pit-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--p6-col-gap);
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.six-player-pit-group .pit-cell {
+  width: 100%;
+  max-width: var(--p6-pit-cell-width);
+  height: var(--p6-pit-cell-height);
+  justify-content: center;
+}
+
+.six-player-pit-group .channemane-pit {
+  width: var(--p6-pit-size);
+  height: var(--p6-pit-size);
+  aspect-ratio: 1 / 1;
+}
+
+.six-player-pit-group .pit-external-count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  height: 18px;
+  min-height: 18px;
+  line-height: 18px;
+}
+
+@media (max-width: 960px) {
+  .six-player-board {
+    --p6-pit-size: clamp(36px, 4.4vw, 50px);
+    --p6-col-gap: clamp(5px, 0.9vw, 10px);
+    --p6-center-gap: clamp(16px, 2.2vw, 28px);
+    --p6-row-gap: 8px;
+    --p6-section-gap: 6px;
+    --p6-side-gap: 8px;
+    --p6-side-storage-width: clamp(65px, 7.5vw, 82px);
+    padding: 10px 12px;
+  }
+  .six-player-pit-group {
+    padding: 4px 6px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .six-player-board {
+    --p6-pit-size: clamp(26px, 3.5vw, 34px);
+    --p6-col-gap: 3px;
+    --p6-center-gap: 10px;
+    --p6-row-gap: 5px;
+    --p6-section-gap: 4px;
+    --p6-side-gap: 5px;
+    --p6-side-storage-width: 52px;
+    padding: 6px 8px;
+  }
+  .six-player-pit-group {
+    padding: 2px 4px;
+    border-radius: 10px;
+  }
+  .six-player-pit-group .pit-cell {
+    height: calc(var(--p6-pit-size) + 14px);
+  }
+  .six-player-pit-group .pit-external-count {
+    font-size: 0.7rem;
+    height: 12px;
+    min-height: 12px;
+    line-height: 12px;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .six-player-board {
+    --p6-pit-size: clamp(26px, 3.2vw, 38px);
+    --p6-row-gap: 4px;
+    --p6-section-gap: 4px;
+    --p6-side-gap: 6px;
     padding: 4px 8px;
   }
 }
@@ -1396,6 +1595,10 @@ body {
 
 .pit-external-count.p5-count {
   color: #e9d5ff;
+}
+
+.pit-external-count.p6-count {
+  color: #99f6e4;
 }
 
 /* Pit Component (Circular, enlarged fixed diameter to clearly showcase up to 70 seeds) */
@@ -3038,6 +3241,13 @@ body {
   border: 2px solid var(--p5-purple, #a855f7);
   color: #faf5ff;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(168, 85, 247, 0.4);
+}
+
+.turn-notification-p6 {
+  background: linear-gradient(135deg, rgba(15, 65, 65, 0.95) 0%, rgba(10, 40, 40, 0.95) 100%);
+  border: 2px solid var(--p6-teal, #0d9488);
+  color: #f0fdfa;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(13, 148, 136, 0.4);
 }
 
 .turn-notification-ai {

@@ -28,6 +28,7 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   const isP2 = player === "PLAYER_2";
   const isP3 = player === "PLAYER_3";
   const isP4 = player === "PLAYER_4";
+  const isP5 = player === "PLAYER_5";
   const playerLabel = isP1
     ? "Player 1"
     : isP2
@@ -36,7 +37,9 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
     ? "Player 3"
     : isP4
     ? "Player 4"
-    : "Player 5";
+    : isP5
+    ? "Player 5"
+    : "Player 6";
   const testId = isP1
     ? "storage-player1"
     : isP2
@@ -45,7 +48,9 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
     ? "storage-player3"
     : isP4
     ? "storage-player4"
-    : "storage-player5";
+    : isP5
+    ? "storage-player5"
+    : "storage-player6";
   const countTestId = isP1
     ? "p1-captured-count"
     : isP2
@@ -54,7 +59,9 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
     ? "p3-captured-count"
     : isP4
     ? "p4-captured-count"
-    : "p5-captured-count";
+    : isP5
+    ? "p5-captured-count"
+    : "p6-captured-count";
   const gradId = isP1
     ? "storage-seed-grad-p1"
     : isP2
@@ -63,7 +70,9 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
     ? "storage-seed-grad-p3"
     : isP4
     ? "storage-seed-grad-p4"
-    : "storage-seed-grad-p5";
+    : isP5
+    ? "storage-seed-grad-p5"
+    : "storage-seed-grad-p6";
 
   const isHorizontal = orientation === "horizontal";
   const geometry = useMemo(() => {

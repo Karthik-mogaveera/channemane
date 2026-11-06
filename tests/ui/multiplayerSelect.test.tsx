@@ -63,7 +63,7 @@ describe("Local Multiplayer Player Count Selection", () => {
 
     expect(btn6).toBeInTheDocument();
     expect(btn6).toHaveTextContent("6 Players");
-    expect(btn6).toHaveTextContent("Coming Soon");
+    expect(btn6).toHaveTextContent("Play Now");
 
     // Board is not mounted yet
     expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
@@ -201,76 +201,31 @@ describe("Local Multiplayer Player Count Selection", () => {
     expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
   });
 
-  it("Requirement 8-11: Selecting 6 Players displays Work in Progress dialog with exact text", () => {
+  it("Requirement 5e: Selecting 6 Players opens 6-Player gameplay flow and renders 24 pits and 6 player cards", () => {
     render(<App />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("menu-btn-local"));
     });
-
-    // Test 6 Players
     act(() => {
       fireEvent.click(screen.getByTestId("player-count-btn-6"));
     });
-    expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Work in Progress" })).toBeInTheDocument();
-    expect(screen.getByTestId("wip-message")).toHaveTextContent(
-      "Multiplayer for this player count is currently under development. Stay tuned for future updates!"
-    );
-    expect(screen.getByTestId("wip-player-count")).toHaveTextContent("6-Player Multiplayer");
-    act(() => {
-      fireEvent.click(screen.getByTestId("wip-modal-ok-btn"));
-    });
-    expect(screen.queryByTestId("wip-modal")).not.toBeInTheDocument();
-    expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
-  });
 
-  it("Requirement 12-14: WIP dialog dismissals via Escape key and backdrop click without duplicate dialogs", () => {
-    render(<App />);
+    // Directly on game board with 6-Player Board
+    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
+    expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 6P/i);
 
-    act(() => {
-      fireEvent.click(screen.getByTestId("menu-btn-local"));
-    });
-
-    // Open WIP modal with 6 Players
-    act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-6"));
-    });
-    expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
-
-    // Press Escape
-    act(() => {
-      fireEvent.keyDown(window, { key: "Escape" });
-    });
-    expect(screen.queryByTestId("wip-modal")).not.toBeInTheDocument();
-    expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
-
-    // Open again with 6 Players and click backdrop overlay
-    act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-6"));
-    });
-    const overlay = screen.getByTestId("wip-modal");
-    act(() => {
-      fireEvent.click(overlay);
-    });
-    expect(screen.queryByTestId("wip-modal")).not.toBeInTheDocument();
-
-    // Clicking card content does not dismiss (event propagation stopped)
-    act(() => {
-      fireEvent.click(screen.getByTestId("player-count-btn-6"));
-    });
-    const card = screen.getByTestId("wip-card");
-    act(() => {
-      fireEvent.click(card);
-    });
-    expect(screen.getByTestId("wip-modal")).toBeInTheDocument();
-
-    // Ensure only one dialog instance exists
-    expect(screen.getAllByTestId("wip-modal")).toHaveLength(1);
-
-    act(() => {
-      fireEvent.click(screen.getByTestId("wip-modal-ok-btn"));
-    });
+    // Verify 6 player cards and 24 pits
+    expect(screen.getByTestId("player-card-1")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-2")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-3")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-4")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-5")).toBeInTheDocument();
+    expect(screen.getByTestId("player-card-6")).toBeInTheDocument();
+    expect(screen.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
+    expect(screen.getByTestId("pit-23")).toHaveAttribute("data-seeds", "5");
+    expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
   });
 
   it("Requirement 15-17: Regression - Play with AI, AI difficulties, and Rules remain unchanged", () => {

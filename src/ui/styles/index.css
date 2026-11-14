@@ -205,6 +205,11 @@ body {
   background: rgba(36, 19, 11, 0.6);
 }
 
+.btn-muted {
+  opacity: 0.8;
+  filter: grayscale(0.2);
+}
+
 /* Turn & Status Banner */
 .turn-banner {
   display: flex;

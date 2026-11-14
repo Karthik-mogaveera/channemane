@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { useChannemaneGame } from "./ui/hooks/useChannemaneGame";
 import { useOrientation } from "./ui/hooks/useOrientation";
+import { useSoundEffects } from "./ui/hooks/useSoundEffects";
 import { Header } from "./ui/components/Header";
 import { TurnBanner } from "./ui/components/TurnBanner";
 import { PlayerPanels } from "./ui/components/PlayerPanels";
@@ -50,6 +51,7 @@ export const App: React.FC<AppProps> = ({
   const [chosenStartingPlayer, setChosenStartingPlayer] =
     useState<Player>("PLAYER_1");
   const { isPortraitBlocked } = useOrientation();
+  const { isMuted, toggleMute } = useSoundEffects();
 
   const {
     gameState,
@@ -351,6 +353,8 @@ export const App: React.FC<AppProps> = ({
             gameMode={gameMode}
             aiDifficulty={aiDifficulty}
             playerCount={gameState.playerCount ?? 2}
+            isMuted={isMuted}
+            onToggleAudio={toggleMute}
           />
 
           {/* Turn & Status Indicator */}

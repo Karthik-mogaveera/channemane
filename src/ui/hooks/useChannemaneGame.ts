@@ -24,6 +24,7 @@ import {
   type MatchEndResult,
 } from "../../engine/matchEnd";
 import type { TurnStepResult } from "../../engine/simulation";
+import { soundManager } from "../audio/soundManager";
 
 export type AnimationSpeed = "SLOW" | "FAST";
 
@@ -338,6 +339,7 @@ export function useChannemaneGame(
         }
         setGameState({ ...currentState });
 
+        soundManager.playSound("matchVictory");
         setMatchSummary(finalMatchResult);
         setSettlementSummary(null);
         setInteractionState("MATCH_COMPLETE");
@@ -354,6 +356,7 @@ export function useChannemaneGame(
         currentState.phase === "ROUND_SETTLEMENT";
 
       if (isRoundSettled) {
+        soundManager.playSound("roundSettlement");
         const settlement =
           outcome?.roundSettlement ??
           lastSettlementRef.current ??
@@ -439,6 +442,7 @@ export function useChannemaneGame(
           }
 
           if (stepRes.data.pitId !== undefined) {
+            soundManager.playSound("sowDrop");
             setActiveDropPit(stepRes.data.pitId);
           }
 
@@ -489,6 +493,8 @@ export function useChannemaneGame(
         setLastActionError(startRes.error);
         return { success: false, error: startRes.error };
       }
+
+      soundManager.playSound("scoop");
 
       const pickupState = gameRef.current.getState();
       setGameState(pickupState);
@@ -664,6 +670,8 @@ export function useChannemaneGame(
         return res;
       }
 
+      soundManager.playSound("scoop");
+
       setHighlightedContinuationPit(null);
       const stateAfterScoop = gameRef.current.getState();
       setGameState(stateAfterScoop);
@@ -738,6 +746,8 @@ export function useChannemaneGame(
         return res;
       }
 
+      soundManager.playSound("capture");
+
       setHighlightedCapturePit(null);
       handleGameplayCompletion(res.data);
       return res;
@@ -763,6 +773,7 @@ export function useChannemaneGame(
       if (!res.success) {
         setLastActionError(res.error);
       } else {
+        soundManager.playSound("bonusClaim");
         if (res.data.roundEnded || res.data.matchEnded) {
           animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
           animationTimeoutsRef.current = [];

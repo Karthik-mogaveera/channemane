@@ -1688,6 +1688,44 @@ Synthesized blueprint of all positive test cases and negative validation scenari
 | **TC-NEG-13** | Keyboard / Focus Escape From Modals With Incomplete Action | When a modal with required user action (e.g. first-turn selection) is open, background board interaction is trapped and disabled. | User can click board pits behind open modal; focus shifts to background elements; accidental turn trigger while modal active. |
 | **TC-NEG-14** | Reopening Pits When Total Available Storage Seeds Are Insufficient for Even 1 Pair/Group | Player has $< 5$ seeds in storage. Player is immediately disqualified; game prevents reopening 0-seed active pits. | Pits reopen with 0 seeds; negative storage values created; match continues indefinitely with unfunded board. |
 
+---
+
+## 38. Sound Effects & Web Audio Feedback System (Fixes #4)
+
+### 38.1 Architectural Design
+Implemented a lightweight, zero-dependency, zero-asset Web Audio API synthesis engine (`src/ui/audio/soundManager.ts`) providing tactile, pleasant sensory feedback across all core game actions without external audio asset downloads or network latency.
+
+### 38.2 Synthesized Sound Profiles
+1. **`sowDrop`**:
+   - Triangle oscillator at ~720 Hz (with natural randomized +-40 Hz jitter) decaying over 0.04s.
+   - High-pass / bandpass filtered white noise impact transient at 1200 Hz simulating seeds hitting wooden cups.
+2. **`scoop`**:
+   - Resonant downward sine sweep (320 Hz $\rightarrow$ 190 Hz) over 0.11s with subtle low-pass filtered noise burst simulating seeds being scooped in hand.
+3. **`capture`**:
+   - Staggered triple-click clatter (0ms, 30ms, 65ms) simulating multiple seeds dropping into the storage bowl, coupled with an 880 Hz (A5) resonant bell tone decaying over 0.32s.
+4. **`bonusClaim`**:
+   - Ascending 3-note harmonic chime: C5 (523.25 Hz) $\rightarrow$ E5 (659.25 Hz) $\rightarrow$ G5 (783.99 Hz) with gentle exponential decay over 0.38s.
+5. **`roundSettlement`**:
+   - Triumphant chord: C4 (261.63 Hz), E4 (329.63 Hz), G4 (392.00 Hz), C5 (523.25 Hz) with gentle swell and decay over 0.65s.
+6. **`matchVictory`**:
+   - Celebratory 4-note victory fanfare: G4 (392 Hz) $\rightarrow$ C5 (523.25 Hz) $\rightarrow$ E5 (659.25 Hz) $\rightarrow$ G5 (783.99 Hz) over 0.8s.
+
+### 38.3 Audio Controls & Mute Persistence
+- **Audio Toggle Control**: Accessible button in the game header (`data-testid="audio-toggle-btn"`):
+  - Displays `🔊 Sound` when unmuted and `🔇 Muted` when muted.
+  - Updates `aria-label` and `title` appropriately.
+- **Persistence**: Player preference automatically saves to `localStorage` under `channemane_sound_muted` (`"true"` | `"false"`).
+- **Graceful Degradation & Autoplay Resilience**:
+  - Automatically resumes `AudioContext` if suspended by browser autoplay policies upon user gesture.
+  - Safely falls back to a no-op if Web Audio API is unsupported or disabled without throwing unhandled exceptions.
+
+### 38.4 Verification & Test Coverage
+- **Unit & Integration Suite**: `tests/ui/soundEffects.test.tsx` (8/8 tests passed).
+  - Validates `SoundManager` singleton initialization, localStorage persistence, AudioContext resumption, and all 6 sound synthesis methods.
+  - Validates `useSoundEffects` hook state reactivity.
+  - Validates in-game Header audio button toggling and accessible attribute updates.
+
+
 
 
 

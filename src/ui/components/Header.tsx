@@ -16,6 +16,8 @@ export interface HeaderProps {
   gameMode?: GameMode | null;
   aiDifficulty?: AIDifficulty | null;
   playerCount?: 2 | 3 | 4 | 5 | 6;
+  isMuted?: boolean;
+  onToggleAudio?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,6 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
   gameMode,
   aiDifficulty,
   playerCount = 2,
+  isMuted = false,
+  onToggleAudio,
 }) => {
   return (
     <header className="game-header" role="banner">
@@ -65,6 +69,19 @@ export const Header: React.FC<HeaderProps> = ({
             title="Return to Main Menu"
           >
             🏠 Menu
+          </button>
+        )}
+
+        {onToggleAudio && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onToggleAudio}
+            aria-label={isMuted ? "Unmute audio sound effects" : "Mute audio sound effects"}
+            data-testid="audio-toggle-btn"
+            title={isMuted ? "Sound: Off (Click to Unmute)" : "Sound: On (Click to Mute)"}
+          >
+            {isMuted ? "🔇 Muted" : "🔊 Sound"}
           </button>
         )}
 

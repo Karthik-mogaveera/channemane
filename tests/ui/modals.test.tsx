@@ -105,8 +105,8 @@ describe("Game Modals", () => {
     render(<RulesModal isOpen={true} onClose={handleClose} />);
 
     expect(screen.getByTestId("rules-modal")).toBeInTheDocument();
-    expect(screen.getByText("Origins & Heritage")).toBeInTheDocument();
-    expect(screen.getByText(/3 → 4/)).toBeInTheDocument();
+    expect(screen.getByText("1. The Game Board")).toBeInTheDocument();
+    expect(screen.getByText("5. The Special 4-Seed Bonus")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("close-rules-btn"));
     expect(handleClose).toHaveBeenCalledTimes(1);

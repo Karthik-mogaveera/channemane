@@ -1591,5 +1591,46 @@ Represented all 11 pit-group configurations as explicit engine data structures i
   - `npm run typecheck`: 0 errors.
   - `npm run build`: Production build succeeded in 3.97s.
 
+---
+
+## 36. Rewrite and Integrate Player-Friendly Rules for All Modes (2P, 3P, 4P, 5P, 6P)
+
+### 36.1 Architectural Objective
+Replace the developer-centric, technical rules screen with beginner-friendly, accessible instructions for Channemane. The new screen strips away all technical pit notations (`P0`, `P1`, `P2`, `P15`, `P23`), mathematical formulas, internal implementation terms, code snippets, and historical origin essays in favor of simple, everyday English.
+
+### 36.2 The Nine Player-Friendly Sections
+1. **1. The Game Board**: Board overview, circular pits, storage bowls, seed initializations, and layout descriptions for each selected mode.
+2. **2. How to Play Your Turn**: Selecting a pit on your side with seeds, scooping all seeds, and counter-clockwise sowing.
+3. **3. Continue Sowing**: Automatic relay mechanic—if your last seed lands in a pit with seeds, scoop up all seeds in that pit and continue sowing.
+4. **4. Capturing Seeds**: The empty pit landing rule—when your last seed lands in an empty pit, check the very next pit; if it has seeds, capture them and bank them immediately in your storage bowl.
+5. **5. The Special 4-Seed Bonus**: If any sowing drop brings a pit's count to exactly 4 seeds, the pit's owner claims all 4 seeds into storage immediately.
+6. **6. When Does a Round End?**: Round termination when no player can make a legal move, followed by side-seed sweeps into player storages.
+7. **7. Opening Pits for the Next Round**: Re-opening pits with 5 seeds each using storage seeds, opposite pair funding (2P) or coordinated atomic group funding (3P, 4P, 5P, 6P), and locking unfunded pits.
+8. **8. Player Elimination**: Disqualification conditions (< 5 seeds in storage at round settlement), permanent seed removals (20 seeds per elimination in 4P/5P/6P, 25 in 3P), and transition to remaining player counts.
+9. **9. How to Win**: Winning criteria, surviving player victories, and ranked placements (1st, 2nd, 3rd, etc.).
+
+### 36.3 Interactive Mode-Switching Tabs & Contextual Defaulting
+- **Interactive Selector**: `2 Players | 3 Players | 4 Players | 5 Players | 6 Players` tab bar.
+- **Contextual Defaulting**:
+  - When opened from the Main Menu (`MainMenu.tsx`), defaults to `2 Players` while allowing full exploration of other modes.
+  - When opened from an active game (`App.tsx`), automatically defaults to that active game's player count (`2`, `3`, `4`, `5`, or `6`).
+- **Dynamic Board Specifications**:
+  - **2 Players**: 14 Pits, 70 Seeds, 2 Storages, 2 rows of 7 pits, opposite pairs.
+  - **3 Players**: 15 Pits, 75 Seeds, 3 Storages, 3 rows of 5 pits, 5 groups.
+  - **4 Players**: 16 Pits, 80 Seeds, 4 Storages, 2 rows of 8 pits, 4 groups.
+  - **5 Players**: 20 Pits, 100 Seeds, 5 Storages, 3 rows (8, 4, 8), 4 groups.
+  - **6 Players**: 24 Pits, 120 Seeds, 6 Storages, 3 continuous rows of 8, 4 groups.
+
+### 36.4 Verification and Test Coverage
+- **Unit & Integration Tests**:
+  - `tests/ui/rulesModal.test.tsx`: 6 comprehensive tests validating all 9 sections, absence of technical jargon/formulas, tab navigation across all 5 modes, and modal dismissal methods.
+  - `tests/ui/modals.test.tsx`: Updated to test new headings and close actions.
+  - `tests/ui/menuNavigation.test.tsx`: Updated to assert new modal title and navigation.
+- **Full Test Suite & Build Results**:
+  - `npm run typecheck`: 0 errors.
+  - Full repo test suite (`npx vitest run`): **66/66 test files passed, 507/507 tests passed**.
+  - `npm run build`: Production build succeeded in 3.25s.
+
+
 
 

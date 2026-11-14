@@ -202,7 +202,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
 
     // Rules modal is visible
     expect(screen.getByTestId("rules-modal")).toBeInTheDocument();
-    expect(screen.getByText("Channemane — Rules of Play")).toBeInTheDocument();
+    expect(screen.getByText("How to Play Channemane")).toBeInTheDocument();
 
     // Click Back to Menu button in Rules modal
     act(() => {

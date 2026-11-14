@@ -1361,13 +1361,13 @@ body {
   --p6-pit-size: clamp(52px, 5.5vw, 68px);
   --p6-pit-cell-width: var(--p6-pit-size);
   --p6-pit-cell-height: calc(var(--p6-pit-size) + 20px);
-  --p6-col-gap: clamp(8px, 1.2vw, 16px);
+  --p6-col-gap: clamp(10px, 1.4vw, 18px);
   --p6-center-gap: clamp(24px, 3vw, 44px);
-  --p6-row-gap: clamp(8px, 1.2vw, 14px);
+  --p6-row-gap: clamp(10px, 1.4vw, 16px);
   --p6-section-gap: clamp(8px, 1vw, 12px);
   --p6-side-gap: clamp(10px, 1.4vw, 18px);
   --p6-side-storage-width: clamp(80px, 8.5vw, 104px);
-  --p6-board-max-width: calc(8 * var(--p6-pit-cell-width) + 6 * var(--p6-col-gap) + var(--p6-center-gap) + 2 * var(--p6-side-storage-width) + 2 * var(--p6-side-gap) + 40px);
+  --p6-board-max-width: calc(8 * var(--p6-pit-cell-width) + 6 * var(--p6-col-gap) + var(--p6-center-gap) + 2 * var(--p6-side-storage-width) + 2 * var(--p6-side-gap) + 200px);
 
   display: flex;
   flex-direction: column;
@@ -1903,6 +1903,295 @@ body {
 
 .modal-body li {
   margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Player-Friendly Rules Modal Styling (All Game Modes)
+   ========================================================================== */
+.rules-modal-content {
+  max-width: 720px !important;
+  width: 95%;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rules-header-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rules-header-badge {
+  font-size: 0.76rem;
+  color: var(--brass-gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.rules-mode-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.rules-mode-tab {
+  flex: 1;
+  min-width: 82px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.rules-mode-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+}
+
+.rules-mode-tab.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(153, 122, 21, 0.35) 100%);
+  color: var(--gold-light);
+  border-color: var(--brass-gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.rules-modal-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px;
+  max-height: 60vh;
+  padding-right: 8px;
+  overflow-y: auto;
+}
+
+.rules-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(212, 175, 55, 0.14);
+}
+
+.rules-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
+  padding-bottom: 4px;
+}
+
+.rules-section p {
+  margin: 0 0 4px;
+  line-height: 1.5;
+  color: var(--text-main);
+  font-size: 0.88rem;
+}
+
+.rules-section ul,
+.rules-section ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.rules-section li {
+  margin-bottom: 4px;
+}
+
+.rules-detail-note {
+  margin-top: 4px !important;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 3px solid var(--brass-gold);
+  border-radius: 4px;
+  font-size: 0.82rem !important;
+  color: var(--gold-light) !important;
+}
+
+.rules-ownership-list {
+  margin-top: 6px;
+  font-size: 0.84rem;
+}
+
+.rules-ownership-list strong {
+  color: var(--gold-light);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rules-visual-card {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  padding: 10px 14px;
+  margin: 6px 0;
+}
+
+.rules-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 8px;
+  text-align: center;
+}
+
+.rules-config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rules-config-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.rules-config-value {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+.rules-illustration-box {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  padding: 8px 10px;
+  margin: 6px 0 2px;
+}
+
+.rules-step-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.step-pill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+  text-align: center;
+}
+
+.step-pill.highlight {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: var(--brass-gold);
+  color: var(--gold-light);
+}
+
+.step-pill.success {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--success-color);
+  color: #a7f3d0;
+}
+
+.step-pill.warning {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--p4-amber);
+  color: #fde68a;
+}
+
+.step-arrow {
+  color: var(--brass-gold);
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.rules-win-summary {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+
+.rules-win-summary strong {
+  color: var(--gold-light);
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.85rem;
+}
+
+.rules-win-summary p {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.rules-rank-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rank-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rank-badge.gold {
+  background: rgba(234, 179, 8, 0.2);
+  border: 1px solid #eab308;
+  color: #fef08a;
+}
+
+.rank-badge.silver {
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid #94a3b8;
+  color: #e2e8f0;
+}
+
+.rank-badge.bronze {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid #f59e0b;
+  color: #fed7aa;
+}
+
+.rules-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  padding-top: 10px;
+  margin-top: 4px;
+  gap: 10px;
 }
 
 .settlement-score-grid {
@@ -2779,31 +3068,19 @@ body {
     font-size: 1.05rem !important;
   }
 
-  /* Rules Modal in Landscape: 2-Column Responsive Reading */
+  /* Rules Modal in Landscape */
   div[data-testid="rules-modal"] .modal-content {
-    max-width: 680px;
+    max-width: 720px;
     padding: 10px 16px;
     gap: 6px;
   }
 
   div[data-testid="rules-modal"] .modal-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     max-height: calc(100dvh - 92px);
     overflow-y: auto;
-  }
-
-  div[data-testid="rules-modal"] .modal-body h4 {
-    margin: 4px 0 2px;
-    font-size: 0.82rem;
-  }
-
-  div[data-testid="rules-modal"] .modal-body p,
-  div[data-testid="rules-modal"] .modal-body ul {
-    font-size: 0.73rem;
-    line-height: 1.25;
-    margin-bottom: 2px;
   }
 
   /* Main Menu in Landscape: Horizontal Side-by-Side Grid */

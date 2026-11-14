@@ -473,7 +473,11 @@ export const App: React.FC<AppProps> = ({
       )}
 
       {/* Rules Modal (Shared across Main Menu, Difficulty Select, and Game) */}
-      <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
+      <RulesModal
+        isOpen={isRulesOpen}
+        onClose={() => setIsRulesOpen(false)}
+        activePlayerCount={currentScreen === "GAME" ? (gameState.playerCount ?? 2) : undefined}
+      />
     </div>
   );
 };

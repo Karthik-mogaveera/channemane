@@ -8,8 +8,10 @@ import { soundManager, type SoundEffectType } from "../audio/soundManager";
 
 export interface SoundEffectsHook {
   isMuted: boolean;
+  sfxVolume: number;
   toggleMute: () => void;
   setMuted: (muted: boolean) => void;
+  setSfxVolume: (volume: number) => void;
   playSound: (type: SoundEffectType) => void;
   playSowDrop: () => void;
   playScoop: () => void;
@@ -23,6 +25,9 @@ export function useSoundEffects(): SoundEffectsHook {
   const [isMuted, setIsMutedState] = useState<boolean>(() =>
     soundManager.isSoundMuted()
   );
+  const [sfxVolume, setSfxVolumeState] = useState<number>(() =>
+    soundManager.getSfxVolume()
+  );
 
   const toggleMute = useCallback(() => {
     const next = soundManager.toggleMute();
@@ -32,6 +37,11 @@ export function useSoundEffects(): SoundEffectsHook {
   const setMuted = useCallback((muted: boolean) => {
     soundManager.setMuted(muted);
     setIsMutedState(muted);
+  }, []);
+
+  const setSfxVolume = useCallback((volume: number) => {
+    soundManager.setSfxVolume(volume);
+    setSfxVolumeState(soundManager.getSfxVolume());
   }, []);
 
   const playSound = useCallback((type: SoundEffectType) => {
@@ -64,8 +74,10 @@ export function useSoundEffects(): SoundEffectsHook {
 
   return {
     isMuted,
+    sfxVolume,
     toggleMute,
     setMuted,
+    setSfxVolume,
     playSound,
     playSowDrop,
     playScoop,

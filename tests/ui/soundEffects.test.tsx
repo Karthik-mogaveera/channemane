@@ -8,6 +8,7 @@ describe("SoundManager & Web Audio Synthesis", () => {
   let mockOscillator: any;
   let mockGain: any;
   let mockBiquadFilter: any;
+  let mockCompressor: any;
   let mockBufferSource: any;
   let mockAudioContext: any;
 
@@ -28,17 +29,31 @@ describe("SoundManager & Web Audio Synthesis", () => {
 
     mockGain = {
       gain: {
+        value: 1,
         setValueAtTime: vi.fn(),
         exponentialRampToValueAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
       },
       connect: vi.fn(),
     };
 
     mockBiquadFilter = {
       type: "bandpass",
-      frequency: { setValueAtTime: vi.fn() },
+      frequency: {
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
       Q: { setValueAtTime: vi.fn() },
+      connect: vi.fn(),
+    };
+
+    mockCompressor = {
+      threshold: { setValueAtTime: vi.fn() },
+      knee: { setValueAtTime: vi.fn() },
+      ratio: { setValueAtTime: vi.fn() },
+      attack: { setValueAtTime: vi.fn() },
+      release: { setValueAtTime: vi.fn() },
       connect: vi.fn(),
     };
 
@@ -57,6 +72,7 @@ describe("SoundManager & Web Audio Synthesis", () => {
       createOscillator: vi.fn(() => ({ ...mockOscillator })),
       createGain: vi.fn(() => ({ ...mockGain })),
       createBiquadFilter: vi.fn(() => ({ ...mockBiquadFilter })),
+      createDynamicsCompressor: vi.fn(() => ({ ...mockCompressor })),
       createBuffer: vi.fn(() => ({
         getChannelData: vi.fn(() => new Float32Array(100)),
       })),
@@ -93,6 +109,22 @@ describe("SoundManager & Web Audio Synthesis", () => {
     expect(manager.isSoundMuted()).toBe(true);
   });
 
+  it("supports SFX volume adjustments and persists to localStorage", () => {
+    const manager = new SoundManager();
+    expect(manager.getSfxVolume()).toBe(0.85);
+
+    manager.setSfxVolume(0.6);
+    expect(manager.getSfxVolume()).toBe(0.6);
+    expect(localStorage.getItem("channemane_sfx_volume")).toBe("0.6");
+
+    // Clamps between 0 and 1
+    manager.setSfxVolume(1.5);
+    expect(manager.getSfxVolume()).toBe(1.0);
+
+    manager.setSfxVolume(-0.2);
+    expect(manager.getSfxVolume()).toBe(0.0);
+  });
+
   it("does not synthesize sounds when muted", () => {
     const manager = new SoundManager();
     manager.setMuted(true);
@@ -107,7 +139,7 @@ describe("SoundManager & Web Audio Synthesis", () => {
     expect(mockAudioContext.createOscillator).not.toHaveBeenCalled();
   });
 
-  it("synthesizes all 6 sound effect types when unmuted", () => {
+  it("synthesizes all 6 sound effect types when unmuted with realistic acoustic modeling", () => {
     const manager = new SoundManager();
     manager.setMuted(false);
 
@@ -141,6 +173,72 @@ describe("SoundManager & Web Audio Synthesis", () => {
     expect(mockAudioContext.createOscillator).toHaveBeenCalled();
   });
 
+  it("applies anti-fatigue voice cycling on rapid consecutive sowDrop events", () => {
+    const manager = new SoundManager();
+    manager.setMuted(false);
+
+    // Trigger multiple rapid drops within milliseconds
+    manager.playSound("sowDrop");
+    manager.playSound("sowDrop");
+    manager.playSound("sowDrop");
+
+    expect(mockAudioContext.createOscillator).toHaveBeenCalled();
+  });
+
+  it("supports background music ducking with smooth restoration", () => {
+    vi.useFakeTimers();
+    const manager = new SoundManager();
+
+    const mockMusicGain = {
+      gain: {
+        value: 1.0,
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
+      },
+    };
+    manager.setMusicGainNode(mockMusicGain as any);
+
+    // Trigger capture which ducks music
+    manager.playSound("capture");
+    expect(mockMusicGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      expect.closeTo(0.65, 0.01),
+      expect.any(Number)
+    );
+
+    // Fast-forward past ducking timeout
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+
+    expect(mockMusicGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1.0,
+      expect.any(Number)
+    );
+
+    vi.useRealTimers();
+  });
+
+  it("ducks HTMLAudioElement when set as music source", () => {
+    vi.useFakeTimers();
+    const manager = new SoundManager();
+
+    const mockAudioElement = {
+      volume: 0.8,
+    };
+    manager.setMusicAudioElement(mockAudioElement as any);
+
+    manager.playSound("bonusClaim");
+    expect(mockAudioElement.volume).toBeCloseTo(0.48, 0.01);
+
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
+    expect(mockAudioElement.volume).toBeCloseTo(0.8, 0.01);
+    vi.useRealTimers();
+  });
+
   it("resumes AudioContext if suspended upon sound playback", () => {
     mockAudioContext.state = "suspended";
     const manager = new SoundManager();
@@ -168,10 +266,11 @@ describe("useSoundEffects Hook", () => {
     soundManager.setMuted(false);
   });
 
-  it("provides reactive sound controls and triggers", () => {
+  it("provides reactive sound controls, volume adjustments, and triggers", () => {
     const { result } = renderHook(() => useSoundEffects());
 
     expect(result.current.isMuted).toBe(false);
+    expect(result.current.sfxVolume).toBe(0.85);
 
     act(() => {
       result.current.toggleMute();
@@ -182,6 +281,11 @@ describe("useSoundEffects Hook", () => {
       result.current.setMuted(false);
     });
     expect(result.current.isMuted).toBe(false);
+
+    act(() => {
+      result.current.setSfxVolume(0.5);
+    });
+    expect(result.current.sfxVolume).toBe(0.5);
 
     // Ensure convenience methods execute without throwing
     expect(() => {

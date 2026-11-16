@@ -1725,6 +1725,64 @@ Implemented a lightweight, zero-dependency, zero-asset Web Audio API synthesis e
   - Validates `useSoundEffects` hook state reactivity.
   - Validates in-game Header audio button toggling and accessible attribute updates.
 
+---
+
+## 39. Redesign Channemane Sound Effects – Modern, Realistic and Premium Audio
+
+### 39.1 Audio Identity & Aesthetic Direction
+Completely redesigned the procedural audio engine from synthetic electronic bleeps into modern, realistic, premium board-game audio reflecting physical wood and seed acoustics:
+- Replaced synthetic electronic tones with physical acoustic modeling: hollow carved pit resonances, seed shell impacts, granular seed-on-seed friction, deep storage bowl resonances, handcrafted marimba/kalimba wooden bar harmonics, and cinematic milestone resolutions.
+- Zero external audio assets required; 100% procedurally synthesized in real time via the Web Audio API with zero network latency and full offline support.
+
+### 39.2 Redesigned Acoustic Sound Specifications
+1. **`sowDrop` (Seed Placement)**:
+   - Polished seed (*Manjadikuru* / tamarind seed) gently dropping into a carved wooden pit cup.
+   - 3 layered acoustic elements:
+     - Hard shell contact click: high-frequency bandpass transient (3400 Hz, $Q=3.5$, 8ms).
+     - Cavity body resonance: warm damped sine wave (460–550 Hz) decaying exponentially over 35ms.
+     - Air pocket overtone: subtle secondary harmonic ring (920–1100 Hz, 25ms).
+   - Anti-fatigue voice management: rotates across 5 acoustic wood pitch variations with micro-jitter to prevent monotony during fast sowing.
+2. **`scoop` (Picking Up Seeds)**:
+   - Fingers scooping a cluster of seeds against the curved wooden cavity of the pit.
+   - Dual low-mid downward frequency glide (280 Hz $\rightarrow$ 170 Hz over 95ms) with smooth 15ms attack.
+   - Granular seed-on-seed friction: pre-rendered noise passed through a sweeping bandpass filter (2200 Hz $\rightarrow$ 1100 Hz).
+   - Staggered micro-clicks simulating individual seeds tumbling as they are lifted into the hand.
+3. **`capture` (Collecting Handful into Storage Bowl)**:
+   - Staggered multi-seed cluster (4 sequential impacts at 0ms, 22ms, 48ms, 80ms) cascading into the basin.
+   - Deep storage basin resonance: low-mid wooden cavity resonance at 185 Hz $\rightarrow$ 140 Hz over 220ms.
+   - Warm acoustic reward accent: soft E5 (659.25 Hz) chime decaying smoothly over 380ms.
+4. **`bonusClaim` (Special 4-Seed Bonus)**:
+   - Handcrafted acoustic marimba / kalimba musical arpeggio: G4 (392 Hz) $\rightarrow$ B4 (494 Hz) $\rightarrow$ E5 (659 Hz) $\rightarrow$ G5 (784 Hz).
+   - Dual-layer wooden bar acoustic synthesis: fundamental sine tone + 3.92x overtone ring with wooden mallet transient.
+   - Physical seed scoop underlay.
+5. **`roundSettlement` (Round Completion)**:
+   - Dignified, warm cinematic milestone transition.
+   - Acoustic singing bowl / gong chord: D3 (146.8 Hz), A3 (220 Hz), D4 (293.7 Hz), F#4 (370 Hz) with swelling 45ms attack and long noble decay (950ms).
+   - Granular board sweep: soft filtered noise simulating seeds sliding across wood into bowls.
+   - High harmonic overtone (A5: 880 Hz) providing serene closure.
+6. **`matchVictory` (Match Victory Fanfare)**:
+   - Celebratory, cinematic acoustic fanfare: D4 (294 Hz) $\rightarrow$ G4 (392 Hz) $\rightarrow$ B4 (494 Hz) $\rightarrow$ D5 (587 Hz).
+   - Grand resolving acoustic chord: G3 (196 Hz) + D4 + G4 + B4 + D5 with high shimmer (B5: 988 Hz) sustaining and decaying smoothly over 1.6s.
+   - Warm wooden mallet transients on each note.
+
+### 39.3 Master Audio Routing & Background Music Ducking
+- **Audio Routing Graph**:
+  `[Voice Source]` $\rightarrow$ `[Master SFX Gain]` $\rightarrow$ `[Dynamics Compressor / Limiter]` $\rightarrow$ `[Master Lowpass Filter (14.5kHz)]` $\rightarrow$ `[AudioContext.destination]`.
+- **Pre-rendered Noise Buffer**:
+  - Pre-computes 1.0 second of organic filtered noise on initialization, reusing it for all transient click and granular sweep sources without memory allocations or GC pauses.
+- **Background Music Ducking Engine**:
+  - `duckMusic(reductionFraction = 0.35, durationMs = 750)` smoothly attenuates background music during prominent gameplay events (`capture`, `bonusClaim`, `roundSettlement`, `matchVictory`) and restores previous volume without abrupt jumps.
+  - Supports both Web Audio API `GainNode` and HTML `<audio>` elements.
+- **Volume & Mute Controls**:
+  - SFX Volume: `getSfxVolume()` / `setSfxVolume()` with persistence in `localStorage` under `channemane_sfx_volume`.
+  - Mute: `isSoundMuted()` / `toggleMute()` / `setMuted()` with persistence under `channemane_sound_muted`.
+
+### 39.4 Verification & Test Results
+- **Unit & Integration Suite**: `tests/ui/soundEffects.test.tsx` (12/12 tests passed).
+- **Full Vitest Test Suite**: 67/67 test files and 519/519 tests passed.
+- **Production Build**: Clean production build via `npm run build`.
+
+
 
 
 

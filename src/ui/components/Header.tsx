@@ -18,6 +18,7 @@ export interface HeaderProps {
   playerCount?: 2 | 3 | 4 | 5 | 6;
   isMuted?: boolean;
   onToggleAudio?: () => void;
+  onOpenThemes?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   playerCount = 2,
   isMuted = false,
   onToggleAudio,
+  onOpenThemes,
 }) => {
   return (
     <header className="game-header" role="banner">
@@ -99,6 +101,19 @@ export const Header: React.FC<HeaderProps> = ({
         >
           {animationSettings.speed === "SLOW" ? "🎬 Slow Mode" : "⚡ Fast Mode"}
         </button>
+
+        {onOpenThemes && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onOpenThemes}
+            aria-label="Select Theme"
+            data-testid="header-themes-btn"
+            title="Select Theme (Royal / Nature)"
+          >
+            🎨 Themes
+          </button>
+        )}
 
         <button
           type="button"

@@ -3639,3 +3639,715 @@ body {
     font-size: 1.1rem;
   }
 }
+
+
+/* ==========================================================================
+   Theme Selection Dialog & Cards Styling
+   ========================================================================== */
+
+.theme-modal-overlay {
+  z-index: 1000;
+}
+
+.theme-modal-card {
+  max-width: 620px;
+  width: 100%;
+}
+
+.theme-modal-header {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  padding-bottom: 14px;
+}
+
+.theme-modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-modal-title {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.theme-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.theme-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.theme-card {
+  background: rgba(22, 11, 6, 0.6);
+  border: 2px solid rgba(212, 175, 55, 0.35);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.22s ease-in-out;
+  outline: none;
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brass-gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px var(--gold-glow);
+}
+
+.theme-card:focus-visible {
+  outline: 3px solid var(--brass-gold);
+  outline-offset: 2px;
+}
+
+.theme-card.selected {
+  border-color: var(--brass-gold);
+  background: rgba(45, 22, 12, 0.75);
+  box-shadow: 0 0 18px var(--gold-glow), inset 0 0 12px rgba(212, 175, 55, 0.15);
+}
+
+.theme-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.theme-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-card-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.theme-card-name {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 0;
+}
+
+.theme-card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.theme-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.theme-badge.active {
+  background: var(--brass-gold);
+  color: #1a0e07;
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+.theme-badge.select-hint {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Miniature Visual Board Previews */
+.theme-preview-box {
+  width: 100%;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.royal-preview {
+  background: #160b06;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.royal-preview .preview-board-rim {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #422315, #24130b);
+  border: 2px solid #d4af37;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+
+.royal-preview .preview-storage-left,
+.royal-preview .preview-storage-right {
+  width: 16px;
+  height: 38px;
+  background: #1b0d07;
+  border: 1.5px solid #d4af37;
+  border-radius: 8px;
+}
+
+.royal-preview .preview-pits-cluster {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.royal-preview .preview-pit {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #201008;
+  border: 1.5px solid #d4af37;
+}
+
+.royal-preview .preview-pit.active-glow {
+  box-shadow: 0 0 6px #d4af37;
+  border-color: #fff2cc;
+}
+
+.nature-preview {
+  background: #F5EBDD;
+  border: 1px solid #C6D2B8;
+}
+
+.nature-preview .preview-board-rim {
+  width: 100%;
+  height: 100%;
+  background: #E5D5B9;
+  border: 2px solid #9B7654;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+
+.nature-preview .preview-storage-left,
+.nature-preview .preview-storage-right {
+  width: 16px;
+  height: 38px;
+  background: #FFFCF5;
+  border: 1.5px solid #9B7654;
+  border-radius: 8px;
+}
+
+.nature-preview .preview-pits-cluster {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nature-preview .preview-pit {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FFFCF5;
+  border: 1.5px solid #9B7654;
+}
+
+.nature-preview .preview-pit.active-glow {
+  border-color: #899B78;
+  box-shadow: 0 0 6px #899B78;
+}
+
+/* Palette Swatches Bar */
+.theme-palette-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.palette-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.palette-swatch:hover {
+  transform: scale(1.2);
+}
+
+.theme-modal-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  padding-top: 10px;
+}
+
+/* ==========================================================================
+   Nature Theme – Official Earth & Nature Colour Palette System
+   Warm Sand (#F5EBDD), Desert Beige (#E5D5B9), Sage Green (#C6D2B8),
+   Forest Sage (#899B78), Natural Wood (#9B7654), Ivory Cream (#FFFCF5)
+   ========================================================================== */
+
+:root[data-theme="nature"],
+body[data-theme="nature"],
+[data-theme="nature"] {
+  /* Nature Tokens */
+  --bg-deep: #F5EBDD;               /* Warm Sand: Main app background */
+  --bg-surface: #FFFCF5;            /* Ivory Cream: Cards, dialogs, surfaces */
+  --wood-rim: #9B7654;              /* Natural Wood: Borders, outlines */
+  --wood-grain-light: #C6D2B8;      /* Sage Green: Supporting accents */
+  --wood-pit-dark: #E5D5B9;         /* Desert Beige: Board surface */
+  --wood-pit-inner: #FFFCF5;        /* Ivory Cream: Pit interior */
+
+  /* Accents & Highlights */
+  --brass-gold: #899B78;            /* Forest Sage: Primary active / selected */
+  --gold-light: #4A3E31;            /* Dark Wood: Headings and titles */
+  --gold-dark: #6B7D5C;
+  --gold-glow: rgba(137, 155, 120, 0.45);
+
+  /* Typography */
+  --text-main: #33271E;             /* Dark rich wood readable text */
+  --text-muted: #6B5B4E;            /* Muted earthy brown text */
+
+  /* Earthy Natural Player Palettes (High contrast on light backgrounds) */
+  --p1-crimson: #C24136;
+  --p1-crimson-bg: rgba(194, 65, 54, 0.15);
+  --p1-crimson-border: #D35246;
+
+  --p2-indigo: #2D68C4;
+  --p2-indigo-bg: rgba(45, 104, 196, 0.15);
+  --p2-indigo-border: #457ED6;
+
+  --p3-emerald: #2E8540;
+  --p3-emerald-bg: rgba(46, 133, 64, 0.15);
+  --p3-emerald-border: #3D9E51;
+
+  --p4-amber: #D97706;
+  --p4-amber-bg: rgba(217, 119, 6, 0.15);
+  --p4-amber-border: #F59E0B;
+
+  --p5-purple: #8B48B4;
+  --p5-purple-bg: rgba(139, 72, 180, 0.15);
+  --p5-purple-border: #A35EC9;
+
+  --p6-teal: #0F766E;
+  --p6-teal-bg: rgba(15, 118, 110, 0.15);
+  --p6-teal-border: #14B8A6;
+
+  /* Indicators */
+  --indicator-selected: #899B78;
+  --indicator-selected-glow: rgba(137, 155, 120, 0.75);
+
+  --indicator-continuation: #B45309;
+  --indicator-continuation-light: #D97706;
+  --indicator-continuation-glow: rgba(180, 83, 9, 0.4);
+
+  --indicator-capture: #991B1B;
+  --indicator-capture-light: #DC2626;
+  --indicator-capture-glow: rgba(153, 27, 27, 0.4);
+
+  --indicator-bonus: #B48348;
+  --indicator-bonus-light: #D4A373;
+  --indicator-bonus-glow: rgba(180, 131, 72, 0.5);
+}
+
+/* 1. Body & Overall Background in Nature Theme */
+body[data-theme="nature"] {
+  background: radial-gradient(circle at 50% 20%, #FAF5ED 0%, #F5EBDD 100%);
+  color: #33271E;
+}
+
+/* 2. Main Menu, Difficulty & Multiplayer Cards in Nature Theme */
+[data-theme="nature"] .main-menu-card,
+[data-theme="nature"] .difficulty-select-card,
+[data-theme="nature"] .multiplayer-select-card {
+  background: linear-gradient(160deg, #FFFCF5 0%, #F7F1E7 100%);
+  border: 2px solid #9B7654;
+  box-shadow:
+    0 16px 48px rgba(90, 70, 50, 0.15),
+    inset 0 0 24px rgba(198, 210, 184, 0.25);
+  color: #33271E;
+}
+
+[data-theme="nature"] .main-menu-card::before,
+[data-theme="nature"] .difficulty-select-card::before,
+[data-theme="nature"] .multiplayer-select-card::before {
+  border-color: rgba(137, 155, 120, 0.35);
+}
+
+[data-theme="nature"] .menu-brand-title,
+[data-theme="nature"] .difficulty-title,
+[data-theme="nature"] .multiplayer-title {
+  background: linear-gradient(135deg, #4A3E31 0%, #6E5339 60%, #899B78 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="nature"] .menu-brand-kannada {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .menu-brand-subtitle,
+[data-theme="nature"] .difficulty-subtitle,
+[data-theme="nature"] .multiplayer-subtitle {
+  color: #899B78;
+}
+
+[data-theme="nature"] .divider-line {
+  background: #C6D2B8;
+}
+
+[data-theme="nature"] .divider-diamond {
+  color: #899B78;
+}
+
+/* Menu Option Buttons in Nature Theme */
+[data-theme="nature"] .menu-option-btn,
+[data-theme="nature"] .difficulty-option-btn,
+[data-theme="nature"] .multiplayer-option-btn {
+  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
+  border: 1.5px solid #C6D2B8;
+  color: #33271E;
+  box-shadow: 0 4px 14px rgba(90, 70, 50, 0.08);
+}
+
+[data-theme="nature"] .menu-option-btn:hover,
+[data-theme="nature"] .difficulty-option-btn:hover,
+[data-theme="nature"] .multiplayer-option-btn:hover {
+  background: linear-gradient(135deg, #FFFFFF 0%, #ECE2D2 100%);
+  border-color: #899B78;
+  box-shadow:
+    0 8px 24px rgba(90, 70, 50, 0.14),
+    0 0 16px rgba(137, 155, 120, 0.3);
+  transform: translateY(-2px);
+}
+
+[data-theme="nature"] .menu-btn-icon,
+[data-theme="nature"] .difficulty-level-indicator,
+[data-theme="nature"] .multiplayer-badge-icon {
+  background: #E5D5B9;
+  border: 1px solid #9B7654;
+  color: #33271E;
+}
+
+[data-theme="nature"] .menu-btn-title,
+[data-theme="nature"] .difficulty-btn-title,
+[data-theme="nature"] .multiplayer-btn-title {
+  color: #4A3E31;
+}
+
+[data-theme="nature"] .menu-btn-desc,
+[data-theme="nature"] .difficulty-btn-desc,
+[data-theme="nature"] .multiplayer-btn-desc {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .menu-btn-arrow,
+[data-theme="nature"] .difficulty-btn-arrow,
+[data-theme="nature"] .multiplayer-btn-arrow {
+  color: #899B78;
+}
+
+[data-theme="nature"] .main-menu-footer,
+[data-theme="nature"] .difficulty-footer,
+[data-theme="nature"] .multiplayer-footer {
+  color: #6B5B4E;
+}
+
+/* 3. Game Header in Nature Theme */
+[data-theme="nature"] .game-header {
+  background: rgba(255, 252, 245, 0.95);
+  border: 1px solid #C6D2B8;
+  box-shadow: 0 4px 20px rgba(90, 70, 50, 0.08);
+}
+
+[data-theme="nature"] .brand-title {
+  background: linear-gradient(135deg, #4A3E31 0%, #6E5339 60%, #899B78 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="nature"] .brand-subtitle {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .game-mode-tag {
+  background: #E5D5B9;
+  border: 1px solid #9B7654;
+  color: #4A3E31;
+}
+
+/* Header & Action Buttons in Nature Theme */
+[data-theme="nature"] .btn {
+  background: linear-gradient(180deg, #F5EBDD 0%, #E5D5B9 100%);
+  border: 1px solid #9B7654;
+  color: #4A3E31;
+}
+
+[data-theme="nature"] .btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #FAF4EB 0%, #EFE3CE 100%);
+  border-color: #899B78;
+  box-shadow: 0 0 12px rgba(137, 155, 120, 0.35);
+}
+
+[data-theme="nature"] .btn-secondary {
+  background: rgba(255, 252, 245, 0.85);
+  border-color: #C6D2B8;
+  color: #4A3E31;
+}
+
+[data-theme="nature"] .btn-secondary:hover:not(:disabled) {
+  background: #FFFCF5;
+  border-color: #899B78;
+}
+
+/* 4. Turn Banner in Nature Theme */
+[data-theme="nature"] .turn-banner {
+  background: rgba(255, 252, 245, 0.95);
+  border: 1px solid #C6D2B8;
+  box-shadow: 0 2px 10px rgba(90, 70, 50, 0.08);
+  color: #33271E;
+}
+
+[data-theme="nature"] .turn-status-text {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .hand-seeds-count {
+  background: #E5D5B9;
+  border: 1px solid #9B7654;
+  color: #4A3E31;
+}
+
+/* 5. Player Panels & Cards in Nature Theme */
+[data-theme="nature"] .player-card {
+  background: rgba(255, 252, 245, 0.95);
+  border: 1.5px solid #C6D2B8;
+  box-shadow: 0 2px 8px rgba(90, 70, 50, 0.08);
+  color: #33271E;
+}
+
+[data-theme="nature"] .player-card.active {
+  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
+  border-color: #899B78;
+  box-shadow: 0 0 14px rgba(137, 155, 120, 0.35);
+}
+
+[data-theme="nature"] .player-stats {
+  color: #6B5B4E;
+}
+
+/* 6. Physical Board in Nature Theme */
+[data-theme="nature"] .channemane-board {
+  background: linear-gradient(145deg, #ede0cb 0%, #E5D5B9 60%, #dfceb1 100%);
+  border: 4px solid #9B7654;
+  outline: 2px solid #C6D2B8;
+  box-shadow:
+    0 16px 36px rgba(110, 85, 60, 0.25),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -3px 8px rgba(110, 85, 60, 0.15);
+}
+
+/* 7. Circular Pits in Nature Theme */
+[data-theme="nature"] .channemane-pit {
+  background: radial-gradient(circle at 35% 30%, #FFFCF5 0%, #F5EBDD 70%, #E5D5B9 100%);
+  border: 3px solid #9B7654;
+  box-shadow:
+    inset 0 3px 8px rgba(90, 70, 50, 0.3),
+    0 2px 4px rgba(90, 70, 50, 0.15);
+}
+
+[data-theme="nature"] .channemane-pit.selectable {
+  border-color: #899B78;
+  box-shadow:
+    inset 0 2px 6px rgba(90, 70, 50, 0.2),
+    0 0 14px rgba(137, 155, 120, 0.65);
+}
+
+[data-theme="nature"] .channemane-pit.active-drop {
+  border-color: #899B78;
+  box-shadow:
+    0 0 20px rgba(137, 155, 120, 0.8),
+    inset 0 0 10px rgba(137, 155, 120, 0.4);
+}
+
+[data-theme="nature"] .channemane-pit.continuation-target {
+  border-color: #D97706;
+  box-shadow: 0 0 16px rgba(217, 119, 6, 0.75);
+}
+
+[data-theme="nature"] .channemane-pit.capture-target {
+  border-color: #DC2626;
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.75);
+}
+
+[data-theme="nature"] .channemane-pit.has-bonus {
+  border-color: #B48348;
+  box-shadow: 0 0 16px rgba(180, 131, 72, 0.6);
+}
+
+[data-theme="nature"] .channemane-pit.closed {
+  background: #D8CEBD;
+  border-color: #A39684;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* External Pit Counters in Nature Theme */
+[data-theme="nature"] .pit-external-count {
+  background: rgba(255, 252, 245, 0.95);
+  border: 1px solid #9B7654;
+  box-shadow: 0 2px 6px rgba(90, 70, 50, 0.15);
+  text-shadow: none;
+}
+
+[data-theme="nature"] .row-label {
+  color: #6B5B4E;
+}
+
+/* 8. Storage Bowls in Nature Theme */
+[data-theme="nature"] .storage-bowl {
+  background: radial-gradient(ellipse at 50% 30%, #FFFCF5 0%, #E5D5B9 100%);
+  border: 3px solid #9B7654;
+  box-shadow:
+    inset 0 6px 14px rgba(90, 70, 50, 0.3),
+    0 2px 6px rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="nature"] .storage-label {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .storage-count {
+  color: #4A3E31;
+  text-shadow: none;
+}
+
+[data-theme="nature"] .storage-seeds-reservoir {
+  background: rgba(229, 213, 185, 0.4);
+  border: 1px solid #C6D2B8;
+}
+
+[data-theme="nature"] .storage-empty-hint {
+  color: rgba(107, 91, 78, 0.45);
+}
+
+[data-theme="nature"] .storage-pill {
+  color: #899B78;
+}
+
+/* 9. Multi-Player Board Layouts in Nature Theme (3P, 4P, 5P, 6P) */
+[data-theme="nature"] .four-player-board,
+[data-theme="nature"] .five-player-board,
+[data-theme="nature"] .six-player-board,
+[data-theme="nature"] .three-player-board {
+  border-color: #9B7654;
+  outline-color: #C6D2B8;
+}
+
+[data-theme="nature"] .ornamental-center-divider,
+[data-theme="nature"] .board-divider-line {
+  background: #C6D2B8;
+}
+
+[data-theme="nature"] .divider-flourish {
+  color: #899B78;
+}
+
+/* 10. Modals & Dialogs in Nature Theme */
+[data-theme="nature"] .modal-overlay {
+  background: rgba(45, 35, 25, 0.65);
+}
+
+[data-theme="nature"] .modal-content,
+[data-theme="nature"] .rules-modal-card,
+[data-theme="nature"] .settlement-card,
+[data-theme="nature"] .match-end-card,
+[data-theme="nature"] .notice-modal-card,
+[data-theme="nature"] .first-player-card {
+  background: linear-gradient(160deg, #FFFCF5 0%, #F7F1E7 100%);
+  border: 2px solid #9B7654;
+  box-shadow:
+    0 20px 48px rgba(90, 70, 50, 0.25),
+    0 0 20px rgba(137, 155, 120, 0.2);
+  color: #33271E;
+}
+
+[data-theme="nature"] .modal-header,
+[data-theme="nature"] .rules-header {
+  border-bottom: 1px solid rgba(198, 210, 184, 0.6);
+}
+
+[data-theme="nature"] .modal-title,
+[data-theme="nature"] .rules-title,
+[data-theme="nature"] .settlement-title,
+[data-theme="nature"] .match-end-title {
+  color: #4A3E31;
+}
+
+[data-theme="nature"] .close-btn {
+  color: #6B5B4E;
+}
+
+[data-theme="nature"] .close-btn:hover {
+  color: #33271E;
+}
+
+[data-theme="nature"] .rules-section-btn {
+  background: #FFFCF5;
+  border-color: #C6D2B8;
+  color: #4A3E31;
+}
+
+[data-theme="nature"] .rules-section-btn.active {
+  background: #E5D5B9;
+  border-color: #899B78;
+  color: #33271E;
+}
+
+[data-theme="nature"] .rules-content-panel {
+  background: #FAF5ED;
+  border: 1px solid #C6D2B8;
+  color: #33271E;
+}
+
+[data-theme="nature"] .settlement-summary-card,
+[data-theme="nature"] .match-end-summary {
+  background: #FAF5ED;
+  border: 1px solid #C6D2B8;
+  color: #33271E;
+}
+
+/* 11. Alerts, Action Bars & Notifications in Nature Theme */
+[data-theme="nature"] .round-settlement-action-bar {
+  background: rgba(255, 252, 245, 0.95);
+  border: 1px solid #C6D2B8;
+  color: #33271E;
+}
+
+[data-theme="nature"] .turn-notification-pill {
+  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
+  border: 2px solid #899B78;
+  color: #33271E;
+  box-shadow: 0 10px 30px rgba(90, 70, 50, 0.2);
+}
+
+[data-theme="nature"] .error-alert {
+  background: #FDF2E9;
+  border: 1px solid #C24136;
+  color: #78281F;
+}

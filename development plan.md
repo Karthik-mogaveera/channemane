@@ -1788,3 +1788,67 @@ Completely redesigned the procedural audio engine from synthetic electronic blee
 
 
 
+
+
+---
+
+## 40. Application-Wide Theme Selection: Royal Theme & Nature Theme Implementation
+
+### 40.1 Architecture Overview
+Implemented a centralized, application-wide theme management system supporting two complete visual identities:
+1. **Royal Theme (Default)**: Preserves the authentic Karnataka heritage sandalwood, rosewood, and brass aesthetic.
+2. **Nature Theme**: A calm, organic light Earth & Nature aesthetic utilizing the official color palette:
+   - **Warm Sand (`#F5EBDD`)**: Main application background, canvas, and viewport backdrop.
+   - **Desert Beige (`#E5D5B9`)**: Game board surface, reservoirs, and badge containers.
+   - **Sage Green (`#C6D2B8`)**: Secondary accents, dividers, and supporting UI borders.
+   - **Forest Sage (`#899B78`)**: Active states, selection rings, turn pulses, and highlight elements.
+   - **Natural Wood (`#9B7654`)**: Outlines, borders, pit rims, and seed details.
+   - **Ivory Cream (`#FFFCF5`)**: Pit interiors, modal dialogs, cards, and primary surfaces.
+
+### 40.2 Modified & Created Files
+1. **`src/ui/theme/theme.ts` (New)**:
+   - Defines `AppTheme = "royal" | "nature"`.
+   - Exports `NATURE_PALETTE` and `ROYAL_PALETTE` token constants.
+   - Central persistence functions: `getStoredTheme()`, `setStoredTheme(theme)`, and `applyTheme(theme)`.
+   - Storage keys: `channemane_theme` (and backward-compatible `channemane_board_theme`).
+   - Immediately invokes `applyTheme(getStoredTheme())` on script evaluation to eliminate any theme flash on reload.
+2. **`src/ui/theme/ThemeContext.tsx` (New)**:
+   - Implements React `ThemeContext`, `ThemeProvider`, and `useTheme()` hook.
+   - Reactively syncs theme changes with DOM root attributes and local storage.
+3. **`src/ui/components/ThemeSelectModal.tsx` (New)**:
+   - Accessible modal dialog (`role="dialog"`, `aria-modal="true"`, Escape dismissal, focus management).
+   - Displays selectable cards for **Royal Theme** and **Nature Theme**.
+   - Features visual board layout mini-previews and authentic color palette swatches.
+   - Dynamic active state indicator (`✓ Active` badge).
+   - Instant theme switching without restarting or resetting active matches.
+4. **`src/ui/components/MainMenu.tsx`**:
+   - Added `onOpenThemes?: () => void` prop.
+   - Added clearly visible **Themes** navigation button (`menu-btn-themes`) with palette icon, title, description, and arrow matching existing menu options.
+5. **`src/ui/components/Header.tsx`**:
+   - Added `onOpenThemes?: () => void` prop.
+   - Added in-game **Themes** button (`header-themes-btn`), enabling seamless theme switching during active matches without returning to main menu.
+6. **`src/App.tsx`**:
+   - Wrapped application with `<ThemeProvider>`.
+   - Managed `isThemeModalOpen` state.
+   - Passed `data-theme={theme}` to `.app-container`.
+   - Integrated `<ThemeSelectModal>` into the global modal stack.
+7. **`src/ui/components/Pit.tsx` & `src/ui/components/StorageBowl.tsx`**:
+   - Integrated `useTheme()` hook.
+   - High-contrast seed bead rendering in Nature Theme: natural wood tones (`#d8ab7d` $\rightarrow$ `#9B7654` $\rightarrow$ `#734e30` $\rightarrow$ `#432815` with `#382010` stroke) ensuring clear readability against Ivory Cream pit interiors and Desert Beige board surfaces.
+   - Royal Theme seed rendering completely preserved.
+8. **`src/ui/styles/index.css`**:
+   - Implemented Theme Selection modal styling (`.theme-modal-*`, `.theme-card*`, swatches, mini previews).
+   - Implemented complete Nature Theme styles scoped under `[data-theme="nature"]`:
+     - Overrides root CSS variables (`--bg-deep`, `--bg-surface`, `--wood-rim`, `--wood-pit-inner`, etc.).
+     - Radial background gradients for body and viewport.
+     - Cards, buttons, menus, and headers.
+     - Pits, bowls, counters, and highlights.
+     - All multi-player board variants (2P, 3P, 4P, 5P, 6P) and AI mode.
+     - All dialogs (Rules, Settlement, Match End, Notice, First Player).
+9. **`tests/ui/themeSelection.test.tsx` (New)**:
+   - 11 comprehensive automated tests verifying default theme, persistence, modal behavior, front-page and header integration, zero match reset on switch, and AI mode support.
+
+### 40.3 Verification Results
+- **TypeScript Typecheck**: `npm run typecheck` passed with 0 errors.
+- **Vitest Unit & Integration Suite**: All 68 test files passed (530 tests passing, 0 failures).
+- **Production Build**: `npm run build` compiled cleanly into `dist/` in 5.38s.

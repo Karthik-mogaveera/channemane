@@ -12,12 +12,14 @@ export interface MainMenuProps {
   onPlayAI: () => void;
   onPlayLocal: () => void;
   onOpenRules: () => void;
+  onOpenThemes?: () => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
   onPlayAI,
   onPlayLocal,
   onOpenRules,
+  onOpenThemes,
 }) => {
   return (
     <div className="main-menu-container" data-testid="main-menu">
@@ -106,6 +108,30 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               →
             </span>
           </button>
+
+          {/* 4. Themes */}
+          {onOpenThemes && (
+            <button
+              type="button"
+              className="menu-option-btn menu-option-themes"
+              onClick={onOpenThemes}
+              data-testid="menu-btn-themes"
+              aria-label="Theme Selection"
+            >
+              <div className="menu-btn-icon" aria-hidden="true">
+                🎨
+              </div>
+              <div className="menu-btn-content">
+                <span className="menu-btn-title">Themes</span>
+                <span className="menu-btn-desc">
+                  Choose between Royal Heritage and Earth &amp; Nature styles
+                </span>
+              </div>
+              <span className="menu-btn-arrow" aria-hidden="true">
+                →
+              </span>
+            </button>
+          )}
         </nav>
 
         {/* Footer Note */}

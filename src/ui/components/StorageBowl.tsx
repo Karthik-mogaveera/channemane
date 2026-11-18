@@ -129,10 +129,10 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
               <radialGradient id={gradId} cx="35%" cy="30%" r="70%">
                 {isNature ? (
                   <>
-                    <stop offset="0%" stopColor="#d8ab7d" />
-                    <stop offset="35%" stopColor="#9B7654" />
-                    <stop offset="75%" stopColor="#734e30" />
-                    <stop offset="100%" stopColor="#432815" />
+                    <stop offset="0%" stopColor="#c89d6e" />
+                    <stop offset="35%" stopColor="#896747" />
+                    <stop offset="75%" stopColor="#5f4329" />
+                    <stop offset="100%" stopColor="#352415" />
                   </>
                 ) : (
                   <>
@@ -163,7 +163,7 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
                   cy={pos.y}
                   r={pos.radius}
                   fill={`url(#${gradId})`}
-                  stroke={isNature ? "#382010" : "#4a2e18"}
+                  stroke={isNature ? "#2c1d11" : "#4a2e18"}
                   strokeWidth="0.35"
                 />
                 {/* Specular gloss highlight */}

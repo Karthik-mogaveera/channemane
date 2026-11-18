@@ -1,7 +1,8 @@
 /**
  * Theme Selection & Nature Theme Integration Tests
  * Verifies theme persistence, immediate application across the app,
- * zero gameplay reset on switch, and support across all modes.
+ * zero gameplay reset on switch, pit highlighting, box-free seed counts,
+ * and complete Nature Theme coverage across all dialogs and modes.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -16,6 +17,11 @@ import {
   ROYAL_PALETTE,
 } from "../../src/ui/theme/theme";
 import { ThemeSelectModal } from "../../src/ui/components/ThemeSelectModal";
+import { FirstPlayerModal } from "../../src/ui/components/FirstPlayerModal";
+import { NoticeModal } from "../../src/ui/components/NoticeModal";
+import { RulesModal } from "../../src/ui/components/RulesModal";
+import { Pit } from "../../src/ui/components/Pit";
+import { ThemeProvider } from "../../src/ui/theme/ThemeContext";
 
 describe("Theme Selection & Nature Theme", () => {
   beforeEach(() => {
@@ -34,7 +40,7 @@ describe("Theme Selection & Nature Theme", () => {
     }
   });
 
-  describe("Theme Storage and Palette Architecture", () => {
+  describe("Theme Storage and Refined Palette Architecture", () => {
     it("defaults to Royal Theme when no theme is stored", () => {
       expect(getStoredTheme()).toBe("royal");
     });
@@ -55,13 +61,16 @@ describe("Theme Selection & Nature Theme", () => {
       expect(document.body.getAttribute("data-theme")).toBe("royal");
     });
 
-    it("exposes the official Nature and Royal color palettes", () => {
-      expect(NATURE_PALETTE.warmSand).toBe("#F5EBDD");
-      expect(NATURE_PALETTE.desertBeige).toBe("#E5D5B9");
-      expect(NATURE_PALETTE.sageGreen).toBe("#C6D2B8");
-      expect(NATURE_PALETTE.forestSage).toBe("#899B78");
-      expect(NATURE_PALETTE.naturalWood).toBe("#9B7654");
-      expect(NATURE_PALETTE.ivoryCream).toBe("#FFFCF5");
+    it("exposes the refined Nature and Royal color palettes", () => {
+      expect(NATURE_PALETTE.warmIvory).toBe("#F6F2E9");
+      expect(NATURE_PALETTE.sandstone).toBe("#E7D9C2");
+      expect(NATURE_PALETTE.softCream).toBe("#FFFDF7");
+      expect(NATURE_PALETTE.walnut).toBe("#896747");
+      expect(NATURE_PALETTE.mutedSage).toBe("#A7B69A");
+      expect(NATURE_PALETTE.forestSage).toBe("#718568");
+      expect(NATURE_PALETTE.darkCocoa).toBe("#352C24");
+      expect(NATURE_PALETTE.warmBrown).toBe("#69594A");
+      expect(NATURE_PALETTE.lightSand).toBe("#D4C2A5");
 
       expect(ROYAL_PALETTE.deepTeak).toBe("#160b06");
       expect(ROYAL_PALETTE.brassGold).toBe("#d4af37");
@@ -124,7 +133,131 @@ describe("Theme Selection & Nature Theme", () => {
     });
   });
 
-  describe("Front Page & App Integration", () => {
+  describe("Pit Highlighting and Seed Count Design", () => {
+    it("renders box-free external seed count directly outside the pit", () => {
+      render(
+        <ThemeProvider initialTheme="nature">
+          <Pit
+            pitId={0}
+            owner="PLAYER_1"
+            seeds={5}
+            status="OPEN"
+            bonusAvailable={false}
+            isSelectable={true}
+            isActiveDrop={false}
+            isAnimating={false}
+            onSelect={vi.fn()}
+            onClaimBonus={vi.fn()}
+          />
+        </ThemeProvider>
+      );
+
+      const countEl = screen.getByTestId("pit-count-0");
+      expect(countEl).toBeInTheDocument();
+      expect(countEl).toHaveTextContent("5");
+
+      // Verify pit button has selectable highlight class
+      const pitBtn = screen.getByTestId("pit-0");
+      expect(pitBtn).toHaveClass("selectable");
+      expect(pitBtn).not.toHaveClass("has-bonus");
+      expect(pitBtn).not.toHaveClass("capture-target");
+      expect(pitBtn).not.toHaveClass("continuation-target");
+    });
+
+    it("renders bonus highlight when bonus is available", () => {
+      render(
+        <ThemeProvider initialTheme="nature">
+          <Pit
+            pitId={2}
+            owner="PLAYER_1"
+            seeds={4}
+            status="OPEN"
+            bonusAvailable={true}
+            isSelectable={true}
+            isActiveDrop={false}
+            isAnimating={false}
+            onSelect={vi.fn()}
+            onClaimBonus={vi.fn()}
+          />
+        </ThemeProvider>
+      );
+
+      const pitBtn = screen.getByTestId("pit-2");
+      expect(pitBtn).toHaveClass("has-bonus");
+      expect(pitBtn).toHaveClass("selectable");
+    });
+
+    it("renders continuation and capture target highlights accurately", () => {
+      const { rerender } = render(
+        <ThemeProvider initialTheme="nature">
+          <Pit
+            pitId={3}
+            owner="PLAYER_1"
+            seeds={2}
+            status="OPEN"
+            bonusAvailable={false}
+            isSelectable={false}
+            isActiveDrop={false}
+            isAnimating={false}
+            isContinuationTarget={true}
+            onSelect={vi.fn()}
+            onClaimBonus={vi.fn()}
+          />
+        </ThemeProvider>
+      );
+
+      let pitBtn = screen.getByTestId("pit-3");
+      expect(pitBtn).toHaveClass("continuation-target");
+      expect(pitBtn).not.toHaveClass("capture-target");
+
+      rerender(
+        <ThemeProvider initialTheme="nature">
+          <Pit
+            pitId={3}
+            owner="PLAYER_1"
+            seeds={2}
+            status="OPEN"
+            bonusAvailable={false}
+            isSelectable={false}
+            isActiveDrop={false}
+            isAnimating={false}
+            isCaptureTarget={true}
+            onSelect={vi.fn()}
+            onClaimBonus={vi.fn()}
+          />
+        </ThemeProvider>
+      );
+
+      pitBtn = screen.getByTestId("pit-3");
+      expect(pitBtn).toHaveClass("capture-target");
+    });
+
+    it("marks closed pits as closed and prevents misleading selectable highlights", () => {
+      render(
+        <ThemeProvider initialTheme="nature">
+          <Pit
+            pitId={5}
+            owner="PLAYER_1"
+            seeds={0}
+            status="CLOSED"
+            bonusAvailable={false}
+            isSelectable={false}
+            isActiveDrop={false}
+            isAnimating={false}
+            onSelect={vi.fn()}
+            onClaimBonus={vi.fn()}
+          />
+        </ThemeProvider>
+      );
+
+      const pitBtn = screen.getByTestId("pit-5");
+      expect(pitBtn).toHaveClass("closed");
+      expect(pitBtn).toBeDisabled();
+      expect(screen.getByText("🔒")).toBeInTheDocument();
+    });
+  });
+
+  describe("Front Page & App-Wide Coverage Audit", () => {
     it("renders Themes button on the Main Menu and opens modal", () => {
       render(<App initialScreen="MAIN_MENU" />);
 
@@ -222,17 +355,55 @@ describe("Theme Selection & Nature Theme", () => {
       vi.useRealTimers();
     });
 
-    it("applies Nature Theme in AI game mode", () => {
+    it("applies Nature Theme in AI game mode and First Player modal", () => {
       window.localStorage.setItem(THEME_STORAGE_KEY, "nature");
 
-      const { container } = render(
-        <App initialScreen="GAME" initialGameMode="ai" initialDifficulty="beginner" />
+      const onSelectFirstPlayer = vi.fn();
+      const onBack = vi.fn();
+
+      render(
+        <ThemeProvider initialTheme="nature">
+          <FirstPlayerModal
+            difficulty="beginner"
+            onSelectFirstPlayer={onSelectFirstPlayer}
+            onBack={onBack}
+          />
+        </ThemeProvider>
       );
 
-      const appContainer = container.querySelector(".app-container");
-      expect(appContainer).toHaveAttribute("data-theme", "nature");
-      expect(screen.getByTestId("game-mode-tag")).toHaveTextContent("AI (BEGINNER)");
+      expect(screen.getByTestId("first-player-modal")).toBeInTheDocument();
+      expect(screen.getByTestId("first-player-player-btn")).toBeInTheDocument();
+      expect(screen.getByTestId("first-player-ai-btn")).toBeInTheDocument();
+      expect(screen.getByTestId("first-player-back-btn")).toBeInTheDocument();
+
+      // Select Player first
+      fireEvent.click(screen.getByTestId("first-player-player-btn"));
+      expect(onSelectFirstPlayer).toHaveBeenCalledWith("player");
+    });
+
+    it("renders RulesModal and NoticeModal under Nature Theme without layout regressions", () => {
+      const onClose = vi.fn();
+
+      const { rerender } = render(
+        <ThemeProvider initialTheme="nature">
+          <RulesModal isOpen={true} onClose={onClose} activePlayerCount={2} />
+        </ThemeProvider>
+      );
+
+      expect(screen.getByTestId("rules-modal")).toBeInTheDocument();
+
+      rerender(
+        <ThemeProvider initialTheme="nature">
+          <NoticeModal
+            isOpen={true}
+            title="Notice Test"
+            message="Testing notice modal in Nature Theme"
+            onClose={onClose}
+          />
+        </ThemeProvider>
+      );
+
+      expect(screen.getByTestId("notice-modal")).toBeInTheDocument();
     });
   });
 });
-

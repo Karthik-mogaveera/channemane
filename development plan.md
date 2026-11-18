@@ -1852,3 +1852,55 @@ Implemented a centralized, application-wide theme management system supporting t
 - **TypeScript Typecheck**: `npm run typecheck` passed with 0 errors.
 - **Vitest Unit & Integration Suite**: All 68 test files passed (530 tests passing, 0 failures).
 - **Production Build**: `npm run build` compiled cleanly into `dist/` in 5.38s.
+
+---
+
+## 41. Nature Theme Refinement, Pit Highlighting Hierarchy, and App-Wide Visual Polish
+
+### 41.1 Objectives & Root Cause Remediation
+Following the initial introduction of Nature Theme, an exhaustive visual and behavioural audit identified several key refinement requirements:
+1. **Pit Highlighting Clarity & Distinguishability**: Different pit states (turn selectable, continuous sowing continuation, capture targets, 4-seed bonus claims, active drop) needed distinct, organic visual signatures rather than ambiguous borders.
+2. **Seed Counter Readability**: Seed count badges previously had rectangular bordered boxes that cluttered circular pit geometry. They required transition to clean, transparent, box-free numbers centered cleanly in high-contrast Dark Cocoa (`#352C24`).
+3. **Incomplete Modal Coverage**: Specific dialogs (`FirstPlayerModal`, `RulesModal`, `SettlementModal`, `MatchEndModal`, `NoticeModal`, `OrientationPrompt`, and turn notifications) still had lingering hardcoded dark semi-transparent overlays (`rgba(0,0,0,0.35)`) and dark brown gradients from the Royal Theme.
+4. **Refined 9-Color Nature Palette**: Standardized on a warm, earthy, balanced color system designed for high contrast and calm focus.
+
+### 41.2 Authoritative 9-Color Nature Palette
+Standardized in `src/ui/theme/theme.ts`:
+- **Warm Ivory (`#F6F2E9`)**: Board outer perimeter, container surfaces, and viewport background.
+- **Sandstone (`#E7D9C2`)**: Main game board surface and storage backdrops.
+- **Soft Cream (`#FFFDF7`)**: Pit interior basins and modal card surfaces.
+- **Walnut (`#896747`)**: Pit rims, borders, bowl outlines, and polished seed bead gradients.
+- **Muted Sage (`#A7B69A`)**: Secondary decorations, dividers, and inactive borders.
+- **Forest Sage (`#718568`)**: Primary interactive states, selectable turn rings, and turn pulses.
+- **Dark Cocoa (`#352C24`)**: Seed counter numbers, primary headings, and high-emphasis typography.
+- **Warm Brown (`#69594A`)**: Secondary labels, subtitles, and metadata.
+- **Light Sand (`#D4C2A5`)**: Subtle borders, structural dividers, and card outlines.
+
+### 41.3 Pit Highlighting System & Strict Cascading Priority
+Implemented CSS keyframe pulse animations and priority cascading in `src/ui/styles/index.css`:
+- **Priority 1: Bonus (`has-bonus`, `holding-bonus`)**: Antique Amber/Gold (`#B98236`), glowing halo `rgba(185, 130, 54, 0.38)`, animated `bonusPulseNature`. Distinct from green!
+- **Priority 2: Capture Target (`capture-target`)**: Muted Terracotta (`#B65F46`), glowing halo `rgba(182, 95, 70, 0.38)`, animated `capturePulseNature`.
+- **Priority 3: Continuation Target (`continuation-target`)**: Deep Natural Teal/Sage (`#397F78`), glowing halo `rgba(57, 127, 120, 0.35)`, animated `continuationPulseNature`.
+- **Priority 4: Active Drop (`active-drop`)**: Subtle brief accent glow `rgba(113, 133, 104, 0.4)`.
+- **Priority 5: Selectable (`selectable`)**: Forest Sage (`#718568`) border, soft aura `rgba(113, 133, 104, 0.32)`, subtle background tint `rgba(167, 182, 154, 0.18)`, animated `selectablePulseNature`.
+- **Closed Pits (`closed`)**: Strictly rendered semi-transparent with dashed borders; all selectable animations and pointer events suppressed.
+- **Accessibility**: `@media (prefers-reduced-motion: reduce)` disables pulse scaling and infinite iterations.
+
+### 41.4 Box-Free Seed Count Displays
+- Removed background cards, borders, rectangular shapes, and box shadows from `.pit-seed-count` under `[data-theme="nature"]`.
+- Numbers render directly above/below pits in bold (`font-weight: 800`) Dark Cocoa (`#352C24`).
+- Player-specific background colors (`.count-p1`, `.count-p2`, etc.) are cleanly overridden to transparent text in Nature Theme while remaining 100% untouched in Royal Theme.
+
+### 41.5 Comprehensive Modal & Dialog Coverage
+- **`FirstPlayerModal`**: Replaced dark overlays with Warm Ivory cards (`#F6F2E9`), Sandstone button tiles (`#E7D9C2`), Dark Cocoa typography (`#352C24`), and Forest Sage hover borders.
+- **`RulesModal`**: Styled mode tabs, section headers, illustration boxes, step badges, and win summaries in Sandstone/Sage tones with crisp text.
+- **`SettlementModal` & `MatchEndModal`**: Replaced black patches with Soft Cream panels, Sandstone score boxes, Dark Cocoa scores, and Walnut accents.
+- **`NoticeModal` & `OrientationPrompt`**: Formatted WIP notes and landscape rotation prompts in Nature Theme card aesthetics.
+- **`TurnNotification` & `TurnBanner`**: Styled turn alert pills with Sandstone/Warm Ivory bodies and refined borders matching the active player.
+
+### 41.6 Verification & Test Coverage
+- Expanded `tests/ui/themeSelection.test.tsx` to 16 comprehensive automated tests verifying palette tokens, box-free seed counts, all pit highlighting priority levels, closed pit suppression, and modal theme styling.
+- **Vitest Suite**: 68 test files passed (535 tests passing, 0 failures).
+- **TypeScript Compilation**: Clean typecheck with 0 errors.
+- **Production Bundle**: `npm run build` generated production assets cleanly in 6.42s.
+

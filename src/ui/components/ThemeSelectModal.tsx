@@ -186,7 +186,7 @@ export const ThemeSelectModal: React.FC<ThemeSelectModalProps> = ({
                 <span className="theme-card-icon" aria-hidden="true">🌿</span>
                 <div>
                   <h3 className="theme-card-name">Nature Theme</h3>
-                  <span className="theme-card-desc">Earth &amp; Nature · Warm Sand &amp; Forest Sage</span>
+                  <span className="theme-card-desc">Natural Earth · Warm Ivory, Sandstone &amp; Walnut</span>
                 </div>
               </div>
               {currentTheme === "nature" ? (
@@ -216,33 +216,33 @@ export const ThemeSelectModal: React.FC<ThemeSelectModalProps> = ({
             <div className="theme-palette-swatches">
               <span
                 className="palette-swatch"
-                style={{ backgroundColor: NATURE_PALETTE.warmSand }}
-                title="Warm Sand (#F5EBDD)"
+                style={{ backgroundColor: NATURE_PALETTE.warmIvory }}
+                title="Warm Ivory (#F6F2E9)"
               />
               <span
                 className="palette-swatch"
-                style={{ backgroundColor: NATURE_PALETTE.desertBeige }}
-                title="Desert Beige (#E5D5B9)"
+                style={{ backgroundColor: NATURE_PALETTE.sandstone }}
+                title="Sandstone (#E7D9C2)"
               />
               <span
                 className="palette-swatch"
-                style={{ backgroundColor: NATURE_PALETTE.sageGreen }}
-                title="Sage Green (#C6D2B8)"
+                style={{ backgroundColor: NATURE_PALETTE.softCream }}
+                title="Soft Cream (#FFFDF7)"
+              />
+              <span
+                className="palette-swatch"
+                style={{ backgroundColor: NATURE_PALETTE.walnut }}
+                title="Walnut (#896747)"
+              />
+              <span
+                className="palette-swatch"
+                style={{ backgroundColor: NATURE_PALETTE.mutedSage }}
+                title="Muted Sage (#A7B69A)"
               />
               <span
                 className="palette-swatch"
                 style={{ backgroundColor: NATURE_PALETTE.forestSage }}
-                title="Forest Sage (#899B78)"
-              />
-              <span
-                className="palette-swatch"
-                style={{ backgroundColor: NATURE_PALETTE.naturalWood }}
-                title="Natural Wood (#9B7654)"
-              />
-              <span
-                className="palette-swatch"
-                style={{ backgroundColor: NATURE_PALETTE.ivoryCream }}
-                title="Ivory Cream (#FFFCF5)"
+                title="Forest Sage (#718568)"
               />
             </div>
           </div>

@@ -9,12 +9,22 @@ export const THEME_STORAGE_KEY = "channemane_theme";
 export const LEGACY_THEME_STORAGE_KEY = "channemane_board_theme";
 
 export const NATURE_PALETTE = {
-  warmSand: "#F5EBDD",     // Main application background
-  desertBeige: "#E5D5B9",  // Game board surface
-  sageGreen: "#C6D2B8",    // Secondary accents and supporting UI
-  forestSage: "#899B78",   // Active states, highlights and selected elements
-  naturalWood: "#9B7654",  // Borders, outlines and seed details
-  ivoryCream: "#FFFCF5",   // Pit interiors, cards and light surfaces
+  warmIvory: "#F6F2E9",      // Board surrounding area
+  sandstone: "#E7D9C2",      // Main board surface
+  softCream: "#FFFDF7",      // Pit interior, cards and light surfaces
+  walnut: "#896747",         // Pit border, board rim, outlines and wood details
+  mutedSage: "#A7B69A",      // Secondary decoration
+  forestSage: "#718568",     // Main interaction colour, active states, highlights
+  darkCocoa: "#352C24",      // Primary text, seed counts
+  warmBrown: "#69594A",      // Secondary text and subtitles
+  lightSand: "#D4C2A5",      // Subtle dividers and borders
+
+  // Backward-compatible aliases:
+  warmSand: "#F6F2E9",
+  desertBeige: "#E7D9C2",
+  sageGreen: "#A7B69A",
+  naturalWood: "#896747",
+  ivoryCream: "#FFFDF7",
 } as const;
 
 export const ROYAL_PALETTE = {

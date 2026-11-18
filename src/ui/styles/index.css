@@ -3898,31 +3898,32 @@ body {
 }
 
 /* ==========================================================================
-   Nature Theme – Official Earth & Nature Colour Palette System
-   Warm Sand (#F5EBDD), Desert Beige (#E5D5B9), Sage Green (#C6D2B8),
-   Forest Sage (#899B78), Natural Wood (#9B7654), Ivory Cream (#FFFCF5)
+   Nature Theme – Premium Natural Earth Palette System
+   Warm Ivory (#F6F2E9), Sandstone (#E7D9C2), Soft Cream (#FFFDF7),
+   Walnut (#896747), Muted Sage (#A7B69A), Forest Sage (#718568),
+   Dark Cocoa (#352C24), Warm Brown (#69594A), Light Sand (#D4C2A5)
    ========================================================================== */
 
 :root[data-theme="nature"],
 body[data-theme="nature"],
 [data-theme="nature"] {
-  /* Nature Tokens */
-  --bg-deep: #F5EBDD;               /* Warm Sand: Main app background */
-  --bg-surface: #FFFCF5;            /* Ivory Cream: Cards, dialogs, surfaces */
-  --wood-rim: #9B7654;              /* Natural Wood: Borders, outlines */
-  --wood-grain-light: #C6D2B8;      /* Sage Green: Supporting accents */
-  --wood-pit-dark: #E5D5B9;         /* Desert Beige: Board surface */
-  --wood-pit-inner: #FFFCF5;        /* Ivory Cream: Pit interior */
+  /* Nature Theme Tokens */
+  --bg-deep: #F6F2E9;               /* Warm Ivory: Board surrounding area & app background */
+  --bg-surface: #FFFDF7;            /* Soft Cream: Cards, dialogs, surfaces */
+  --wood-rim: #896747;              /* Walnut: Borders, outlines, pit rims */
+  --wood-grain-light: #A7B69A;      /* Muted Sage: Supporting accents */
+  --wood-pit-dark: #E7D9C2;         /* Sandstone: Board surface */
+  --wood-pit-inner: #FFFDF7;        /* Soft Cream: Pit interior */
 
   /* Accents & Highlights */
-  --brass-gold: #899B78;            /* Forest Sage: Primary active / selected */
-  --gold-light: #4A3E31;            /* Dark Wood: Headings and titles */
-  --gold-dark: #6B7D5C;
-  --gold-glow: rgba(137, 155, 120, 0.45);
+  --brass-gold: #718568;            /* Forest Sage: Primary interaction colour */
+  --gold-light: #352C24;            /* Dark Cocoa: Headings and titles */
+  --gold-dark: #5C4838;             /* Rich Walnut shadow */
+  --gold-glow: rgba(113, 133, 104, 0.35);
 
   /* Typography */
-  --text-main: #33271E;             /* Dark rich wood readable text */
-  --text-muted: #6B5B4E;            /* Muted earthy brown text */
+  --text-main: #352C24;             /* Dark Cocoa readable text */
+  --text-muted: #69594A;            /* Warm Brown secondary text */
 
   /* Earthy Natural Player Palettes (High contrast on light backgrounds) */
   --p1-crimson: #C24136;
@@ -3949,305 +3950,460 @@ body[data-theme="nature"],
   --p6-teal-bg: rgba(15, 118, 110, 0.15);
   --p6-teal-border: #14B8A6;
 
-  /* Indicators */
-  --indicator-selected: #899B78;
-  --indicator-selected-glow: rgba(137, 155, 120, 0.75);
+  /* Gameplay Indicators */
+  --indicator-selected: #718568;
+  --indicator-selected-glow: rgba(113, 133, 104, 0.32);
 
-  --indicator-continuation: #B45309;
-  --indicator-continuation-light: #D97706;
-  --indicator-continuation-glow: rgba(180, 83, 9, 0.4);
+  --indicator-bonus: #B98236;
+  --indicator-bonus-light: #D49F50;
+  --indicator-bonus-glow: rgba(185, 130, 54, 0.38);
 
-  --indicator-capture: #991B1B;
-  --indicator-capture-light: #DC2626;
-  --indicator-capture-glow: rgba(153, 27, 27, 0.4);
+  --indicator-capture: #B65F46;
+  --indicator-capture-light: #CC7860;
+  --indicator-capture-glow: rgba(182, 95, 70, 0.38);
 
-  --indicator-bonus: #B48348;
-  --indicator-bonus-light: #D4A373;
-  --indicator-bonus-glow: rgba(180, 131, 72, 0.5);
+  --indicator-continuation: #397F78;
+  --indicator-continuation-light: #4DA39B;
+  --indicator-continuation-glow: rgba(57, 127, 120, 0.35);
 }
 
 /* 1. Body & Overall Background in Nature Theme */
 body[data-theme="nature"] {
-  background: radial-gradient(circle at 50% 20%, #FAF5ED 0%, #F5EBDD 100%);
-  color: #33271E;
+  background: radial-gradient(circle at 50% 20%, #FAF7F0 0%, #F6F2E9 100%);
+  color: #352C24;
 }
 
 /* 2. Main Menu, Difficulty & Multiplayer Cards in Nature Theme */
 [data-theme="nature"] .main-menu-card,
 [data-theme="nature"] .difficulty-select-card,
 [data-theme="nature"] .multiplayer-select-card {
-  background: linear-gradient(160deg, #FFFCF5 0%, #F7F1E7 100%);
-  border: 2px solid #9B7654;
+  background: linear-gradient(160deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 2px solid #896747;
   box-shadow:
-    0 16px 48px rgba(90, 70, 50, 0.15),
-    inset 0 0 24px rgba(198, 210, 184, 0.25);
-  color: #33271E;
+    0 16px 48px rgba(53, 44, 36, 0.15),
+    inset 0 0 24px rgba(167, 182, 154, 0.2);
+  color: #352C24;
 }
 
 [data-theme="nature"] .main-menu-card::before,
 [data-theme="nature"] .difficulty-select-card::before,
 [data-theme="nature"] .multiplayer-select-card::before {
-  border-color: rgba(137, 155, 120, 0.35);
+  border-color: rgba(113, 133, 104, 0.3);
 }
 
 [data-theme="nature"] .menu-brand-title,
 [data-theme="nature"] .difficulty-title,
 [data-theme="nature"] .multiplayer-title {
-  background: linear-gradient(135deg, #4A3E31 0%, #6E5339 60%, #899B78 100%);
+  background: linear-gradient(135deg, #352C24 0%, #5C4838 60%, #718568 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 [data-theme="nature"] .menu-brand-kannada {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 [data-theme="nature"] .menu-brand-subtitle,
 [data-theme="nature"] .difficulty-subtitle,
 [data-theme="nature"] .multiplayer-subtitle {
-  color: #899B78;
+  color: #718568;
 }
 
 [data-theme="nature"] .divider-line {
-  background: #C6D2B8;
+  background: #A7B69A;
 }
 
 [data-theme="nature"] .divider-diamond {
-  color: #899B78;
+  color: #718568;
 }
 
 /* Menu Option Buttons in Nature Theme */
 [data-theme="nature"] .menu-option-btn,
 [data-theme="nature"] .difficulty-option-btn,
 [data-theme="nature"] .multiplayer-option-btn {
-  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
-  border: 1.5px solid #C6D2B8;
-  color: #33271E;
-  box-shadow: 0 4px 14px rgba(90, 70, 50, 0.08);
+  background: linear-gradient(135deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 1.5px solid #D4C2A5;
+  color: #352C24;
+  box-shadow: 0 4px 14px rgba(53, 44, 36, 0.08);
 }
 
 [data-theme="nature"] .menu-option-btn:hover,
 [data-theme="nature"] .difficulty-option-btn:hover,
 [data-theme="nature"] .multiplayer-option-btn:hover {
-  background: linear-gradient(135deg, #FFFFFF 0%, #ECE2D2 100%);
-  border-color: #899B78;
+  background: linear-gradient(135deg, #FFFFFF 0%, #E7D9C2 100%);
+  border-color: #718568;
   box-shadow:
-    0 8px 24px rgba(90, 70, 50, 0.14),
-    0 0 16px rgba(137, 155, 120, 0.3);
+    0 8px 24px rgba(53, 44, 36, 0.12),
+    0 0 16px rgba(113, 133, 104, 0.25);
   transform: translateY(-2px);
 }
 
 [data-theme="nature"] .menu-btn-icon,
 [data-theme="nature"] .difficulty-level-indicator,
 [data-theme="nature"] .multiplayer-badge-icon {
-  background: #E5D5B9;
-  border: 1px solid #9B7654;
-  color: #33271E;
+  background: #E7D9C2;
+  border: 1px solid #896747;
+  color: #352C24;
 }
 
 [data-theme="nature"] .menu-btn-title,
 [data-theme="nature"] .difficulty-btn-title,
 [data-theme="nature"] .multiplayer-btn-title {
-  color: #4A3E31;
+  color: #352C24;
 }
 
 [data-theme="nature"] .menu-btn-desc,
 [data-theme="nature"] .difficulty-btn-desc,
 [data-theme="nature"] .multiplayer-btn-desc {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 [data-theme="nature"] .menu-btn-arrow,
 [data-theme="nature"] .difficulty-btn-arrow,
 [data-theme="nature"] .multiplayer-btn-arrow {
-  color: #899B78;
+  color: #718568;
+}
+
+[data-theme="nature"] .multiplayer-ready-pill {
+  background: rgba(46, 133, 64, 0.15);
+  border: 1px solid #2E8540;
+  color: #2E8540;
+}
+
+[data-theme="nature"] .coming-soon-pill {
+  background: rgba(185, 130, 54, 0.15);
+  border: 1px solid #B98236;
+  color: #8C5914;
 }
 
 [data-theme="nature"] .main-menu-footer,
 [data-theme="nature"] .difficulty-footer,
 [data-theme="nature"] .multiplayer-footer {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 /* 3. Game Header in Nature Theme */
 [data-theme="nature"] .game-header {
-  background: rgba(255, 252, 245, 0.95);
-  border: 1px solid #C6D2B8;
-  box-shadow: 0 4px 20px rgba(90, 70, 50, 0.08);
+  background: rgba(255, 253, 247, 0.95);
+  border: 1px solid #D4C2A5;
+  box-shadow: 0 4px 20px rgba(53, 44, 36, 0.08);
 }
 
 [data-theme="nature"] .brand-title {
-  background: linear-gradient(135deg, #4A3E31 0%, #6E5339 60%, #899B78 100%);
+  background: linear-gradient(135deg, #352C24 0%, #5C4838 60%, #718568 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 [data-theme="nature"] .brand-subtitle {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 [data-theme="nature"] .game-mode-tag {
-  background: #E5D5B9;
-  border: 1px solid #9B7654;
-  color: #4A3E31;
+  background: #E7D9C2;
+  border: 1px solid #896747;
+  color: #352C24;
 }
 
 /* Header & Action Buttons in Nature Theme */
 [data-theme="nature"] .btn {
-  background: linear-gradient(180deg, #F5EBDD 0%, #E5D5B9 100%);
-  border: 1px solid #9B7654;
-  color: #4A3E31;
+  background: linear-gradient(180deg, #F6F2E9 0%, #E7D9C2 100%);
+  border: 1px solid #896747;
+  color: #352C24;
 }
 
 [data-theme="nature"] .btn:hover:not(:disabled) {
-  background: linear-gradient(180deg, #FAF4EB 0%, #EFE3CE 100%);
-  border-color: #899B78;
-  box-shadow: 0 0 12px rgba(137, 155, 120, 0.35);
+  background: linear-gradient(180deg, #FFFDF7 0%, #EFE3CE 100%);
+  border-color: #718568;
+  box-shadow: 0 0 12px rgba(113, 133, 104, 0.3);
 }
 
 [data-theme="nature"] .btn-secondary {
-  background: rgba(255, 252, 245, 0.85);
-  border-color: #C6D2B8;
-  color: #4A3E31;
+  background: rgba(255, 253, 247, 0.85);
+  border-color: #D4C2A5;
+  color: #352C24;
 }
 
 [data-theme="nature"] .btn-secondary:hover:not(:disabled) {
-  background: #FFFCF5;
-  border-color: #899B78;
+  background: #FFFDF7;
+  border-color: #718568;
 }
 
 /* 4. Turn Banner in Nature Theme */
 [data-theme="nature"] .turn-banner {
-  background: rgba(255, 252, 245, 0.95);
-  border: 1px solid #C6D2B8;
-  box-shadow: 0 2px 10px rgba(90, 70, 50, 0.08);
-  color: #33271E;
+  background: rgba(255, 253, 247, 0.95);
+  border: 1px solid #D4C2A5;
+  box-shadow: 0 2px 10px rgba(53, 44, 36, 0.08);
+  color: #352C24;
 }
 
 [data-theme="nature"] .turn-status-text {
-  color: #6B5B4E;
+  color: #352C24;
+}
+
+[data-theme="nature"] .match-info-pill {
+  background: #E7D9C2;
+  border: 1px solid #896747;
+  color: #352C24;
+}
+
+[data-theme="nature"] .bonus-hint-pill {
+  background: rgba(185, 130, 54, 0.15);
+  border: 1px solid rgba(185, 130, 54, 0.45);
+  color: #8C5914;
+}
+
+[data-theme="nature"] .hand-status-indicator {
+  background: #E7D9C2;
+  border: 1px solid #718568;
+  color: #352C24;
 }
 
 [data-theme="nature"] .hand-seeds-count {
-  background: #E5D5B9;
-  border: 1px solid #9B7654;
-  color: #4A3E31;
+  background: #E7D9C2;
+  border: 1px solid #896747;
+  color: #352C24;
 }
 
 /* 5. Player Panels & Cards in Nature Theme */
 [data-theme="nature"] .player-card {
-  background: rgba(255, 252, 245, 0.95);
-  border: 1.5px solid #C6D2B8;
-  box-shadow: 0 2px 8px rgba(90, 70, 50, 0.08);
-  color: #33271E;
+  background: rgba(255, 253, 247, 0.95);
+  border: 1.5px solid #D4C2A5;
+  box-shadow: 0 2px 8px rgba(53, 44, 36, 0.08);
+  color: #352C24;
 }
 
 [data-theme="nature"] .player-card.active {
-  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
-  border-color: #899B78;
-  box-shadow: 0 0 14px rgba(137, 155, 120, 0.35);
+  background: linear-gradient(135deg, #FFFDF7 0%, #F6F2E9 100%);
+  border-color: #718568;
+  box-shadow: 0 0 14px rgba(113, 133, 104, 0.35);
 }
 
 [data-theme="nature"] .player-stats {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
-/* 6. Physical Board in Nature Theme */
+[data-theme="nature"] .player-stats strong {
+  color: #352C24;
+}
+
+/* 6. Physical Board in Nature Theme (Sandstone, Walnut, Muted Sage) */
 [data-theme="nature"] .channemane-board {
-  background: linear-gradient(145deg, #ede0cb 0%, #E5D5B9 60%, #dfceb1 100%);
-  border: 4px solid #9B7654;
-  outline: 2px solid #C6D2B8;
+  background: linear-gradient(145deg, #f0e4cf 0%, #E7D9C2 60%, #ded0b7 100%);
+  border: 4px solid #896747;
+  outline: 2px solid #A7B69A;
   box-shadow:
-    0 16px 36px rgba(110, 85, 60, 0.25),
+    0 16px 36px rgba(53, 44, 36, 0.16),
     inset 0 2px 4px rgba(255, 255, 255, 0.6),
-    inset 0 -3px 8px rgba(110, 85, 60, 0.15);
+    inset 0 -3px 8px rgba(53, 44, 36, 0.12);
 }
 
-/* 7. Circular Pits in Nature Theme */
+/* 7. Circular Pits & Visual Recessing in Nature Theme */
 [data-theme="nature"] .channemane-pit {
-  background: radial-gradient(circle at 35% 30%, #FFFCF5 0%, #F5EBDD 70%, #E5D5B9 100%);
-  border: 3px solid #9B7654;
+  background: radial-gradient(circle at 35% 30%, #FFFDF7 0%, #F6F2E9 70%, #E7D9C2 100%);
+  border: 3px solid #896747;
   box-shadow:
-    inset 0 3px 8px rgba(90, 70, 50, 0.3),
-    0 2px 4px rgba(90, 70, 50, 0.15);
+    inset 0 3px 8px rgba(53, 44, 36, 0.28),
+    0 2px 4px rgba(53, 44, 36, 0.12);
 }
 
+/* --- Highlighting Animations for Nature Theme --- */
+@keyframes selectablePulseNature {
+  0%, 100% {
+    border-color: #718568;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.15),
+      0 0 10px rgba(113, 133, 104, 0.32);
+  }
+  50% {
+    border-color: #8fa685;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.12),
+      0 0 16px rgba(113, 133, 104, 0.45);
+  }
+}
+
+@keyframes bonusPulseNature {
+  0%, 100% {
+    border-color: #B98236;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.15),
+      0 0 12px rgba(185, 130, 54, 0.38);
+  }
+  50% {
+    border-color: #d49f50;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.12),
+      0 0 20px rgba(185, 130, 54, 0.55);
+  }
+}
+
+@keyframes capturePulseNature {
+  0%, 100% {
+    border-color: #B65F46;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.15),
+      0 0 12px rgba(182, 95, 70, 0.38);
+  }
+  50% {
+    border-color: #cc7860;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.12),
+      0 0 20px rgba(182, 95, 70, 0.55);
+  }
+}
+
+@keyframes continuationPulseNature {
+  0%, 100% {
+    border-color: #397F78;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.15),
+      0 0 12px rgba(57, 127, 120, 0.35);
+  }
+  50% {
+    border-color: #4da39b;
+    box-shadow:
+      inset 0 2px 6px rgba(53, 44, 36, 0.12),
+      0 0 20px rgba(57, 127, 120, 0.52);
+  }
+}
+
+/* Priority 5: Ordinary Selectable Pit */
 [data-theme="nature"] .channemane-pit.selectable {
-  border-color: #899B78;
+  border-color: #718568;
+  background: radial-gradient(circle at 35% 30%, #FFFDF7 0%, rgba(167, 182, 154, 0.18) 70%, #E7D9C2 100%);
   box-shadow:
-    inset 0 2px 6px rgba(90, 70, 50, 0.2),
-    0 0 14px rgba(137, 155, 120, 0.65);
+    inset 0 2px 6px rgba(53, 44, 36, 0.15),
+    0 0 12px rgba(113, 133, 104, 0.32);
+  animation: selectablePulseNature 2.2s infinite ease-in-out;
 }
 
+/* Priority 4: Active Seed Drop (temporary sowing animation drop) */
 [data-theme="nature"] .channemane-pit.active-drop {
-  border-color: #899B78;
+  border-color: #718568;
   box-shadow:
-    0 0 20px rgba(137, 155, 120, 0.8),
-    inset 0 0 10px rgba(137, 155, 120, 0.4);
+    0 0 18px rgba(113, 133, 104, 0.55),
+    inset 0 0 8px rgba(113, 133, 104, 0.3);
 }
 
-[data-theme="nature"] .channemane-pit.continuation-target {
-  border-color: #D97706;
-  box-shadow: 0 0 16px rgba(217, 119, 6, 0.75);
+/* Priority 3: Continuous-Sowing Target (overrides ordinary selectable and active-drop) */
+[data-theme="nature"] .channemane-pit.continuation-target,
+[data-theme="nature"] .channemane-pit.selectable.continuation-target,
+[data-theme="nature"] .channemane-pit.active-drop.continuation-target {
+  border-color: #397F78;
+  box-shadow:
+    inset 0 2px 6px rgba(53, 44, 36, 0.15),
+    0 0 16px rgba(57, 127, 120, 0.35);
+  animation: continuationPulseNature 1.8s infinite ease-in-out;
 }
 
-[data-theme="nature"] .channemane-pit.capture-target {
-  border-color: #DC2626;
-  box-shadow: 0 0 16px rgba(220, 38, 38, 0.75);
+/* Priority 2: Capture Target (overrides continuation, active-drop, selectable) */
+[data-theme="nature"] .channemane-pit.capture-target,
+[data-theme="nature"] .channemane-pit.selectable.capture-target,
+[data-theme="nature"] .channemane-pit.continuation-target.capture-target {
+  border-color: #B65F46;
+  box-shadow:
+    inset 0 2px 6px rgba(53, 44, 36, 0.15),
+    0 0 16px rgba(182, 95, 70, 0.38);
+  animation: capturePulseNature 1.6s infinite ease-in-out;
 }
 
-[data-theme="nature"] .channemane-pit.has-bonus {
-  border-color: #B48348;
-  box-shadow: 0 0 16px rgba(180, 131, 72, 0.6);
+/* Priority 1: Active Bonus Opportunity (Highest priority highlight) */
+[data-theme="nature"] .channemane-pit.has-bonus,
+[data-theme="nature"] .channemane-pit.selectable.has-bonus,
+[data-theme="nature"] .channemane-pit.continuation-target.has-bonus,
+[data-theme="nature"] .channemane-pit.capture-target.has-bonus,
+[data-theme="nature"] .channemane-pit.holding-bonus {
+  border-color: #B98236;
+  box-shadow:
+    inset 0 2px 6px rgba(53, 44, 36, 0.15),
+    0 0 16px rgba(185, 130, 54, 0.38);
+  animation: bonusPulseNature 1.8s infinite ease-in-out;
 }
 
-[data-theme="nature"] .channemane-pit.closed {
-  background: #D8CEBD;
-  border-color: #A39684;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+/* Closed Pit: Always muted, never glows, never pulses */
+[data-theme="nature"] .channemane-pit.closed,
+[data-theme="nature"] .channemane-pit.closed.selectable,
+[data-theme="nature"] .channemane-pit.closed.has-bonus {
+  background: #D8CEBD !important;
+  border-color: #A39684 !important;
+  box-shadow: inset 0 2px 6px rgba(53, 44, 36, 0.2) !important;
+  animation: none !important;
+  cursor: not-allowed !important;
 }
 
-/* External Pit Counters in Nature Theme */
-[data-theme="nature"] .pit-external-count {
-  background: rgba(255, 252, 245, 0.95);
-  border: 1px solid #9B7654;
-  box-shadow: 0 2px 6px rgba(90, 70, 50, 0.15);
-  text-shadow: none;
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="nature"] .channemane-pit.selectable,
+  [data-theme="nature"] .channemane-pit.has-bonus,
+  [data-theme="nature"] .channemane-pit.capture-target,
+  [data-theme="nature"] .channemane-pit.continuation-target {
+    animation: none;
+  }
+}
+
+/* Phase 4: Seed Count Design (Box-free, transparent, readable dark cocoa) */
+[data-theme="nature"] .pit-external-count,
+[data-theme="nature"] .pit-external-count.p1-count,
+[data-theme="nature"] .pit-external-count.p2-count,
+[data-theme="nature"] .pit-external-count.p3-count,
+[data-theme="nature"] .pit-external-count.p4-count,
+[data-theme="nature"] .pit-external-count.p5-count,
+[data-theme="nature"] .pit-external-count.p6-count {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #352C24 !important;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-shadow: 0 1px 1px rgba(255, 253, 247, 0.8);
+}
+
+[data-theme="nature"] .pit-external-count.empty,
+[data-theme="nature"] .pit-external-count.empty.p1-count,
+[data-theme="nature"] .pit-external-count.empty.p2-count,
+[data-theme="nature"] .pit-external-count.empty.p3-count,
+[data-theme="nature"] .pit-external-count.empty.p4-count,
+[data-theme="nature"] .pit-external-count.empty.p5-count,
+[data-theme="nature"] .pit-external-count.empty.p6-count {
+  color: rgba(53, 44, 36, 0.32) !important;
+  text-shadow: none !important;
 }
 
 [data-theme="nature"] .row-label {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 /* 8. Storage Bowls in Nature Theme */
 [data-theme="nature"] .storage-bowl {
-  background: radial-gradient(ellipse at 50% 30%, #FFFCF5 0%, #E5D5B9 100%);
-  border: 3px solid #9B7654;
+  background: radial-gradient(ellipse at 50% 30%, #FFFDF7 0%, #E7D9C2 100%);
+  border: 3px solid #896747;
   box-shadow:
-    inset 0 6px 14px rgba(90, 70, 50, 0.3),
+    inset 0 6px 14px rgba(53, 44, 36, 0.25),
     0 2px 6px rgba(255, 255, 255, 0.5);
 }
 
 [data-theme="nature"] .storage-label {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 [data-theme="nature"] .storage-count {
-  color: #4A3E31;
+  color: #352C24;
   text-shadow: none;
 }
 
 [data-theme="nature"] .storage-seeds-reservoir {
-  background: rgba(229, 213, 185, 0.4);
-  border: 1px solid #C6D2B8;
+  background: rgba(231, 217, 194, 0.45);
+  border: 1px solid #A7B69A;
 }
 
 [data-theme="nature"] .storage-empty-hint {
-  color: rgba(107, 91, 78, 0.45);
+  color: rgba(105, 89, 74, 0.45);
 }
 
 [data-theme="nature"] .storage-pill {
-  color: #899B78;
+  color: #718568;
 }
 
 /* 9. Multi-Player Board Layouts in Nature Theme (3P, 4P, 5P, 6P) */
@@ -4255,99 +4411,405 @@ body[data-theme="nature"] {
 [data-theme="nature"] .five-player-board,
 [data-theme="nature"] .six-player-board,
 [data-theme="nature"] .three-player-board {
-  border-color: #9B7654;
-  outline-color: #C6D2B8;
+  border-color: #896747;
+  outline-color: #A7B69A;
 }
 
 [data-theme="nature"] .ornamental-center-divider,
 [data-theme="nature"] .board-divider-line {
-  background: #C6D2B8;
+  background: #D4C2A5;
 }
 
 [data-theme="nature"] .divider-flourish {
-  color: #899B78;
+  color: #718568;
 }
 
 /* 10. Modals & Dialogs in Nature Theme */
 [data-theme="nature"] .modal-overlay {
-  background: rgba(45, 35, 25, 0.65);
+  background: rgba(53, 44, 36, 0.55);
 }
 
 [data-theme="nature"] .modal-content,
 [data-theme="nature"] .rules-modal-card,
 [data-theme="nature"] .settlement-card,
 [data-theme="nature"] .match-end-card,
-[data-theme="nature"] .notice-modal-card,
-[data-theme="nature"] .first-player-card {
-  background: linear-gradient(160deg, #FFFCF5 0%, #F7F1E7 100%);
-  border: 2px solid #9B7654;
+[data-theme="nature"] .notice-modal-card {
+  background: linear-gradient(160deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 2px solid #896747;
   box-shadow:
-    0 20px 48px rgba(90, 70, 50, 0.25),
-    0 0 20px rgba(137, 155, 120, 0.2);
-  color: #33271E;
+    0 20px 48px rgba(53, 44, 36, 0.2),
+    0 0 20px rgba(113, 133, 104, 0.15);
+  color: #352C24;
 }
 
 [data-theme="nature"] .modal-header,
 [data-theme="nature"] .rules-header {
-  border-bottom: 1px solid rgba(198, 210, 184, 0.6);
+  border-bottom: 1px solid rgba(167, 182, 154, 0.45);
 }
 
 [data-theme="nature"] .modal-title,
 [data-theme="nature"] .rules-title,
 [data-theme="nature"] .settlement-title,
 [data-theme="nature"] .match-end-title {
-  color: #4A3E31;
+  color: #352C24;
 }
 
 [data-theme="nature"] .close-btn {
-  color: #6B5B4E;
+  color: #69594A;
 }
 
 [data-theme="nature"] .close-btn:hover {
-  color: #33271E;
+  color: #352C24;
 }
 
-[data-theme="nature"] .rules-section-btn {
-  background: #FFFCF5;
-  border-color: #C6D2B8;
-  color: #4A3E31;
+/* First Player Modal ("Who will Play first") Coverage */
+[data-theme="nature"] .first-player-card {
+  background: linear-gradient(160deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 2px solid #896747;
+  box-shadow:
+    0 20px 48px rgba(53, 44, 36, 0.18),
+    0 0 20px rgba(113, 133, 104, 0.15);
+  color: #352C24;
 }
 
-[data-theme="nature"] .rules-section-btn.active {
-  background: #E5D5B9;
-  border-color: #899B78;
-  color: #33271E;
+[data-theme="nature"] .first-player-subtitle {
+  color: #69594A;
 }
 
-[data-theme="nature"] .rules-content-panel {
-  background: #FAF5ED;
-  border: 1px solid #C6D2B8;
-  color: #33271E;
+[data-theme="nature"] .first-player-subtitle strong {
+  color: #352C24;
 }
 
-[data-theme="nature"] .settlement-summary-card,
-[data-theme="nature"] .match-end-summary {
-  background: #FAF5ED;
-  border: 1px solid #C6D2B8;
-  color: #33271E;
+[data-theme="nature"] .first-player-option-btn {
+  background: linear-gradient(135deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 1.5px solid #D4C2A5;
+  color: #352C24;
+  box-shadow: 0 4px 14px rgba(53, 44, 36, 0.08);
 }
 
-/* 11. Alerts, Action Bars & Notifications in Nature Theme */
+[data-theme="nature"] .first-player-option-btn:hover {
+  background: linear-gradient(135deg, #FFFFFF 0%, #E7D9C2 100%);
+  border-color: #718568;
+  box-shadow:
+    0 8px 24px rgba(53, 44, 36, 0.12),
+    0 0 16px rgba(113, 133, 104, 0.25);
+  transform: translateY(-2px);
+}
+
+[data-theme="nature"] .first-player-icon {
+  background: #E7D9C2;
+  border: 1px solid #896747;
+  color: #352C24;
+}
+
+[data-theme="nature"] .first-player-title {
+  color: #352C24;
+  font-family: var(--font-heading);
+}
+
+[data-theme="nature"] .first-player-desc {
+  color: #69594A;
+}
+
+[data-theme="nature"] .first-player-back-btn {
+  background: #FFFDF7;
+  border-color: #D4C2A5;
+  color: #352C24;
+}
+
+[data-theme="nature"] .first-player-back-btn:hover {
+  background: #E7D9C2;
+  border-color: #718568;
+}
+
+/* Rules Modal Coverage */
+[data-theme="nature"] .rules-modal-content {
+  background: linear-gradient(160deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 2px solid #896747;
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-header-badge {
+  color: #718568;
+}
+
+[data-theme="nature"] .rules-mode-tabs {
+  background: #FAF7F0;
+  border: 1px solid #D4C2A5;
+}
+
+[data-theme="nature"] .rules-mode-tab {
+  color: #69594A;
+}
+
+[data-theme="nature"] .rules-mode-tab:hover:not(.active) {
+  background: #E7D9C2;
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-mode-tab.active {
+  background: #E7D9C2;
+  border-color: #718568;
+  color: #352C24;
+  box-shadow: 0 0 8px rgba(113, 133, 104, 0.25);
+}
+
+[data-theme="nature"] .rules-section {
+  background: #FAF7F0;
+  border: 1px solid #D4C2A5;
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-section-title {
+  color: #352C24;
+  border-bottom: 1px dashed #D4C2A5;
+}
+
+[data-theme="nature"] .rules-section p,
+[data-theme="nature"] .rules-section ul,
+[data-theme="nature"] .rules-section ol,
+[data-theme="nature"] .rules-section li {
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-detail-note {
+  background: #F6F2E9;
+  border-left: 3px solid #718568;
+  color: #352C24 !important;
+}
+
+[data-theme="nature"] .rules-visual-card {
+  background: #F6F2E9;
+  border: 1px solid #D4C2A5;
+}
+
+[data-theme="nature"] .rules-config-label {
+  color: #69594A;
+}
+
+[data-theme="nature"] .rules-config-value {
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-illustration-box {
+  background: #FAF7F0;
+  border: 1px solid #D4C2A5;
+}
+
+[data-theme="nature"] .step-pill {
+  background: #FFFDF7;
+  border-color: #D4C2A5;
+  color: #352C24;
+}
+
+[data-theme="nature"] .step-pill.highlight {
+  background: rgba(113, 133, 104, 0.18);
+  border-color: #718568;
+  color: #352C24;
+}
+
+[data-theme="nature"] .step-pill.success {
+  background: rgba(46, 133, 64, 0.15);
+  border-color: #2E8540;
+  color: #1B5E20;
+}
+
+[data-theme="nature"] .step-pill.warning {
+  background: rgba(217, 119, 6, 0.15);
+  border-color: #D97706;
+  color: #92400E;
+}
+
+[data-theme="nature"] .step-arrow {
+  color: #718568;
+}
+
+[data-theme="nature"] .rules-win-summary {
+  background: rgba(167, 182, 154, 0.2);
+  border: 1px solid #A7B69A;
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-win-summary strong {
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-ownership-list strong {
+  color: #352C24;
+}
+
+[data-theme="nature"] .rules-modal-footer {
+  border-top-color: #D4C2A5;
+}
+
+/* Settlement Modal Coverage */
+[data-theme="nature"] .winner-banner {
+  background: linear-gradient(135deg, rgba(113, 133, 104, 0.18) 0%, rgba(167, 182, 154, 0.25) 100%);
+  border: 1.5px solid #718568;
+  color: #352C24;
+  box-shadow: 0 4px 12px rgba(113, 133, 104, 0.15);
+}
+
+[data-theme="nature"] .score-box {
+  background: #FAF7F0;
+  border: 1px solid #D4C2A5;
+  color: #352C24;
+}
+
+[data-theme="nature"] .score-box h5 {
+  color: #69594A;
+}
+
+[data-theme="nature"] .score-box .score-val {
+  color: #352C24;
+}
+
+[data-theme="nature"] .disqualified-box {
+  opacity: 0.6;
+  background: #EFE8DA;
+  border-color: #D4C2A5;
+}
+
+[data-theme="nature"] .settlement-preview {
+  color: #69594A;
+}
+
+/* Match End Modal Coverage */
+[data-theme="nature"] .match-ranking-row {
+  background: #FAF7F0 !important;
+  border: 1px solid #D4C2A5 !important;
+  color: #352C24 !important;
+}
+
+[data-theme="nature"] .match-ranking-row.winner-row {
+  background: linear-gradient(135deg, #FFFDF7 0%, #F6F2E9 100%) !important;
+  border: 1.5px solid #718568 !important;
+}
+
+[data-theme="nature"] .ranking-player-name {
+  color: #352C24 !important;
+}
+
+[data-theme="nature"] .ranking-storage-val {
+  color: #352C24 !important;
+}
+
+/* Notice Modal (WIP & Coming Soon) Coverage */
+[data-theme="nature"] .notice-subtitle,
+[data-theme="nature"] .wip-subtitle,
+[data-theme="nature"] .coming-soon-subtitle {
+  color: #69594A;
+}
+
+[data-theme="nature"] .notice-description,
+[data-theme="nature"] .wip-description,
+[data-theme="nature"] .coming-soon-description {
+  color: #352C24;
+}
+
+/* Orientation Prompt Coverage */
+[data-theme="nature"] .orientation-prompt-overlay {
+  background: radial-gradient(circle at 50% 30%, #F6F2E9 0%, #E7D9C2 100%);
+}
+
+[data-theme="nature"] .orientation-prompt-card {
+  background: linear-gradient(160deg, #FFFDF7 0%, #F6F2E9 100%);
+  border: 2px solid #896747;
+  color: #352C24;
+  box-shadow: 0 16px 40px rgba(53, 44, 36, 0.18), 0 0 24px rgba(113, 133, 104, 0.2);
+}
+
+[data-theme="nature"] .orientation-title {
+  color: #352C24;
+}
+
+[data-theme="nature"] .orientation-message {
+  color: #69594A;
+}
+
+[data-theme="nature"] .orientation-pill {
+  background: #E7D9C2;
+  border: 1px solid #718568;
+  color: #352C24;
+}
+
+/* 11. Alerts, Action Bars & Turn Notifications in Nature Theme */
 [data-theme="nature"] .round-settlement-action-bar {
-  background: rgba(255, 252, 245, 0.95);
-  border: 1px solid #C6D2B8;
-  color: #33271E;
+  background: rgba(255, 253, 247, 0.95);
+  border: 1.5px solid #896747;
+  color: #352C24;
+  box-shadow: 0 4px 16px rgba(53, 44, 36, 0.1);
+}
+
+[data-theme="nature"] .settlement-bar-info {
+  color: #352C24;
+}
+
+[data-theme="nature"] .settlement-bar-info strong {
+  color: #352C24;
 }
 
 [data-theme="nature"] .turn-notification-pill {
-  background: linear-gradient(135deg, #FFFCF5 0%, #F5EDE0 100%);
-  border: 2px solid #899B78;
-  color: #33271E;
-  box-shadow: 0 10px 30px rgba(90, 70, 50, 0.2);
+  background: linear-gradient(135deg, #FFFDF7 0%, #F6F2E9 100%) !important;
+  border: 2px solid #718568 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18) !important;
+}
+
+[data-theme="nature"] .turn-notification-text {
+  color: #352C24 !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p1 {
+  background: #FFFDF7 !important;
+  border-color: #C24136 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(194, 65, 54, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p2 {
+  background: #FFFDF7 !important;
+  border-color: #2D68C4 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(45, 104, 196, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p3 {
+  background: #FFFDF7 !important;
+  border-color: #2E8540 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(46, 133, 64, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p4 {
+  background: #FFFDF7 !important;
+  border-color: #D97706 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(217, 119, 6, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p5 {
+  background: #FFFDF7 !important;
+  border-color: #8B48B4 !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(139, 72, 180, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-p6 {
+  background: #FFFDF7 !important;
+  border-color: #0F766E !important;
+  color: #352C24 !important;
+  box-shadow: 0 10px 30px rgba(53, 44, 36, 0.18), 0 0 16px rgba(15, 118, 110, 0.25) !important;
+}
+
+[data-theme="nature"] .turn-notification-pill.turn-notification-ai {
+  background: #FFFDF7 !important;
+  border-color: #2D68C4 !important;
+  color: #352C24 !important;
 }
 
 [data-theme="nature"] .error-alert {
   background: #FDF2E9;
-  border: 1px solid #C24136;
+  border: 1.5px solid #C24136;
   color: #78281F;
 }

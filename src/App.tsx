@@ -21,8 +21,6 @@ import { FirstPlayerModal } from "./ui/components/FirstPlayerModal";
 import { NoticeModal } from "./ui/components/NoticeModal";
 import { TurnNotification } from "./ui/components/TurnNotification";
 import { MultiplayerSelect, type MultiplayerPlayerCount } from "./ui/components/MultiplayerSelect";
-import { ThemeSelectModal } from "./ui/components/ThemeSelectModal";
-import { ThemeProvider, useTheme } from "./ui/theme/ThemeContext";
 import type { GameMode, AIDifficulty, Player } from "./engine/types";
 
 export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "MULTIPLAYER_SELECT" | "GAME";
@@ -35,15 +33,13 @@ export interface AppProps {
   initialAnimationSettings?: Partial<import("./ui/hooks/useChannemaneGame").AnimationSettings>;
 }
 
-const AppContent: React.FC<AppProps> = ({
+export const App: React.FC<AppProps> = ({
   initialScreen = "MAIN_MENU",
   initialGameMode = "local",
   initialDifficulty = null,
   initialGameState,
   initialAnimationSettings,
 }) => {
-  const { theme, setTheme } = useTheme();
-  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>(initialScreen);
   const [selectedDifficultyForFirstPlayer, setSelectedDifficultyForFirstPlayer] =
     useState<AIDifficulty | null>(null);
@@ -203,7 +199,7 @@ const AppContent: React.FC<AppProps> = ({
   };
 
   return (
-    <div className="app-container" data-theme={theme}>
+    <div className="app-container">
       {/* Mobile Portrait Blocking Screen (Requirement 2) */}
       {isPortraitBlocked && <OrientationPrompt />}
 
@@ -213,7 +209,6 @@ const AppContent: React.FC<AppProps> = ({
           onPlayAI={handlePlayAI}
           onPlayLocal={handleOpenMultiplayerSelect}
           onOpenRules={() => setIsRulesOpen(true)}
-          onOpenThemes={() => setIsThemeModalOpen(true)}
         />
       )}
 
@@ -360,7 +355,6 @@ const AppContent: React.FC<AppProps> = ({
             playerCount={gameState.playerCount ?? 2}
             isMuted={isMuted}
             onToggleAudio={toggleMute}
-            onOpenThemes={() => setIsThemeModalOpen(true)}
           />
 
           {/* Turn & Status Indicator */}
@@ -488,23 +482,7 @@ const AppContent: React.FC<AppProps> = ({
         onClose={() => setIsRulesOpen(false)}
         activePlayerCount={currentScreen === "GAME" ? (gameState.playerCount ?? 2) : undefined}
       />
-
-      {/* Theme Selection Modal (Accessible from Main Menu and In-Game Header) */}
-      <ThemeSelectModal
-        isOpen={isThemeModalOpen}
-        onClose={() => setIsThemeModalOpen(false)}
-        currentTheme={theme}
-        onSelectTheme={setTheme}
-      />
     </div>
-  );
-};
-
-export const App: React.FC<AppProps> = (props) => {
-  return (
-    <ThemeProvider>
-      <AppContent {...props} />
-    </ThemeProvider>
   );
 };
 

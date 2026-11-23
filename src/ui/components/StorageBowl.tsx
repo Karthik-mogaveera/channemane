@@ -8,7 +8,6 @@
 import React, { useMemo } from "react";
 import type { Player } from "../../engine/types";
 import { calculateStorageSeedPositions } from "../utils/storageSeedPacking";
-import { useTheme } from "../theme/ThemeContext";
 
 export interface StorageBowlProps {
   player: Player;
@@ -25,8 +24,6 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
   isDisqualified = false,
   orientation = "vertical",
 }) => {
-  const { theme } = useTheme();
-  const isNature = theme === "nature";
   const isP1 = player === "PLAYER_1";
   const isP2 = player === "PLAYER_2";
   const isP3 = player === "PLAYER_3";
@@ -127,21 +124,10 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
           >
             <defs>
               <radialGradient id={gradId} cx="35%" cy="30%" r="70%">
-                {isNature ? (
-                  <>
-                    <stop offset="0%" stopColor="#c89d6e" />
-                    <stop offset="35%" stopColor="#896747" />
-                    <stop offset="75%" stopColor="#5f4329" />
-                    <stop offset="100%" stopColor="#352415" />
-                  </>
-                ) : (
-                  <>
-                    <stop offset="0%" stopColor="#fffdfa" />
-                    <stop offset="35%" stopColor="#f3e5ab" />
-                    <stop offset="70%" stopColor="#bca172" />
-                    <stop offset="100%" stopColor="#6b4423" />
-                  </>
-                )}
+                <stop offset="0%" stopColor="#fffdfa" />
+                <stop offset="35%" stopColor="#f3e5ab" />
+                <stop offset="70%" stopColor="#bca172" />
+                <stop offset="100%" stopColor="#6b4423" />
               </radialGradient>
             </defs>
             {seedPositions.map((pos, idx) => (
@@ -163,7 +149,7 @@ export const StorageBowl: React.FC<StorageBowlProps> = React.memo(({
                   cy={pos.y}
                   r={pos.radius}
                   fill={`url(#${gradId})`}
-                  stroke={isNature ? "#2c1d11" : "#4a2e18"}
+                  stroke="#4a2e18"
                   strokeWidth="0.35"
                 />
                 {/* Specular gloss highlight */}

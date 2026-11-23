@@ -8,7 +8,6 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { Player, PitStatus } from "../../engine/types";
 import { calculateSeedPositions } from "../utils/seedPacking";
-import { useTheme } from "../theme/ThemeContext";
 
 export interface PitProps {
   pitId: number;
@@ -45,8 +44,6 @@ export const Pit: React.FC<PitProps> = React.memo(({
   onConfirmCapture,
   onClaimBonus,
 }) => {
-  const { theme } = useTheme();
-  const isNature = theme === "nature";
   const isClosed = status === "CLOSED";
   const hasBonus = bonusAvailable && seeds === 4 && !isClosed;
   const isPlayer1 = owner === "PLAYER_1";
@@ -313,21 +310,10 @@ export const Pit: React.FC<PitProps> = React.memo(({
               >
                 <defs>
                   <radialGradient id={`seed-grad-${pitId}`} cx="35%" cy="30%" r="70%">
-                    {isNature ? (
-                      <>
-                        <stop offset="0%" stopColor="#c89d6e" />
-                        <stop offset="35%" stopColor="#896747" />
-                        <stop offset="75%" stopColor="#5f4329" />
-                        <stop offset="100%" stopColor="#352415" />
-                      </>
-                    ) : (
-                      <>
-                        <stop offset="0%" stopColor="#fffdfa" />
-                        <stop offset="35%" stopColor="#f3e5ab" />
-                        <stop offset="70%" stopColor="#bca172" />
-                        <stop offset="100%" stopColor="#6b4423" />
-                      </>
-                    )}
+                    <stop offset="0%" stopColor="#fffdfa" />
+                    <stop offset="35%" stopColor="#f3e5ab" />
+                    <stop offset="70%" stopColor="#bca172" />
+                    <stop offset="100%" stopColor="#6b4423" />
                   </radialGradient>
                 </defs>
                 {seedPositions.map((pos, idx) => (
@@ -349,7 +335,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
                       cy={pos.y}
                       r={pos.radius}
                       fill={`url(#seed-grad-${pitId})`}
-                      stroke={isNature ? "#2c1d11" : "#4a2e18"}
+                      stroke="#4a2e18"
                       strokeWidth="0.35"
                     />
                     {/* Gloss specular reflection */}

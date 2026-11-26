@@ -273,7 +273,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
                 cy="22"
                 r="19"
                 fill="none"
-                stroke="rgba(250, 204, 21, 0.35)"
+                stroke="rgba(201, 151, 46, 0.35)"
                 strokeWidth="3.5"
               />
               <circle
@@ -282,7 +282,7 @@ export const Pit: React.FC<PitProps> = React.memo(({
                 cy="22"
                 r="19"
                 fill="none"
-                stroke="#facc15"
+                stroke="#C9972E"
                 strokeWidth="3.5"
                 strokeDasharray="119.38"
                 strokeDashoffset="119.38"

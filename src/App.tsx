@@ -21,6 +21,8 @@ import { FirstPlayerModal } from "./ui/components/FirstPlayerModal";
 import { NoticeModal } from "./ui/components/NoticeModal";
 import { TurnNotification } from "./ui/components/TurnNotification";
 import { MultiplayerSelect, type MultiplayerPlayerCount } from "./ui/components/MultiplayerSelect";
+import { Board3D } from "./three/Board3D";
+import { AudioProvider } from "./audio/AudioProvider";
 import type { GameMode, AIDifficulty, Player } from "./engine/types";
 
 export type AppScreen = "MAIN_MENU" | "DIFFICULTY_SELECT" | "MULTIPLAYER_SELECT" | "GAME";
@@ -50,6 +52,7 @@ export const App: React.FC<AppProps> = ({
   const [wipPlayerCount, setWipPlayerCount] = useState<MultiplayerPlayerCount | null>(null);
   const [chosenStartingPlayer, setChosenStartingPlayer] =
     useState<Player>("PLAYER_1");
+  const [boardViewMode, setBoardViewMode] = useState<"2D" | "3D">("2D");
   const { isPortraitBlocked } = useOrientation();
   const { isMuted, toggleMute } = useSoundEffects();
 
@@ -67,6 +70,8 @@ export const App: React.FC<AppProps> = ({
     isAnimating,
     activeDropPit,
     visualHandSeeds,
+    visualEvents,
+    completeVisualSettlement,
     lastActionError,
     settlementSummary,
     matchSummary,
@@ -91,10 +96,17 @@ export const App: React.FC<AppProps> = ({
     initialAnimationSettings,
     initialGameState,
     initialGameMode,
-    initialDifficulty
+    initialDifficulty,
+    "PLAYER_2",
+    2,
+    {
+      waitForVisualSettlement: boardViewMode === "3D",
+      deferAudioToVisual: boardViewMode === "3D",
+    }
   );
 
   const isRoundSettled =
+    !isAnimating &&
     (authoritativeGameState.phase === "ROUND_SETTLEMENT" ||
       gameState.phase === "ROUND_SETTLEMENT") &&
     authoritativeGameState.phase !== "MATCH_END" &&
@@ -198,8 +210,14 @@ export const App: React.FC<AppProps> = ({
     setCurrentScreen("MAIN_MENU");
   };
 
+  const handleToggleBoardView = () => {
+    if (isAnimating) return;
+    setBoardViewMode((prev) => (prev === "2D" ? "3D" : "2D"));
+  };
+
   return (
-    <div className="app-container">
+    <AudioProvider>
+      <div className="app-container">
       {/* Mobile Portrait Blocking Screen (Requirement 2) */}
       {isPortraitBlocked && <OrientationPrompt />}
 
@@ -355,6 +373,14 @@ export const App: React.FC<AppProps> = ({
             playerCount={gameState.playerCount ?? 2}
             isMuted={isMuted}
             onToggleAudio={toggleMute}
+            boardViewMode={boardViewMode}
+            onToggleBoardView={handleToggleBoardView}
+            isViewToggleDisabled={isAnimating}
+            viewToggleDisabledReason={
+              isAnimating
+                ? "View switching is disabled during active animation to preserve visual synchronization"
+                : undefined
+            }
           />
 
           {/* Turn & Status Indicator */}
@@ -431,20 +457,41 @@ export const App: React.FC<AppProps> = ({
             disqualifiedPlayers={gameState.disqualifiedPlayers}
           />
 
-          {/* 14-Pit Physical Board & Storage Bowls */}
-          <main>
-            <GameBoard
-              gameState={gameState}
-              selectablePits={selectablePits}
-              activeDropPit={activeDropPit}
-              isAnimating={isAnimating}
-              highlightedContinuationPit={highlightedContinuationPit}
-              highlightedCapturePit={highlightedCapturePit}
-              onSelectPit={selectPit}
-              onConfirmContinuation={confirmContinuation}
-              onConfirmCapture={confirmCapture}
-              onClaimBonus={claimBonus}
-            />
+          {/* Physical 2D / 3D Board & Storage Bowls */}
+          <main className="game-board-main-container">
+            {boardViewMode === "3D" ? (
+              <Board3D
+                gameState={gameState}
+                authoritativeGameState={authoritativeGameState}
+                selectablePits={selectablePits}
+                activeDropPit={activeDropPit}
+                isAnimating={isAnimating}
+                visualEvents={visualEvents}
+                highlightedContinuationPit={highlightedContinuationPit}
+                highlightedCapturePit={highlightedCapturePit}
+                claimableBonuses={claimableBonuses}
+                interactionState={interactionState}
+                animationSpeed={animationSettings.speed}
+                onSelectPit={selectPit}
+                onConfirmContinuation={confirmContinuation}
+                onConfirmCapture={confirmCapture}
+                onClaimBonus={claimBonus}
+                onVisualSettlementComplete={completeVisualSettlement}
+              />
+            ) : (
+              <GameBoard
+                gameState={gameState}
+                selectablePits={selectablePits}
+                activeDropPit={activeDropPit}
+                isAnimating={isAnimating}
+                highlightedContinuationPit={highlightedContinuationPit}
+                highlightedCapturePit={highlightedCapturePit}
+                onSelectPit={selectPit}
+                onConfirmContinuation={confirmContinuation}
+                onConfirmCapture={confirmCapture}
+                onClaimBonus={claimBonus}
+              />
+            )}
           </main>
 
           {/* Settlement Modal (End of Round) */}
@@ -483,6 +530,7 @@ export const App: React.FC<AppProps> = ({
         activePlayerCount={currentScreen === "GAME" ? (gameState.playerCount ?? 2) : undefined}
       />
     </div>
+  </AudioProvider>
   );
 };
 

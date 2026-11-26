@@ -1782,6 +1782,130 @@ Completely redesigned the procedural audio engine from synthetic electronic blee
 - **Full Vitest Test Suite**: 67/67 test files and 519/519 tests passed.
 - **Production Build**: Clean production build via `npm run build`.
 
+---
+
+## 40. Milestone 1: Realistic 3D Playable Prototype
+
+### 40.1 Executive Overview
+Milestone 1 introduces a realistic, interactive 3D board version of Channemane built with **React Three Fiber**, **Three.js**, and **GSAP**, supported by a redesigned event-driven audio foundation powered by **Howler**.
+The implementation adheres to the core principle of **non-negotiable engine authority**: the existing pure TypeScript game engine remains the single source of truth, and the existing 2D game interface remains fully intact and accessible via an instant toggle.
+
+### 40.2 Milestone Scope
+- **Target Platform**: 2-Player local multiplayer and AI game modes.
+- **Board Configuration**:
+  - Exactly 14 circular pits arranged in two rows of seven.
+  - Top Row: P0, P1, P2, P3, P4, P5, P6 owned by Player 1.
+  - Bottom Row: P13, P12, P11, P10, P9, P8, P7 owned by Player 2.
+  - Exactly 5 starting seeds per pit (70 seeds total in active play).
+  - Two flanking player storage areas: Player 1 (Left) and Player 2 (Right).
+- **Presentation Integration**:
+  - Seamless toggle between 2D and 3D views directly in the header without restarting match or resetting game state.
+  - View toggle disabled during active animations and for >2-player modes.
+
+### 40.3 Installed Dependencies
+- `three`: `^0.187.0` (Core 3D engine)
+- `@react-three/fiber`: `^9.8.2` (React declarator for Three.js)
+- `@react-three/drei`: `^10.7.9` (R3F helper library for OrbitControls)
+- `gsap`: `^3.15.1` (GreenSock Animation Platform for smooth 3D seed trajectories)
+- `howler`: `^2.2.4` (Robust Web Audio / HTML5 audio playback engine)
+- `@types/three`: `^0.187.0`
+- `@types/howler`: `^2.2.13`
+
+### 40.4 Implemented Architecture
+```
+src/
+  three/
+    Board3D.tsx                         # Primary 3D Canvas component
+    scene/
+      SceneEnvironment.tsx             # Studio backdrop & shadow receiver plane
+      BoardCamera.tsx                  # Fixed angled perspective camera (limited zoom, no unrestricted rotation)
+      Lighting.tsx                     # Warm directional key light, ambient fill, and specular rim light
+    board/
+      Board.tsx                        # Complete 3D board assembly
+      BoardBase.tsx                    # Thick bevelled solid wooden slab with brass inlays
+      BoardMaterials.ts                # Procedural teak/rosewood Canvas grain, roughness maps, brass
+    pits/
+      Pit3D.tsx                        # Recessed pit cavity, rim, deterministic seeds, pointer handling
+      PitGeometry.ts                   # Reusable lathe parabolic bowl and torus rim geometries
+      PitHighlight.tsx                 # Pulsing shader highlight for selectable, drop, continuation, capture, bonus
+    seeds/
+      Seed3D.tsx                       # Individual organic oval tamarind/wooden seed bead
+      SeedGeometry.ts                  # Reusable oblong seed mesh geometry
+      SeedLayout.ts                    # 3D deterministic positioning derived from seedPacking algorithms
+    storage/
+      PlayerStorage3D.tsx              # Recessed accumulation bowl for Player 1 (left) and Player 2 (right)
+    interaction/
+      BoardInput.ts                    # Legal selection validation and animation state guards
+    animation/
+      AnimationCoordinator.ts          # Central GSAP coordinator, queue management, cancellation & sync
+      SowingAnimation.ts               # Parabolic arc seed trajectories with subtle tumbling
+      CaptureAnimation.ts              # Flying seed cascade from captured pit to player storage
+      BonusAnimation.ts                # 4-seed transfer from bonus pit to owner storage
+      TransitionAnimation.ts           # Configurable timing profiles (SLOW 450ms vs FAST 140ms)
+    config/
+      boardVisualConfigs.ts            # World coordinates and dimension constants for 14 pits and storages
+      graphicsSettings.ts              # Performance tuning: antialiasing, clamped DPR, shadows
+
+  adapters/
+    engineToVisualState.ts             # Unidirectional mapping from GameState to VisualBoardState
+    engineToVisualEvents.ts            # TurnAnimationEvent to high-level 3D visual animation payloads
+
+  audio/
+    AudioManager.ts                    # Singleton facade coordinating audio lifecycle, gesture unlock & ducking
+    AudioProvider.tsx                  # React Context & useAudio hook for reactive audio controls
+    music/
+      MusicManager.ts                  # Background music playback, volume transitions, graceful error handling
+      MusicPlaylist.ts                 # 3 ambient instrumental Indian tracks architecture
+      MusicTransitions.ts              # Crossfading and dynamic SFX ducking
+    sfx/
+      SFXManager.ts                    # Howler SFX with anti-fatigue pitch variation and voice limiting
+      SFXRegistry.ts                   # Mappings to asset paths with synthesized Web Audio fallbacks
+      SFXEventMapper.ts                # Engine animation/lifecycle events to SFX types
+    events/
+      AudioEventListener.ts            # Decoupled pub/sub event bus listening to confirmed game events
+    settings/
+      AudioSettings.ts                 # Master, Music, SFX volume & mute channels with localStorage persistence
+```
+
+### 40.5 Procedural 3D Construction & Visual Styling
+- **Wood Grain Synthesis**: Custom HTML5 Canvas procedural generator creating authentic Teak and Rosewood wood grain with organic annular ring curvature, subtle longitudinal grain fibers, and satin roughness maps without external texture files.
+- **Carved Pits**: Smooth lathe-generated parabolic recessed cavities providing genuine physical depth, inner shadow attenuation, and brass inlay lips.
+- **Organic Seeds**: Reusable oblong oval geometry mimicking traditional tamarind and wooden mancala beads, positioned deterministically using concentric-ring mathematical packing.
+- **Fixed Angled Perspective**: Camera elevated at ~43° maintaining full visibility of all 14 pits and both storage bowls, dynamically adjusting distance to prevent cropping on desktop and mobile landscape screens.
+
+### 40.6 GSAP Animation & Engine Visual Synchronisation
+- **Sowing Trajectories**: Arched 3D parabolic curves with micro-tumbles connecting consecutive pits along counter-clockwise traversal.
+- **Captures & Bonuses**: Coordinated multi-seed trajectories transferring seeds to player storage.
+- **Engine Authority**: The 3D scene never independently computes rules or manages authoritative counts. After visual transitions, displayed counts are reconciled directly against the authoritative `GameState`.
+- **Cancellation Safety**: In-flight tweens and timelines can be cleanly aborted, immediately snapping the scene to the engine's authoritative state without desynchronization.
+
+### 40.7 Howler Audio Subsystem
+- **Decoupled Architecture**: Listens to confirmed engine events (`PICKUP`, `DROP`, `SCOOP`, `CAPTURE`, bonus triggered/claimed, round end, match win/loss).
+- **Independent Audio Channels**: Master, Music, and SFX volume channels with separate mute toggles and safe localStorage persistence.
+- **Dual-Layer Playback**: Supports file-based playback with Howler while falling back to zero-latency Web Audio organic synthesis when asset files are not present on disk.
+- **Ambient Indian Music Architecture**: Playlist supporting three meditative instrumental themes ("Dawn Over the Courtyard", "Teak & Tamarind", "Dusk in Dharwar") with dynamic volume ducking during captures and victory fanfares.
+
+### 40.8 Verification & Test Metrics
+- **TypeScript Static Verification**: `tsc --noEmit` passed with 0 errors.
+- **Unit & Component Tests (Vitest)**:
+  - Total test files: **71 passed (71)**.
+  - Total tests: **539 passed (539)**.
+  - New test suites added:
+    - `tests/three/boardLayoutAndRendering.test.ts` (5/5 passed)
+    - `tests/three/engineVisualSyncAndInteraction.test.ts` (7/7 passed)
+    - `tests/audio/audioManagerSubsystem.test.ts` (5/5 passed)
+    - `tests/ui/boardViewToggle.test.tsx` (3/3 passed)
+- **End-to-End Tests (Playwright)**:
+  - 31 of 32 tests passed (2.3m).
+  - Pre-existing failure identified: `game.spec.ts:80` expected outdated text `"Origins & Heritage"` from an earlier revision of `RulesModal.tsx`.
+- **Production Build (Vite)**: Clean production build in 13.62s.
+
+### 40.9 Known Limitations & Future Work
+- **Milestone Scope**: Milestone 1 focuses on the 2-player board. 3–6 player 3D procedural layouts will be introduced in subsequent milestones.
+- **Physical Audio Assets**: Music and SFX asset pathways are fully wired and functional with zero-latency synthesized fallbacks; finalized live studio recordings can be dropped into `/public/audio/`.
+- **Mobile Packaging**: Prepared for Capacitor Android WebView integration (no browser-only dependencies, touch-friendly raycasting, WebGL fallback detection). Native packaging and build pipelines scheduled for future mobile deployment milestones.
+
+
 
 
 

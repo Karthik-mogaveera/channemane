@@ -89,70 +89,30 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
                     ? "Player 5"
                     : "Player 6";
 
-                const badgeBg = isWinner
-                  ? "rgba(234, 179, 8, 0.25)"
+                const badgeClass = isWinner
+                  ? "rank-winner"
                   : isSecond
-                  ? "rgba(148, 163, 184, 0.2)"
+                  ? "rank-second"
                   : isThird
-                  ? "rgba(245, 158, 11, 0.2)"
-                  : "rgba(239, 68, 68, 0.2)";
-                const badgeBorder = isWinner
-                  ? "#eab308"
-                  : isSecond
-                  ? "#94a3b8"
-                  : isThird
-                  ? "#f59e0b"
-                  : "#ef4444";
-                const badgeColor = isWinner
-                  ? "#fef08a"
-                  : isSecond
-                  ? "#e2e8f0"
-                  : isThird
-                  ? "#fed7aa"
-                  : "#fca5a5";
+                  ? "rank-third"
+                  : "rank-lost";
 
                 return (
                   <div
                     key={ranking.player}
                     className={`match-ranking-row ${isWinner ? "winner-row" : ""}`}
                     data-testid={`ranking-row-${ranking.player.toLowerCase()}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "8px 14px",
-                      borderRadius: "8px",
-                      background: isWinner
-                        ? "linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(202,138,4,0.05) 100%)"
-                        : "rgba(255, 255, 255, 0.04)",
-                      border: isWinner ? "1px solid rgba(234,179,8,0.4)" : "1px solid rgba(255, 255, 255, 0.08)",
-                    }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <span
-                        className="ranking-badge"
+                        className={`ranking-badge ${badgeClass}`}
                         data-testid={`ranking-badge-${ranking.player.toLowerCase()}`}
-                        style={{
-                          display: "inline-block",
-                          padding: "3px 10px",
-                          borderRadius: "9999px",
-                          fontSize: "0.8rem",
-                          fontWeight: 700,
-                          background: badgeBg,
-                          border: `1px solid ${badgeBorder}`,
-                          color: badgeColor,
-                          letterSpacing: "0.5px",
-                        }}
                       >
                         {ranking.label}
                       </span>
                       <strong
                         className="ranking-player-name"
                         data-testid={`ranking-player-${ranking.player.toLowerCase()}`}
-                        style={{
-                          fontSize: isWinner ? "1.05rem" : "0.95rem",
-                          color: isWinner ? "var(--gold-light, #fef08a)" : "var(--text-light, #f8fafc)",
-                        }}
                       >
                         {playerName}
                       </strong>
@@ -161,11 +121,6 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
                     <div
                       className="ranking-storage-val"
                       data-testid={`ranking-storage-${ranking.player.toLowerCase()}`}
-                      style={{
-                        fontSize: "0.9rem",
-                        color: "var(--text-muted, #94a3b8)",
-                        fontWeight: 600,
-                      }}
                     >
                       {ranking.storage} seeds
                     </div>
@@ -175,7 +130,7 @@ export const MatchEndModal: React.FC<MatchEndModalProps> = ({
             </div>
           )}
 
-          <p style={{ marginTop: "14px", textAlign: "center", color: "var(--text-muted)" }}>
+          <p style={{ marginTop: "14px", textAlign: "center", color: "var(--color-text-secondary)" }}>
             {matchResult.reason}
           </p>
         </div>

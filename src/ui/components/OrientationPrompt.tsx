@@ -34,7 +34,7 @@ export const OrientationPrompt: React.FC = () => {
               rx="8"
               ry="8"
               fill="none"
-              stroke="#d4af37"
+              stroke="var(--color-walnut, #6F5038)"
               strokeWidth="3.5"
             />
             {/* Screen inner area */}
@@ -45,7 +45,7 @@ export const OrientationPrompt: React.FC = () => {
               height="54"
               rx="3"
               ry="3"
-              fill="rgba(212, 175, 55, 0.15)"
+              fill="rgba(111, 80, 56, 0.12)"
             />
             {/* Home indicator bar */}
             <line
@@ -53,7 +53,7 @@ export const OrientationPrompt: React.FC = () => {
               y1="80"
               x2="56"
               y2="80"
-              stroke="#d4af37"
+              stroke="var(--color-walnut, #6F5038)"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
@@ -61,11 +61,11 @@ export const OrientationPrompt: React.FC = () => {
             <path
               d="M 16 50 A 34 34 0 0 1 76 22"
               fill="none"
-              stroke="#f3e5ab"
+              stroke="var(--color-sage-border, #5D6D50)"
               strokeWidth="3"
               strokeDasharray="4 2"
             />
-            <polygon points="74,15 84,24 74,31" fill="#f3e5ab" />
+            <polygon points="74,15 84,24 74,31" fill="var(--color-sage-border, #5D6D50)" />
           </svg>
         </div>
 

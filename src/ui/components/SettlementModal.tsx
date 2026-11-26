@@ -197,35 +197,35 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           </div>
 
           {isSixPlayer ? (
-            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+            <p style={{ marginTop: "12px", color: "var(--color-text-secondary)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
                 ? "Disqualified players are eliminated permanently. The remaining active players will continue with their allocations."
                 : "Authoritative pit groups G1–G4 will open atomically if all active players can contribute 5 seeds per group."}
             </p>
           ) : isFivePlayer ? (
-            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+            <p style={{ marginTop: "12px", color: "var(--color-text-secondary)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
                 ? "Disqualified players are eliminated permanently. The remaining active players will continue with their allocations."
                 : "Authoritative pit groups G1–G4 will open atomically if all active players can contribute 5 seeds per group."}
             </p>
           ) : isFourPlayer ? (
-            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+            <p style={{ marginTop: "12px", color: "var(--color-text-secondary)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
                 ? "Disqualified players are eliminated permanently. The remaining active players will continue with their allocations."
                 : "Authoritative pit groups G1–G4 will open atomically if all active players can contribute 5 seeds per group."}
             </p>
           ) : isThreePlayer ? (
-            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+            <p style={{ marginTop: "12px", color: "var(--color-text-secondary)" }}>
               <strong>Next Round Setup:</strong>{" "}
               {settlement.disqualifiedPlayers && settlement.disqualifiedPlayers.length > 0
                 ? "Disqualified players are eliminated permanently. The remaining active players will enter recovery mode with 50 total seeds."
                 : "Pair-wise pit groups G1–G5 will open atomically if all active players can contribute 5 seeds per group."}
             </p>
           ) : (
-            <p style={{ marginTop: "12px", color: "var(--gold-light)" }}>
+            <p style={{ marginTop: "12px", color: "var(--color-text-secondary)" }}>
               <strong>Next Round Setup:</strong> Each player needs 5 seeds per pit.
               With current storage totals, <strong>{openPairs} pairs ({openPairs * 2} pits)</strong> will open for the next round.
               {openPairs < 7 && ` ${7 - openPairs} pairs (${(7 - openPairs) * 2} pits) will be closed.`}

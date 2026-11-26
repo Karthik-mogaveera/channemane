@@ -45,7 +45,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
         data-testid="player-card-1"
       >
         <div className="player-name">
-          <span style={{ color: "var(--p1-crimson)" }}>●</span>
+          <span className="player-color-dot p1" aria-hidden="true">●</span>
           <span>Player 1 {isP1Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
         </div>
         <div className="player-stats">
@@ -60,7 +60,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
         data-testid="player-card-2"
       >
         <div className="player-name">
-          <span style={{ color: "var(--p2-indigo)" }}>●</span>
+          <span className="player-color-dot p2" aria-hidden="true">●</span>
           <span>Player 2 {isP2Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
         </div>
         <div className="player-stats">
@@ -76,7 +76,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           data-testid="player-card-3"
         >
           <div className="player-name">
-            <span style={{ color: "var(--p3-emerald, #10b981)" }}>●</span>
+            <span className="player-color-dot p3" aria-hidden="true">●</span>
             <span>Player 3 {isP3Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
           </div>
           <div className="player-stats">
@@ -93,7 +93,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           data-testid="player-card-4"
         >
           <div className="player-name">
-            <span style={{ color: "var(--p4-amber, #f59e0b)" }}>●</span>
+            <span className="player-color-dot p4" aria-hidden="true">●</span>
             <span>Player 4 {isP4Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
           </div>
           <div className="player-stats">
@@ -110,7 +110,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           data-testid="player-card-5"
         >
           <div className="player-name">
-            <span style={{ color: "var(--p5-purple, #a855f7)" }}>●</span>
+            <span className="player-color-dot p5" aria-hidden="true">●</span>
             <span>Player 5 {isP5Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
           </div>
           <div className="player-stats">
@@ -127,7 +127,7 @@ export const PlayerPanels: React.FC<PlayerPanelsProps> = React.memo(({
           data-testid="player-card-6"
         >
           <div className="player-name">
-            <span style={{ color: "var(--p6-teal, #0d9488)" }}>●</span>
+            <span className="player-color-dot p6" aria-hidden="true">●</span>
             <span>Player 6 {isP6Dis && <span className="disqualified-tag">(Disqualified)</span>}</span>
           </div>
           <div className="player-stats">

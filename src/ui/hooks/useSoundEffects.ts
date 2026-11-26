@@ -3,8 +3,9 @@
  * Provides reactive audio controls and synthesized sound triggers for Channemane.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { soundManager, type SoundEffectType } from "../audio/soundManager";
+import { audioManager } from "../../audio/AudioManager";
 
 export interface SoundEffectsHook {
   isMuted: boolean;
@@ -29,47 +30,68 @@ export function useSoundEffects(): SoundEffectsHook {
     soundManager.getSfxVolume()
   );
 
+  // Synchronize state with audioManager settings
+  useEffect(() => {
+    const unsub = audioManager.settings.subscribe((state) => {
+      setIsMutedState(state.sfxMuted || state.masterMuted);
+      setSfxVolumeState(state.sfxVolume);
+    });
+    return unsub;
+  }, []);
+
   const toggleMute = useCallback(() => {
     const next = soundManager.toggleMute();
+    audioManager.settings.setMasterMuted(next);
+    audioManager.settings.setSFXMuted(next);
     setIsMutedState(next);
   }, []);
 
   const setMuted = useCallback((muted: boolean) => {
     soundManager.setMuted(muted);
+    audioManager.settings.setMasterMuted(muted);
+    audioManager.settings.setSFXMuted(muted);
     setIsMutedState(muted);
   }, []);
 
   const setSfxVolume = useCallback((volume: number) => {
     soundManager.setSfxVolume(volume);
+    audioManager.settings.setSFXVolume(volume);
     setSfxVolumeState(soundManager.getSfxVolume());
   }, []);
 
   const playSound = useCallback((type: SoundEffectType) => {
+    audioManager.unlockAudio();
     soundManager.playSound(type);
   }, []);
 
   const playSowDrop = useCallback(() => {
-    soundManager.playSound("sowDrop");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("seedPlacement");
   }, []);
 
   const playScoop = useCallback(() => {
-    soundManager.playSound("scoop");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("continuousSow");
   }, []);
 
   const playCapture = useCallback(() => {
-    soundManager.playSound("capture");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("capture");
   }, []);
 
   const playBonusClaim = useCallback(() => {
-    soundManager.playSound("bonusClaim");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("bonusClaim");
   }, []);
 
   const playRoundSettlement = useCallback(() => {
-    soundManager.playSound("roundSettlement");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("roundSettlement");
   }, []);
 
   const playMatchVictory = useCallback(() => {
-    soundManager.playSound("matchVictory");
+    audioManager.unlockAudio();
+    audioManager.sfx.play("matchVictory");
   }, []);
 
   return {

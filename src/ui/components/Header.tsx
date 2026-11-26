@@ -18,6 +18,10 @@ export interface HeaderProps {
   playerCount?: 2 | 3 | 4 | 5 | 6;
   isMuted?: boolean;
   onToggleAudio?: () => void;
+  boardViewMode?: "2D" | "3D";
+  onToggleBoardView?: () => void;
+  isViewToggleDisabled?: boolean;
+  viewToggleDisabledReason?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +35,10 @@ export const Header: React.FC<HeaderProps> = ({
   playerCount = 2,
   isMuted = false,
   onToggleAudio,
+  boardViewMode = "2D",
+  onToggleBoardView,
+  isViewToggleDisabled = false,
+  viewToggleDisabledReason,
 }) => {
   return (
     <header className="game-header" role="banner">
@@ -99,6 +107,24 @@ export const Header: React.FC<HeaderProps> = ({
         >
           {animationSettings.speed === "SLOW" ? "🎬 Slow Mode" : "⚡ Fast Mode"}
         </button>
+
+        {onToggleBoardView && (
+          <button
+            type="button"
+            className="btn btn-secondary view-toggle-btn"
+            onClick={onToggleBoardView}
+            disabled={isViewToggleDisabled}
+            aria-label={`Switch to ${boardViewMode === "2D" ? "3D" : "2D"} Board View`}
+            data-testid="view-toggle-btn"
+            title={
+              isViewToggleDisabled
+                ? viewToggleDisabledReason || "View switching is disabled during active animation"
+                : `Switch to ${boardViewMode === "2D" ? "3D" : "2D"} View`
+            }
+          >
+            {boardViewMode === "2D" ? "🎲 3D View" : "📐 2D View"}
+          </button>
+        )}
 
         <button
           type="button"

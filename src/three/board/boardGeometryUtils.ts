@@ -20,11 +20,11 @@ export const CARVED_BOARD_METRICS = {
   topBevelRadius: 0.14,
   bottomChamfer: 0.07,
 
-  // 14 Circular Pits (inner bowl >= floor seed span, lip meets top deck cleanly)
+  // Circular Pits (inner bowl >= floor seed span, lip meets top deck cleanly, ~13.75% deeper floor)
   pitInnerRadius: 0.71,
   pitLipRadius: 0.09,
   pitRimRadius: 0.80, // Exact cutout hole radius in top deck
-  pitBowlSemiDepth: 0.31, // Total carved floor at Y = -0.09 - 0.31 = -0.40
+  pitBowlSemiDepth: 0.365, // Total carved floor at Y = -0.09 - 0.365 = -0.455
   pitRadialSegments: 48,
 
   // 2 Symmetrical Player Storage Trays (world centers at ±7.85, 0)

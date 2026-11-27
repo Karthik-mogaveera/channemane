@@ -90,6 +90,27 @@ export const PitHighlight: React.FC<PitHighlightProps> = ({
         />
       </mesh>
 
+      {/* Secondary antique-brass accent inner rim cleanly distinguishing 4-seed claimable bonuses */}
+      {isBonusAvailable && !isCaptureTarget && !isContinuationTarget && (
+        <mesh
+          position={[0, 0.014, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          renderOrder={2}
+        >
+          <ringGeometry args={[r - 0.115, r - 0.068, 48]} />
+          <meshBasicMaterial
+            color="#C9972E"
+            transparent
+            opacity={0.78}
+            depthWrite={false}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            polygonOffsetUnits={-2}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
+
       {/* Long-press circular bonus progress ring */}
       {holdProgress > 0 && (
         <mesh

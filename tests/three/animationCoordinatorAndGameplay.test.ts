@@ -314,4 +314,224 @@ describe("3D AnimationCoordinator & Full Gameplay Loop Suite", () => {
       expect(result.current.interactionState).toBe("WAITING_FOR_START");
     }
   });
+
+  it("allows independent bonus claims during active sowing for either player without cancelling sowing, serializes same-storage transfers, and handles mid-sowing round end", () => {
+    // Part A: Player 1 sows 5 seeds from pit 0 while Pit 10 (owned by Player 2) and Pit 4 (owned by Player 1) have claimable 4-seed bonuses
+    const state = createInitialGame("PLAYER_1", "local");
+    // Preserve 70-seed total: pit 10 = 4 (bonus), pit 11 = 6; pit 4 = 4 (bonus) -> put extra in storage
+    state.pits[4]!.seeds = 4;
+    state.pits[4]!.bonusAvailable = true;
+    state.pits[10]!.seeds = 4;
+    state.pits[10]!.bonusAvailable = true;
+    state.pits[11]!.seeds = 6;
+    state.players.player2.storage = 1; // 70 - 69 = 1
+
+    const { result } = renderHook(() =>
+      useChannemaneGame(
+        "PLAYER_1",
+        { enabled: true, speed: "FAST", stepDelayMs: 140 },
+        state,
+        "local",
+        null,
+        "PLAYER_2",
+        2,
+        { waitForVisualSettlement: true, deferAudioToVisual: true }
+      )
+    );
+
+    // Dismiss turn-start notification so pit 0 is selectable
+    act(() => {
+      vi.advanceTimersByTime(850);
+    });
+
+    // Start sowing from pit 0
+    act(() => {
+      const startRes = result.current.selectPit(0);
+      expect(startRes?.success).toBe(true);
+    });
+
+    expect(result.current.isAnimating).toBe(true);
+    expect(result.current.interactionState).toBe("SOWING_ANIMATION");
+
+    // Step 1 drops into pit 1 (4 seeds remaining in hand)
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+
+    // Player 1's sowing is ACTIVE -> claim Player 2's bonus on pit 10 AND verify duplicate claim is blocked safely
+    act(() => {
+      const claimRes = result.current.claimBonus(10);
+      expect(claimRes.success).toBe(true);
+      if (claimRes.success) {
+        expect(claimRes.data.owner).toBe("PLAYER_2");
+      }
+
+      // Immediate second rapid claim on the same pit 10 must be rejected silently without setting error alert
+      const dupRes = result.current.claimBonus(10);
+      expect(dupRes.success).toBe(false);
+    });
+
+    // Active sowing must STILL be running cleanly!
+    expect(result.current.isAnimating).toBe(true);
+    expect(result.current.interactionState).toBe("SOWING_ANIMATION");
+    expect(result.current.lastActionError).toBeNull();
+    // Credits strictly to Player 2 storage (1 -> 5), Player 1 untouched (0)
+    expect(result.current.authoritativeGameState.players.player2.storage).toBe(5);
+    expect(result.current.authoritativeGameState.players.player1.storage).toBe(0);
+    expect(result.current.authoritativeGameState.pits[10]!.seeds).toBe(0);
+    expect(result.current.authoritativeGameState.pits[10]!.bonusAvailable).toBe(false);
+
+    // Let remaining sowing steps advance until pit 5 drops (pause or complete); verify sowing didn't lose events
+    for (let i = 0; i < 6; i++) {
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+    }
+    const bonusEvents = result.current.visualEvents.filter(
+      (e) => e.type === "CLAIM_BONUS_TO_STORAGE"
+    );
+    expect(bonusEvents).toHaveLength(1);
+    expect(bonusEvents[0]!.targetPlayerStorage).toBe("PLAYER_2");
+
+    // Part B: Verify AnimationCoordinator serializes concurrent transfers to the SAME storage without losing reserves
+    const coord = new AnimationCoordinator();
+    coord.setAudioEnabled(false);
+    coord.setSpeed("FAST");
+    coord.enqueueEvents([
+      {
+        sequence: 101,
+        type: "CLAIM_BONUS_TO_STORAGE",
+        sourcePitId: 2,
+        targetPlayerStorage: "PLAYER_1",
+        seedsCount: 4,
+        playerCount: 2,
+      },
+      {
+        sequence: 102,
+        type: "CLAIM_BONUS_TO_STORAGE",
+        sourcePitId: 4,
+        targetPlayerStorage: "PLAYER_1",
+        seedsCount: 4,
+        playerCount: 2,
+      },
+      {
+        sequence: 103,
+        type: "CLAIM_BONUS_TO_STORAGE",
+        sourcePitId: 10,
+        targetPlayerStorage: "PLAYER_2",
+        seedsCount: 4,
+        playerCount: 2,
+      },
+    ]);
+    const coordSnap = coord.getSnapshot();
+    expect(coordSnap.storageIncomingReserve.PLAYER_1).toBe(8);
+    expect(coordSnap.storageIncomingReserve.PLAYER_2).toBe(4);
+    expect(coordSnap.isBusy).toBe(true);
+    coord.dispose();
+
+    // Part C: Mid-hand bonus claim defers round end until hand finishes dropping, then transitions smoothly to ROUND_SETTLEMENT
+    const roundEndState = createInitialGame("PLAYER_1", "local");
+    for (const pit of roundEndState.pits) pit.seeds = 0;
+    roundEndState.pits[0]!.seeds = 2;
+    roundEndState.pits[9]!.seeds = 4;
+    roundEndState.pits[9]!.bonusAvailable = true;
+    roundEndState.players.player1.storage = 32;
+    roundEndState.players.player2.storage = 32; // Total = 70
+
+    const hook2 = renderHook(() =>
+      useChannemaneGame(
+        "PLAYER_1",
+        { enabled: true, speed: "FAST", stepDelayMs: 140 },
+        roundEndState,
+        "local",
+        null,
+        "PLAYER_2",
+        2,
+        { waitForVisualSettlement: true, deferAudioToVisual: true }
+      )
+    );
+    act(() => {
+      vi.advanceTimersByTime(850);
+    });
+    act(() => {
+      hook2.result.current.selectPit(0);
+    });
+    expect(hook2.result.current.isAnimating).toBe(true);
+
+    // Mid-hand: seedsInHand === 2, so engine completes sowing before settling round (< 4 board seeds)
+    act(() => {
+      const res = hook2.result.current.claimBonus(9);
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.data.roundEnded).toBe(false);
+      }
+    });
+    expect(
+      hook2.result.current.visualEvents.some((e) => e.type === "CLAIM_BONUS_TO_STORAGE")
+    ).toBe(true);
+    expect(hook2.result.current.isAnimating).toBe(true);
+
+    // Finish dropping remaining 2 seeds in hand -> turn completes -> enters ROUND_SETTLEMENT
+    for (let i = 0; i < 4; i++) {
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+    }
+
+    expect(hook2.result.current.authoritativeGameState.phase).toBe("ROUND_SETTLEMENT");
+    expect(
+      hook2.result.current.visualEvents.some((e) => e.type === "ROUND_SETTLEMENT")
+    ).toBe(true);
+
+    act(() => {
+      hook2.result.current.completeVisualSettlement();
+    });
+    expect(hook2.result.current.settlementSummary).not.toBeNull();
+    expect(hook2.result.current.isAnimating).toBe(false);
+
+    // Part D: Claiming a bonus on the awaited continuation pit cleanly resolves turn without soft-lock
+    const contBonusState = createInitialGame("PLAYER_1", "local");
+    for (const pit of contBonusState.pits) pit.seeds = 0;
+    contBonusState.pits[0]!.seeds = 1; // Drop into pit 1 -> next pit 2 has 4 seeds + bonus (awaiting continuation)
+    contBonusState.pits[2]!.seeds = 4;
+    contBonusState.pits[2]!.bonusAvailable = true;
+    contBonusState.pits[7]!.seeds = 6;
+    contBonusState.players.player1.storage = 30;
+    contBonusState.players.player2.storage = 29; // Total = 70
+
+    const hook3 = renderHook(() =>
+      useChannemaneGame(
+        "PLAYER_1",
+        { enabled: true, speed: "FAST", stepDelayMs: 140 },
+        contBonusState,
+        "local",
+        null,
+        "PLAYER_2",
+        2,
+        { waitForVisualSettlement: true, deferAudioToVisual: true }
+      )
+    );
+    act(() => {
+      vi.advanceTimersByTime(850);
+    });
+    act(() => {
+      hook3.result.current.selectPit(0);
+    });
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(hook3.result.current.interactionState).toBe("WAITING_FOR_CONTINUATION");
+    expect(hook3.result.current.highlightedContinuationPit).toBe(2);
+
+    // Claiming bonus directly on continuation pit 2 finalizes turn cleanly instead of trapping game
+    act(() => {
+      const claimContRes = hook3.result.current.claimBonus(2);
+      expect(claimContRes.success).toBe(true);
+    });
+    expect(hook3.result.current.interactionState).toBe("WAITING_FOR_START");
+    expect(hook3.result.current.highlightedContinuationPit).toBeNull();
+  });
 });

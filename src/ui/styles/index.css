@@ -3750,11 +3750,132 @@ body {
   height: clamp(380px, 58vh, 580px);
   min-height: 380px;
   position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-panel);
   background: radial-gradient(circle at center, var(--color-surface) 0%, var(--color-app-bg) 100%);
   border: 1px solid var(--border-subtle);
+}
+
+.board-3d-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 14px;
+  background: rgba(246, 242, 233, 0.94);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.board-3d-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.board-3d-controls-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.board-3d-controls-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.camera-mode-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--border-medium);
+}
+
+.camera-mode-btn {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 6px 12px;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-walnut-border);
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.camera-mode-btn:hover:not(.is-active) {
+  background: var(--color-surface-hover-muted);
+  color: var(--color-text-primary);
+}
+
+.camera-mode-btn.is-active {
+  background: var(--color-walnut);
+  border-color: var(--color-walnut-dark);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.camera-mode-btn:focus-visible {
+  outline: 2px solid var(--color-walnut);
+  outline-offset: 2px;
+}
+
+.board-3d-canvas-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.board-3d-canvas-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+@media (max-width: 640px) {
+  .board-3d-controls-bar {
+    justify-content: center;
+    padding: 5px 10px;
+  }
+
+  .board-3d-controls-label,
+  .board-3d-controls-hint {
+    display: none;
+  }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .board-3d-viewport {
+    height: clamp(260px, 68vh, 380px);
+    min-height: 260px;
+  }
+
+  .board-3d-controls-bar {
+    padding: 4px 10px;
+  }
+
+  .camera-mode-btn {
+    padding: 5px 10px;
+    min-height: 26px;
+    font-size: 0.76rem;
+  }
 }
 
 .webgl-fallback-container {

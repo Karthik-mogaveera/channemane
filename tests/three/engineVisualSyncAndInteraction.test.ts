@@ -15,7 +15,11 @@ import {
   mapEngineEventsToVisualEvents,
   createSettlementVisualEvent,
 } from "../../src/adapters/engineToVisualEvents";
-import { BoardInputController } from "../../src/three/interaction/BoardInput";
+import {
+  BoardInputController,
+  PIT_CLICK_DRAG_THRESHOLD_PX,
+  hasExceededDragThreshold,
+} from "../../src/three/interaction/BoardInput";
 import { AnimationCoordinator } from "../../src/three/animation/AnimationCoordinator";
 import { playTurn } from "../../src/engine/game";
 import { claimBonus } from "../../src/engine/bonus";
@@ -206,5 +210,24 @@ describe("Engine-to-Visual Synchronisation & Interaction Suite", () => {
         expect(tr.seeds).toBe(1);
       }
     }
+    // Also verify bonus claim mid-turn synchronizes authoritative visual count & reserves cleanly without double counting
+    const hookState = createInitialGame("PLAYER_1", "local");
+    hookState.pits[9]!.seeds = 4;
+    hookState.pits[9]!.bonusAvailable = true;
+    hookState.pits[10]!.seeds = 6;
+    const bonusClaimRes = claimBonus(hookState, 9);
+    expect(bonusClaimRes.success).toBe(true);
+    const postBonusVisual = mapEngineToVisualState({ gameState: hookState });
+    expect(postBonusVisual.pits[9]!.seeds).toBe(0);
+    expect(postBonusVisual.storage.player2.seeds).toBe(4);
+    expect(postBonusVisual.totalVisibleSeeds).toBe(70);
+  });
+
+  it("distinguishes stationary pit taps from orbit camera drags above movement threshold", () => {
+    expect(PIT_CLICK_DRAG_THRESHOLD_PX).toBe(8);
+    expect(hasExceededDragThreshold(200, 150, 204, 153)).toBe(false); // 5px micro-jitter allowed
+    expect(hasExceededDragThreshold(200, 150, 208, 150)).toBe(false); // exactly 8px boundary allowed
+    expect(hasExceededDragThreshold(200, 150, 212, 150)).toBe(true);  // 12px horizontal orbit drag blocked
+    expect(hasExceededDragThreshold(200, 150, 206, 157)).toBe(true);  // ~9.2px diagonal drag blocked
   });
 });

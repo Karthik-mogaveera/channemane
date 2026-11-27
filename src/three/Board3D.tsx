@@ -10,10 +10,16 @@ import React, { useMemo, useEffect, useState, useRef, useCallback } from "react"
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { Lighting } from "./scene/Lighting";
-import { BoardCamera } from "./scene/BoardCamera";
+import {
+  BoardCamera,
+  CAMERA_FOV_DEG,
+  type BoardCameraMode,
+} from "./scene/BoardCamera";
 import { SceneEnvironment } from "./scene/SceneEnvironment";
 import { Board } from "./board/Board";
 import { Seed3D } from "./seeds/Seed3D";
+import { hasExceededDragThreshold } from "./interaction/BoardInput";
+import { CameraModeSelector } from "../ui/components/CameraModeSelector";
 import {
   mapEngineToVisualState,
   type VisualBoardState,
@@ -152,11 +158,66 @@ export const Board3D: React.FC<Board3DProps> = ({
 }) => {
   const [hasWebGL, setHasWebGL] = useState<boolean>(true);
   const [contextLost, setContextLost] = useState<boolean>(false);
+  const [cameraMode, setCameraMode] = useState<BoardCameraMode>("SIDE");
   const [snapshot, setSnapshot] = useState<CoordinatorVisualSnapshot>(EMPTY_SNAPSHOT);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasDragRef = useRef<{
+    activePointers: Map<number, { x: number; y: number }>;
+    exceededThreshold: boolean;
+    resetTimer: ReturnType<typeof setTimeout> | null;
+  }>({
+    activePointers: new Map(),
+    exceededThreshold: false,
+    resetTimer: null,
+  });
 
   useEffect(() => {
     setHasWebGL(checkWebGLSupport());
+    return () => {
+      if (canvasDragRef.current.resetTimer) {
+        clearTimeout(canvasDragRef.current.resetTimer);
+      }
+    };
+  }, []);
+
+  const handleCanvasPointerDownCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = canvasDragRef.current;
+    if (drag.resetTimer) {
+      clearTimeout(drag.resetTimer);
+      drag.resetTimer = null;
+    }
+    if (drag.activePointers.size === 0) {
+      drag.exceededThreshold = false;
+    }
+    drag.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (drag.activePointers.size > 1) {
+      drag.exceededThreshold = true;
+    }
+  }, []);
+
+  const handleCanvasPointerMoveCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = canvasDragRef.current;
+    const start = drag.activePointers.get(e.pointerId);
+    if (!start) return;
+    if (hasExceededDragThreshold(start.x, start.y, e.clientX, e.clientY)) {
+      drag.exceededThreshold = true;
+    }
+  }, []);
+
+  const handleCanvasPointerUpCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = canvasDragRef.current;
+    drag.activePointers.delete(e.pointerId);
+    if (drag.activePointers.size === 0) {
+      if (drag.resetTimer) clearTimeout(drag.resetTimer);
+      drag.resetTimer = setTimeout(() => {
+        drag.exceededThreshold = false;
+        drag.resetTimer = null;
+      }, 60);
+    }
+  }, []);
+
+  const shouldSuppressPitClick = useCallback(() => {
+    return canvasDragRef.current.exceededThreshold;
   }, []);
 
   const coordinator = useMemo(() => new AnimationCoordinator(), []);
@@ -251,7 +312,6 @@ export const Board3D: React.FC<Board3DProps> = ({
 
   const isBonusInteractable =
     !snapshot.activeSettlement &&
-    !isAITurn &&
     interactionState !== "ROUND_SETTLEMENT" &&
     interactionState !== "MATCH_COMPLETE";
 
@@ -270,74 +330,102 @@ export const Board3D: React.FC<Board3DProps> = ({
     );
   }
 
+  const cameraHint =
+    cameraMode === "ORBIT"
+      ? "Drag to orbit 360° · Pinch or scroll to zoom"
+      : "Pinch or scroll to zoom";
+
   return (
     <div
       className={`board-3d-viewport relative w-full h-full min-h-[420px] select-none ${className}`}
       data-testid="channemane-board-3d"
     >
-      <Canvas
-        camera={{ position: [0, 12, 10], fov: 38 }}
-        gl={{
-          antialias: DEFAULT_GRAPHICS_SETTINGS.antialias,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: DEFAULT_GRAPHICS_SETTINGS.toneMappingExposure,
-          powerPreference: "high-performance",
-        }}
-        dpr={[1, DEFAULT_GRAPHICS_SETTINGS.maxPixelRatio]}
-        shadows={DEFAULT_GRAPHICS_SETTINGS.shadows ? "soft" : false}
-        onCreated={({ gl }) => {
-          const dom = gl.domElement;
-          canvasElRef.current = dom;
-          dom.addEventListener("webglcontextlost", handleContextLost, false);
-          dom.addEventListener("webglcontextrestored", handleContextRestored, false);
-        }}
+      {/* Compact Warm Ivory Camera Controls Strip (Never Covers Playable Board) */}
+      <div className="board-3d-controls-bar" data-testid="board-3d-controls-bar">
+        <div className="board-3d-controls-group">
+          <span className="board-3d-controls-label">View</span>
+          <CameraModeSelector value={cameraMode} onChange={setCameraMode} />
+        </div>
+        <span className="board-3d-controls-hint" aria-hidden="true">
+          {cameraHint}
+        </span>
+      </div>
+
+      {/* Single 3D WebGL Viewport Container with Touch-Action Protection */}
+      <div
+        className="board-3d-canvas-stage"
+        data-testid="board-3d-canvas-stage"
+        onPointerDownCapture={handleCanvasPointerDownCapture}
+        onPointerMoveCapture={handleCanvasPointerMoveCapture}
+        onPointerUpCapture={handleCanvasPointerUpCapture}
+        onPointerCancelCapture={handleCanvasPointerUpCapture}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        {/* Fixed Angled Perspective Camera with Controlled Zoom */}
-        <BoardCamera playerCount={visualState.playerCount} />
+        <Canvas
+          camera={{ position: [0, 12, 10], fov: CAMERA_FOV_DEG }}
+          gl={{
+            antialias: DEFAULT_GRAPHICS_SETTINGS.antialias,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: DEFAULT_GRAPHICS_SETTINGS.toneMappingExposure,
+            powerPreference: "high-performance",
+          }}
+          dpr={[1, DEFAULT_GRAPHICS_SETTINGS.maxPixelRatio]}
+          shadows={DEFAULT_GRAPHICS_SETTINGS.shadows ? "soft" : false}
+          onCreated={({ gl }) => {
+            const dom = gl.domElement;
+            canvasElRef.current = dom;
+            dom.addEventListener("webglcontextlost", handleContextLost, false);
+            dom.addEventListener("webglcontextrestored", handleContextRestored, false);
+          }}
+        >
+          {/* Single Switchable Camera System (Side / Top / 360° Orbit) */}
+          <BoardCamera mode={cameraMode} playerCount={visualState.playerCount} />
 
-        {/* Studio Natural Wood Lighting */}
-        <Lighting playerCount={visualState.playerCount} />
+          {/* Studio Natural Wood Lighting */}
+          <Lighting playerCount={visualState.playerCount} />
 
-        {/* Scene Environment & Contact Shadow */}
-        <SceneEnvironment playerCount={visualState.playerCount} />
+          {/* Scene Environment & Contact Shadow */}
+          <SceneEnvironment playerCount={visualState.playerCount} />
 
-        {/* Procedural 3D Board, Pits, and Storage Trays */}
-        <Board
-          visualState={visualState}
-          pitIncomingReserve={snapshot.pitIncomingReserve}
-          pitSeedOverrides={snapshot.pitSeedOverrides}
-          storageIncomingReserve={snapshot.storageIncomingReserve}
-          onSelectPit={onSelectPit}
-          onConfirmContinuation={onConfirmContinuation}
-          onConfirmCapture={onConfirmCapture}
-          onClaimBonus={onClaimBonus}
-          isInteractable={isInteractable}
-          isBonusInteractable={isBonusInteractable}
-        />
+          {/* Procedural 3D Board, Pits, and Storage Trays */}
+          <Board
+            visualState={visualState}
+            pitIncomingReserve={snapshot.pitIncomingReserve}
+            pitSeedOverrides={snapshot.pitSeedOverrides}
+            storageIncomingReserve={snapshot.storageIncomingReserve}
+            onSelectPit={onSelectPit}
+            onConfirmContinuation={onConfirmContinuation}
+            onConfirmCapture={onConfirmCapture}
+            onClaimBonus={onClaimBonus}
+            isInteractable={isInteractable}
+            isBonusInteractable={isBonusInteractable}
+            shouldSuppressPitClick={shouldSuppressPitClick}
+          />
 
-        {/* Hovering Hand Seed Cluster */}
-        <HandSeedCluster3D
-          visible={snapshot.handCluster.visible}
-          position={snapshot.handCluster.position}
-          seedCount={snapshot.handCluster.seedCount}
-        />
+          {/* Hovering Hand Seed Cluster */}
+          <HandSeedCluster3D
+            visible={snapshot.handCluster.visible}
+            position={snapshot.handCluster.position}
+            seedCount={snapshot.handCluster.seedCount}
+          />
 
-        {/* Animated Parabolic Flying Seeds Layer */}
-        {snapshot.flyingSeeds.map((seed, idx) => {
-          const hash = seed.id.charCodeAt(seed.id.length - 1) + idx;
-          return (
-            <Seed3D
-              key={seed.id}
-              position={seed.position}
-              rotation={seed.rotation}
-              scale={seed.scale}
-              variant={seed.variant ?? (hash % 2 === 0 ? "light" : "dark")}
-              toneIndex={seed.toneIndex ?? (hash % 3)}
-              castShadow
-            />
-          );
-        })}
-      </Canvas>
+          {/* Animated Parabolic Flying Seeds Layer */}
+          {snapshot.flyingSeeds.map((seed, idx) => {
+            const hash = seed.id.charCodeAt(seed.id.length - 1) + idx;
+            return (
+              <Seed3D
+                key={seed.id}
+                position={seed.position}
+                rotation={seed.rotation}
+                scale={seed.scale}
+                variant={seed.variant ?? (hash % 2 === 0 ? "light" : "dark")}
+                toneIndex={seed.toneIndex ?? (hash % 3)}
+                castShadow
+              />
+            );
+          })}
+        </Canvas>
+      </div>
     </div>
   );
 };

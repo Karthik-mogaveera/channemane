@@ -74,8 +74,13 @@ export class AnimationCoordinator {
   private pitSeedOverrides: Record<number, number> = {};
   private activeSettlement: boolean = false;
   private pendingSettlementCallback: (() => void) | null = null;
+  private pendingSettlementStarter: (() => void) | null = null;
   private settlementSafetyTimer: ReturnType<typeof setTimeout> | null = null;
   private seedUidCounter: number = 0;
+
+  private activeDropCount: number = 0;
+  private activeStorageTransfers: Set<Player> = new Set();
+  private storageTransferQueues: Map<Player, Array<() => void>> = new Map();
 
   constructor() {
     if (typeof document !== "undefined") {
@@ -140,6 +145,10 @@ export class AnimationCoordinator {
       activeSettlement: this.activeSettlement,
       isBusy:
         this.activeSettlement ||
+        this.activeDropCount > 0 ||
+        this.activeStorageTransfers.size > 0 ||
+        this.storageTransferQueues.size > 0 ||
+        this.pendingSettlementStarter !== null ||
         this.activeTweens.size > 0 ||
         this.activeTimelines.size > 0 ||
         flyingList.length > 0 ||
@@ -199,6 +208,49 @@ export class AnimationCoordinator {
 
   private untrackTween(tween: gsap.core.Tween): void {
     this.activeTweens.delete(tween);
+  }
+
+  private maybeStartPendingSettlement(): void {
+    if (
+      this.pendingSettlementStarter &&
+      this.activeDropCount === 0 &&
+      this.activeStorageTransfers.size === 0
+    ) {
+      const start = this.pendingSettlementStarter;
+      this.pendingSettlementStarter = null;
+      start();
+    }
+  }
+
+  private enqueueStorageTransfer(
+    player: Player,
+    startFn: (onTransferFinished: () => void) => void
+  ): void {
+    const launch = () => {
+      this.activeStorageTransfers.add(player);
+      startFn(() => {
+        this.activeStorageTransfers.delete(player);
+        const queue = this.storageTransferQueues.get(player);
+        if (queue && queue.length > 0) {
+          const nextFn = queue.shift()!;
+          if (queue.length === 0) {
+            this.storageTransferQueues.delete(player);
+          }
+          nextFn();
+        } else {
+          this.storageTransferQueues.delete(player);
+          this.maybeStartPendingSettlement();
+        }
+      });
+    };
+
+    if (!this.activeStorageTransfers.has(player)) {
+      launch();
+    } else {
+      const q = this.storageTransferQueues.get(player) ?? [];
+      q.push(launch);
+      this.storageTransferQueues.set(player, q);
+    }
   }
 
   /**
@@ -354,7 +406,7 @@ export class AnimationCoordinator {
       const angle = (i / Math.max(1, beadCount)) * Math.PI * 2;
       const spreadX = Math.cos(angle) * 0.14;
       const spreadZ = Math.sin(angle) * 0.14;
-      const fromPos: [number, number, number] = [pitPos[0] + spreadX, -0.22, pitPos[2] + spreadZ];
+      const fromPos: [number, number, number] = [pitPos[0] + spreadX, -0.26, pitPos[2] + spreadZ];
       const toPos: [number, number, number] = [
         targetHandPos[0] + spreadX * 0.7,
         targetHandPos[1] - 0.08,
@@ -400,7 +452,7 @@ export class AnimationCoordinator {
     const landedTransform = bowlTransforms[targetCount - 1];
     const toPos: [number, number, number] = landedTransform
       ? landedTransform.position
-      : [pitPos[0], -0.22, pitPos[2]];
+      : [pitPos[0], -0.26, pitPos[2]];
 
     const startHandPos: [number, number, number] = this.handCluster.visible
       ? [...this.handCluster.position]
@@ -447,6 +499,7 @@ export class AnimationCoordinator {
 
     // Reserve incoming seed in target pit until parabolic drop lands
     this.adjustPitReserve(targetPitId, 1);
+    this.activeDropCount += 1;
 
     const seedId = this.nextSeedId("drop");
     const dropFrom: [number, number, number] = [
@@ -475,8 +528,10 @@ export class AnimationCoordinator {
         this.untrackTween(tween);
         this.flyingSeeds.delete(seedId);
         this.adjustPitReserve(targetPitId, -1);
+        this.activeDropCount = Math.max(0, this.activeDropCount - 1);
         this.notify();
         this.playAudio("seedPlacement");
+        this.maybeStartPendingSettlement();
       },
       "power1.inOut"
     );
@@ -492,63 +547,67 @@ export class AnimationCoordinator {
   ): void {
     if (seedsCount <= 0) return;
 
-    const timing = this.getTiming();
-    const batchKey = this.nextSeedId("capture");
-    let releasedSoFar = 0;
-
     this.adjustStorageReserve(targetPlayer, seedsCount);
-    this.playAudio("capture");
 
-    const tl = CaptureAnimation.animateCaptureToStorage(
-      sourcePitId,
-      targetPlayer,
-      seedsCount,
-      timing.captureDuration,
-      (positions, arrivedRatio = 0) => {
-        // Clear stale entries in this capture batch before rewriting active positions
-        for (const k of Array.from(this.flyingSeeds.keys())) {
-          if (k.startsWith(batchKey)) {
-            this.flyingSeeds.delete(k);
+    this.enqueueStorageTransfer(targetPlayer, (onTransferFinished) => {
+      const timing = this.getTiming();
+      const batchKey = this.nextSeedId("capture");
+      let releasedSoFar = 0;
+
+      this.playAudio("capture");
+
+      const tl = CaptureAnimation.animateCaptureToStorage(
+        sourcePitId,
+        targetPlayer,
+        seedsCount,
+        timing.captureDuration,
+        (positions, arrivedRatio = 0) => {
+          // Clear stale entries in this capture batch before rewriting active positions
+          for (const k of Array.from(this.flyingSeeds.keys())) {
+            if (k.startsWith(batchKey)) {
+              this.flyingSeeds.delete(k);
+            }
           }
-        }
-        positions.forEach((pos, idx) => {
-          const id = `${batchKey}-${idx}`;
-          this.flyingSeeds.set(id, {
-            id,
-            position: pos,
-            rotation: [pos[1] * 0.8, idx * 0.9, pos[0] * 0.25],
-            variant: idx % 2 === 0 ? "light" : "dark",
-            toneIndex: idx % 3,
+          positions.forEach((pos, idx) => {
+            const id = `${batchKey}-${idx}`;
+            this.flyingSeeds.set(id, {
+              id,
+              position: pos,
+              rotation: [pos[1] * 0.8, idx * 0.9, pos[0] * 0.25],
+              variant: idx % 2 === 0 ? "light" : "dark",
+              toneIndex: idx % 3,
+            });
           });
-        });
 
-        const expectedReleased = Math.min(seedsCount, Math.floor(arrivedRatio * seedsCount));
-        const delta = expectedReleased - releasedSoFar;
-        if (delta > 0) {
-          releasedSoFar += delta;
-          this.adjustStorageReserve(targetPlayer, -delta);
-        }
-
-        this.notify();
-      },
-      () => {
-        this.activeTimelines.delete(tl);
-        for (const k of Array.from(this.flyingSeeds.keys())) {
-          if (k.startsWith(batchKey)) {
-            this.flyingSeeds.delete(k);
+          const expectedReleased = Math.min(seedsCount, Math.floor(arrivedRatio * seedsCount));
+          const delta = expectedReleased - releasedSoFar;
+          if (delta > 0) {
+            releasedSoFar += delta;
+            this.adjustStorageReserve(targetPlayer, -delta);
           }
-        }
-        const remaining = seedsCount - releasedSoFar;
-        if (remaining > 0) {
-          this.adjustStorageReserve(targetPlayer, -remaining);
-        }
-        this.notify();
-      },
-      this.playerCount
-    );
 
-    this.activeTimelines.add(tl);
-    this.notify();
+          this.notify();
+        },
+        () => {
+          this.activeTimelines.delete(tl);
+          for (const k of Array.from(this.flyingSeeds.keys())) {
+            if (k.startsWith(batchKey)) {
+              this.flyingSeeds.delete(k);
+            }
+          }
+          const remaining = seedsCount - releasedSoFar;
+          if (remaining > 0) {
+            this.adjustStorageReserve(targetPlayer, -remaining);
+          }
+          this.notify();
+          onTransferFinished();
+        },
+        this.playerCount
+      );
+
+      this.activeTimelines.add(tl);
+      this.notify();
+    });
   }
 
   private handleBonusToStorage(
@@ -556,61 +615,65 @@ export class AnimationCoordinator {
     owner: Player,
     seedsCount: number
   ): void {
-    const timing = this.getTiming();
-    const batchKey = this.nextSeedId("bonus");
-    let releasedSoFar = 0;
-
     this.adjustStorageReserve(owner, seedsCount);
-    this.playAudio("bonusClaim");
 
-    const tl = BonusAnimation.animateBonusClaim(
-      sourcePitId,
-      owner,
-      timing.bonusDuration,
-      (positions, arrivedCount = 0) => {
-        for (const k of Array.from(this.flyingSeeds.keys())) {
-          if (k.startsWith(batchKey)) {
-            this.flyingSeeds.delete(k);
+    this.enqueueStorageTransfer(owner, (onTransferFinished) => {
+      const timing = this.getTiming();
+      const batchKey = this.nextSeedId("bonus");
+      let releasedSoFar = 0;
+
+      this.playAudio("bonusClaim");
+
+      const tl = BonusAnimation.animateBonusClaim(
+        sourcePitId,
+        owner,
+        timing.bonusDuration,
+        (positions, arrivedCount = 0) => {
+          for (const k of Array.from(this.flyingSeeds.keys())) {
+            if (k.startsWith(batchKey)) {
+              this.flyingSeeds.delete(k);
+            }
           }
-        }
-        positions.forEach((pos, idx) => {
-          const id = `${batchKey}-${idx}`;
-          this.flyingSeeds.set(id, {
-            id,
-            position: pos,
-            rotation: [pos[1] * 0.7, idx * 1.1, pos[2] * 0.3],
-            variant: idx % 2 === 0 ? "light" : "dark",
-            toneIndex: idx % 3,
+          positions.forEach((pos, idx) => {
+            const id = `${batchKey}-${idx}`;
+            this.flyingSeeds.set(id, {
+              id,
+              position: pos,
+              rotation: [pos[1] * 0.7, idx * 1.1, pos[2] * 0.3],
+              variant: idx % 2 === 0 ? "light" : "dark",
+              toneIndex: idx % 3,
+            });
           });
-        });
 
-        const clampedArrived = Math.min(seedsCount, arrivedCount);
-        const delta = clampedArrived - releasedSoFar;
-        if (delta > 0) {
-          releasedSoFar += delta;
-          this.adjustStorageReserve(owner, -delta);
-        }
-
-        this.notify();
-      },
-      () => {
-        this.activeTimelines.delete(tl);
-        for (const k of Array.from(this.flyingSeeds.keys())) {
-          if (k.startsWith(batchKey)) {
-            this.flyingSeeds.delete(k);
+          const clampedArrived = Math.min(seedsCount, arrivedCount);
+          const delta = clampedArrived - releasedSoFar;
+          if (delta > 0) {
+            releasedSoFar += delta;
+            this.adjustStorageReserve(owner, -delta);
           }
-        }
-        const remaining = seedsCount - releasedSoFar;
-        if (remaining > 0) {
-          this.adjustStorageReserve(owner, -remaining);
-        }
-        this.notify();
-      },
-      this.playerCount
-    );
 
-    this.activeTimelines.add(tl);
-    this.notify();
+          this.notify();
+        },
+        () => {
+          this.activeTimelines.delete(tl);
+          for (const k of Array.from(this.flyingSeeds.keys())) {
+            if (k.startsWith(batchKey)) {
+              this.flyingSeeds.delete(k);
+            }
+          }
+          const remaining = seedsCount - releasedSoFar;
+          if (remaining > 0) {
+            this.adjustStorageReserve(owner, -remaining);
+          }
+          this.notify();
+          onTransferFinished();
+        },
+        this.playerCount
+      );
+
+      this.activeTimelines.add(tl);
+      this.notify();
+    });
   }
 
   private handleRoundSettlement(
@@ -623,27 +686,14 @@ export class AnimationCoordinator {
       this.settlementSafetyTimer = null;
     }
 
-    if (transfers.length === 0) {
-      this.activeSettlement = false;
-      this.pitSeedOverrides = {};
-      this.notify();
-      if (onSettlementComplete) {
-        onSettlementComplete();
-      }
-      return;
-    }
-
     const timing = this.getTiming();
     this.activeSettlement = true;
     this.pendingSettlementCallback = onSettlementComplete ?? null;
     this.pitSeedOverrides = {};
 
-    const addedStorageReserve: Partial<Record<Player, number>> = {};
     for (const transfer of transfers) {
       this.pitSeedOverrides[transfer.pitId] = transfer.seeds;
       this.adjustStorageReserve(transfer.owner, transfer.seeds);
-      addedStorageReserve[transfer.owner] =
-        (addedStorageReserve[transfer.owner] ?? 0) + transfer.seeds;
     }
 
     const finishSettlement = () => {
@@ -651,11 +701,16 @@ export class AnimationCoordinator {
         clearTimeout(this.settlementSafetyTimer);
         this.settlementSafetyTimer = null;
       }
+      this.pendingSettlementStarter = null;
       for (const k of Array.from(this.flyingSeeds.keys())) {
-        if (k.startsWith("settle-")) {
+        if (k.startsWith("settle-") || k.startsWith("bonus-") || k.startsWith("capture-")) {
           this.flyingSeeds.delete(k);
         }
       }
+      this.activeStorageTransfers.clear();
+      this.storageTransferQueues.clear();
+      this.activeDropCount = 0;
+      this.pitIncomingReserve = {};
       this.pitSeedOverrides = {};
       this.storageIncomingReserve = {};
       this.activeSettlement = false;
@@ -665,88 +720,99 @@ export class AnimationCoordinator {
       if (cb) cb();
     };
 
-    const masterTl = gsap.timeline({
-      onComplete: () => {
-        this.activeTimelines.delete(masterTl);
+    if (transfers.length === 0) {
+      if (this.activeDropCount === 0 && this.activeStorageTransfers.size === 0) {
         finishSettlement();
-      },
-    });
+        return;
+      }
+      this.pendingSettlementStarter = finishSettlement;
+      this.settlementSafetyTimer = setTimeout(() => {
+        if (this.activeSettlement) finishSettlement();
+      }, 2400);
+      this.notify();
+      return;
+    }
 
     const staggerSec = this.speed === "SLOW" ? 0.075 : 0.04;
     const itemDurSec = this.speed === "SLOW" ? 0.42 : 0.22;
 
-    transfers.forEach((transfer, idx) => {
-      const fromPos = getPitWorldPosition(transfer.pitId, this.playerCount);
-      const toPos = getStorageWorldPosition(transfer.owner, this.playerCount);
-      const batchKey = `settle-${transfer.pitId}`;
-      const visibleBeads = Math.min(transfer.seeds, 5);
-      const animObj = { t: 0 };
-      let started = false;
-      let released = false;
-
-      masterTl.to(
-        animObj,
-        {
-          t: 1,
-          duration: itemDurSec,
-          ease: "power2.inOut",
-          onStart: () => {
-            if (started) return;
-            started = true;
-            this.pitSeedOverrides[transfer.pitId] = 0;
-            this.notify();
-          },
-          onUpdate: () => {
-            const t = animObj.t;
-            for (let b = 0; b < visibleBeads; b++) {
-              const id = `${batchKey}-${b}`;
-              const spread = (b - (visibleBeads - 1) / 2) * 0.16 * Math.sin(t * Math.PI);
-              const x = fromPos[0] + (toPos[0] - fromPos[0]) * t + spread;
-              const z = fromPos[2] + (toPos[2] - fromPos[2]) * t + spread * 0.65;
-              const arc = Math.sin(t * Math.PI) * (timing.arcHeight * 1.35);
-              const y = -0.18 + arc;
-              this.flyingSeeds.set(id, {
-                id,
-                position: [x, y, z],
-                rotation: [t * Math.PI * 1.4, b * 0.8 + t * Math.PI, Math.sin(t * Math.PI) * 0.3],
-                variant: b % 2 === 0 ? "light" : "dark",
-                toneIndex: b % 3,
-              });
-            }
-            this.notify();
-          },
-          onComplete: () => {
-            if (released) return;
-            released = true;
-            for (let b = 0; b < visibleBeads; b++) {
-              this.flyingSeeds.delete(`${batchKey}-${b}`);
-            }
-            this.adjustStorageReserve(transfer.owner, -transfer.seeds);
-            this.playAudio("seedPlacement");
-            this.notify();
-          },
+    this.pendingSettlementStarter = () => {
+      const masterTl = gsap.timeline({
+        onComplete: () => {
+          this.activeTimelines.delete(masterTl);
+          finishSettlement();
         },
-        idx * staggerSec
-      );
-    });
+      });
 
-    this.activeTimelines.add(masterTl);
+      transfers.forEach((transfer, idx) => {
+        const fromPos = getPitWorldPosition(transfer.pitId, this.playerCount);
+        const toPos = getStorageWorldPosition(transfer.owner, this.playerCount);
+        const batchKey = `settle-${transfer.pitId}`;
+        const visibleBeads = Math.min(transfer.seeds, 5);
+        const animObj = { t: 0 };
+        let started = false;
+        let released = false;
+
+        masterTl.to(
+          animObj,
+          {
+            t: 1,
+            duration: itemDurSec,
+            ease: "power2.inOut",
+            onStart: () => {
+              if (started) return;
+              started = true;
+              this.pitSeedOverrides[transfer.pitId] = 0;
+              this.notify();
+            },
+            onUpdate: () => {
+              const t = animObj.t;
+              for (let b = 0; b < visibleBeads; b++) {
+                const id = `${batchKey}-${b}`;
+                const spread = (b - (visibleBeads - 1) / 2) * 0.16 * Math.sin(t * Math.PI);
+                const x = fromPos[0] + (toPos[0] - fromPos[0]) * t + spread;
+                const z = fromPos[2] + (toPos[2] - fromPos[2]) * t + spread * 0.65;
+                const arc = Math.sin(t * Math.PI) * (timing.arcHeight * 1.35);
+                const y = -0.18 + arc;
+                this.flyingSeeds.set(id, {
+                  id,
+                  position: [x, y, z],
+                  rotation: [t * Math.PI * 1.4, b * 0.8 + t * Math.PI, Math.sin(t * Math.PI) * 0.3],
+                  variant: b % 2 === 0 ? "light" : "dark",
+                  toneIndex: b % 3,
+                });
+              }
+              this.notify();
+            },
+            onComplete: () => {
+              if (released) return;
+              released = true;
+              for (let b = 0; b < visibleBeads; b++) {
+                this.flyingSeeds.delete(`${batchKey}-${b}`);
+              }
+              this.adjustStorageReserve(transfer.owner, -transfer.seeds);
+              this.playAudio("seedPlacement");
+              this.notify();
+            },
+          },
+          idx * staggerSec
+        );
+      });
+
+      this.activeTimelines.add(masterTl);
+      this.notify();
+    };
 
     // Safety fallback if RAF is suspended in headless/background tab
     const expectedMs =
-      Math.ceil((transfers.length * staggerSec + itemDurSec) * 1000) + 1200;
+      Math.ceil((transfers.length * staggerSec + itemDurSec) * 1000) + 1800;
     this.settlementSafetyTimer = setTimeout(() => {
       if (this.activeSettlement) {
-        this.activeTimelines.delete(masterTl);
-        try {
-          masterTl.kill();
-        } catch {
-          // ignore
-        }
         finishSettlement();
       }
-    }, Math.max(1500, Math.min(expectedMs, 5500)));
+    }, Math.max(1800, Math.min(expectedMs, 5500)));
 
+    this.maybeStartPendingSettlement();
     this.notify();
   }
 
@@ -780,6 +846,10 @@ export class AnimationCoordinator {
     this.pitSeedOverrides = {};
     this.activeSettlement = false;
     this.pendingSettlementCallback = null;
+    this.pendingSettlementStarter = null;
+    this.activeDropCount = 0;
+    this.activeStorageTransfers.clear();
+    this.storageTransferQueues.clear();
   }
 
   /**

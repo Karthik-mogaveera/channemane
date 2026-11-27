@@ -11,6 +11,10 @@ import { BoardMaterialsManager } from "../board/BoardMaterials";
 import { PitHighlight } from "./PitHighlight";
 import { Seed3D } from "../seeds/Seed3D";
 import { getPitSeedPositions3D } from "../seeds/SeedLayout";
+import {
+  PIT_CLICK_DRAG_THRESHOLD_PX,
+  hasExceededDragThreshold,
+} from "../interaction/BoardInput";
 import type { VisualPitState } from "../../adapters/engineToVisualState";
 import {
   getPitWorldPosition,
@@ -27,10 +31,10 @@ export interface Pit3DProps {
   onClaimBonus: (pitId: number) => void;
   isInteractable: boolean;
   isBonusInteractable?: boolean;
+  shouldSuppressClick?: () => boolean;
 }
 
 const HOLD_DURATION_MS = 500;
-const DRAG_CANCEL_PX = 12;
 
 export const Pit3D: React.FC<Pit3DProps> = React.memo(({
   pitState,
@@ -42,6 +46,7 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
   onClaimBonus,
   isInteractable,
   isBonusInteractable = isInteractable,
+  shouldSuppressClick,
 }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [holdProgress, setHoldProgress] = useState<number>(0);
@@ -51,7 +56,9 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
   const holdStartMsRef = useRef<number>(0);
   const holdTriggeredRef = useRef<boolean>(false);
   const startPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const dragExceededRef = useRef<boolean>(false);
   const lastActionAtRef = useRef<number>(0);
+  const bonusClaimedLockRef = useRef<boolean>(false);
 
   const geometries = useMemo(() => PitGeometries.getInstance(), []);
   const materials = useMemo(() => BoardMaterialsManager.getInstance(), []);
@@ -102,10 +109,26 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
   }, [cancelHold]);
 
   useEffect(() => {
+    if (!canClaimBonusNow) {
+      bonusClaimedLockRef.current = false;
+      cancelHold();
+    }
+  }, [canClaimBonusNow, cancelHold]);
+
+  useEffect(() => {
     if ((!isInteractable && !isBonusInteractable) || isClosed) {
       cancelHold();
     }
   }, [isInteractable, isBonusInteractable, isClosed, cancelHold]);
+
+  const fireBonusClaimSafely = useCallback(() => {
+    if (!canClaimBonusNow || bonusClaimedLockRef.current || isClosed) return false;
+    bonusClaimedLockRef.current = true;
+    lastActionAtRef.current = Date.now();
+    cancelHold();
+    onClaimBonus(pitState.pitId);
+    return true;
+  }, [canClaimBonusNow, isClosed, cancelHold, onClaimBonus, pitState.pitId]);
 
   // Compute deterministic world positions via SeedLayout and convert to pit-local space
   const seedTransforms = useMemo(() => {
@@ -123,17 +146,20 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
   const handlePointerDown = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
+      dragExceededRef.current = false;
+      holdTriggeredRef.current = false;
+
       if (isClosed) return;
-      if (!isInteractable && !canClaimBonusNow) return;
       const nativeEvent = e.nativeEvent;
       if (nativeEvent && typeof nativeEvent.button === "number" && nativeEvent.button !== 0) {
         return;
       }
 
-      holdTriggeredRef.current = false;
       startPointerRef.current = nativeEvent
         ? { x: nativeEvent.clientX, y: nativeEvent.clientY }
         : { x: 0, y: 0 };
+
+      if (!isInteractable && !canClaimBonusNow) return;
 
       if (canClaimBonusNow) {
         holdStartMsRef.current = Date.now();
@@ -154,25 +180,27 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
 
         holdTimerRef.current = setTimeout(() => {
           holdTriggeredRef.current = true;
-          lastActionAtRef.current = Date.now();
-          cancelHold();
-          onClaimBonus(pitState.pitId);
+          fireBonusClaimSafely();
         }, HOLD_DURATION_MS);
       }
     },
-    [isInteractable, isClosed, canClaimBonusNow, cancelHold, onClaimBonus, pitState.pitId]
+    [isInteractable, isClosed, canClaimBonusNow, fireBonusClaimSafely]
   );
 
   const handlePointerMove = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
-      if (!holdTimerRef.current || !startPointerRef.current) return;
+      if (!startPointerRef.current) return;
       const nativeEvent = e.nativeEvent;
       if (!nativeEvent) return;
-      const dist = Math.hypot(
-        nativeEvent.clientX - startPointerRef.current.x,
-        nativeEvent.clientY - startPointerRef.current.y
-      );
-      if (dist > DRAG_CANCEL_PX) {
+      if (
+        hasExceededDragThreshold(
+          startPointerRef.current.x,
+          startPointerRef.current.y,
+          nativeEvent.clientX,
+          nativeEvent.clientY
+        )
+      ) {
+        dragExceededRef.current = true;
         cancelHold();
       }
     },
@@ -187,19 +215,36 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
     (e: ThreeEvent<MouseEvent>) => {
       e.nativeEvent?.preventDefault?.();
       e.stopPropagation();
+
+      const deltaPx = typeof e.delta === "number" ? e.delta : 0;
+      if (deltaPx > PIT_CLICK_DRAG_THRESHOLD_PX || shouldSuppressClick?.()) {
+        return;
+      }
+
       if (isClosed || !canClaimBonusNow) return;
       const now = Date.now();
       if (now - lastActionAtRef.current < 150) return;
-      lastActionAtRef.current = now;
-      cancelHold();
-      onClaimBonus(pitState.pitId);
+      fireBonusClaimSafely();
     },
-    [isClosed, canClaimBonusNow, cancelHold, onClaimBonus, pitState.pitId]
+    [isClosed, canClaimBonusNow, fireBonusClaimSafely, shouldSuppressClick]
   );
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
+
+      const deltaPx = typeof e.delta === "number" ? e.delta : 0;
+      const wasDragged =
+        dragExceededRef.current ||
+        deltaPx > PIT_CLICK_DRAG_THRESHOLD_PX ||
+        Boolean(shouldSuppressClick?.());
+
+      dragExceededRef.current = false;
+
+      if (wasDragged) {
+        holdTriggeredRef.current = false;
+        return;
+      }
 
       if (holdTriggeredRef.current) {
         holdTriggeredRef.current = false;
@@ -221,8 +266,7 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
         lastActionAtRef.current = now;
         onSelectPit(pitState.pitId);
       } else if (canClaimBonusNow) {
-        lastActionAtRef.current = now;
-        onClaimBonus(pitState.pitId);
+        fireBonusClaimSafely();
       }
     },
     [
@@ -236,7 +280,8 @@ export const Pit3D: React.FC<Pit3DProps> = React.memo(({
       onConfirmContinuation,
       onConfirmCapture,
       onSelectPit,
-      onClaimBonus,
+      fireBonusClaimSafely,
+      shouldSuppressClick,
     ]
   );
 

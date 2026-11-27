@@ -227,6 +227,7 @@ export function useChannemaneGame(
   const animationTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const aiBonusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recentBonusClaimsRef = useRef<Map<number, number>>(new Map());
 
   const [visualEvents, setVisualEvents] = useState<VisualSeedAnimationEvent[]>([]);
   const visualSequenceRef = useRef<number>(0);
@@ -953,19 +954,41 @@ export function useChannemaneGame(
    */
   const claimBonus = useCallback(
     (pitId: number): ActionResult<ClaimBonusResult> => {
-      if (isReviewingBoard || gameState.phase === "ROUND_SETTLEMENT") {
+      const liveState = gameRef.current.getState();
+      if (
+        isReviewingBoard ||
+        gameState.phase === "ROUND_SETTLEMENT" ||
+        gameState.phase === "MATCH_END" ||
+        liveState.phase === "ROUND_SETTLEMENT" ||
+        liveState.phase === "MATCH_END" ||
+        pendingSettlementRef.current !== null
+      ) {
         return {
           success: false,
           error: "Cannot claim bonuses while reviewing the board or during round settlement.",
         };
       }
 
-      const bonusPitOwner = gameRef.current.getState().pits[pitId]?.owner;
+      const targetPit = liveState.pits[pitId];
+      const now = Date.now();
+      const recentClaimAt = recentBonusClaimsRef.current.get(pitId) ?? 0;
+      if (
+        (!targetPit || !targetPit.bonusAvailable || targetPit.seeds !== 4) &&
+        now - recentClaimAt < 800
+      ) {
+        return {
+          success: false,
+          error: `Bonus claim for pit ${pitId} already processed.`,
+        };
+      }
+
+      const bonusPitOwner = targetPit?.owner;
       clearError();
       const res = gameRef.current.claimBonus(pitId);
       if (!res.success) {
         setLastActionError(res.error);
       } else {
+        recentBonusClaimsRef.current.set(pitId, Date.now());
         if (!deferAudioToVisualRef.current || !animationSettings.enabled) {
           soundManager.playSound("bonusClaim");
         }
@@ -984,13 +1007,27 @@ export function useChannemaneGame(
           animationTimeoutsRef.current.forEach((t) => clearTimeout(t));
           animationTimeoutsRef.current = [];
           handleGameplayCompletion(res.data);
+        } else if (
+          (interactionState === "WAITING_FOR_CONTINUATION" ||
+            interactionState === "WAITING_FOR_CAPTURE") &&
+          !gameRef.current.isTurnInProgress()
+        ) {
+          handleGameplayCompletion(gameRef.current.getLastTurnResult() ?? undefined);
         } else {
           setGameState(postBonusState);
         }
       }
       return res;
     },
-    [isReviewingBoard, gameState.phase, clearError, animationSettings.enabled, pushVisualEvents, handleGameplayCompletion]
+    [
+      isReviewingBoard,
+      gameState.phase,
+      interactionState,
+      clearError,
+      animationSettings.enabled,
+      pushVisualEvents,
+      handleGameplayCompletion,
+    ]
   );
 
   /**
@@ -1492,11 +1529,13 @@ export function useChannemaneGame(
     if (
       isReviewingBoard ||
       gameState.phase === "ROUND_SETTLEMENT" ||
-      gameState.phase === "MATCH_END"
+      gameState.phase === "MATCH_END" ||
+      interactionState === "ROUND_SETTLEMENT" ||
+      interactionState === "MATCH_COMPLETE"
     )
       return [];
     return gameRef.current.getClaimableBonuses();
-  }, [isReviewingBoard, gameState]);
+  }, [isReviewingBoard, gameState, interactionState]);
 
   return {
     gameState: effectiveGameState,

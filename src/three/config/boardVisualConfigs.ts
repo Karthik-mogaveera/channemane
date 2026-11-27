@@ -45,8 +45,7 @@ export interface BoardVisualConfig {
 export const COL_SPACING = 1.9;
 const ROW_Z_OFFSET = 1.25;
 const PIT_Y_SURFACE = 0.0;
-const CAVITY_DEPTH = 0.38;
-
+const CAVITY_DEPTH = 0.455;
 export const TOP_ROW_PIT_IDS = [0, 1, 2, 3, 4, 5, 6] as const;
 export const BOTTOM_ROW_PIT_IDS = [13, 12, 11, 10, 9, 8, 7] as const;
 

@@ -5,6 +5,22 @@
 
 import type { VisualPitState } from "../../adapters/engineToVisualState";
 
+export const PIT_CLICK_DRAG_THRESHOLD_PX = 8;
+
+/**
+ * Returns true when pointer travel distance exceeds the orbit-drag threshold,
+ * preventing camera drags from accidentally triggering pit selection.
+ */
+export function hasExceededDragThreshold(
+  startX: number,
+  startY: number,
+  currentX: number,
+  currentY: number,
+  thresholdPx: number = PIT_CLICK_DRAG_THRESHOLD_PX
+): boolean {
+  return Math.hypot(currentX - startX, currentY - startY) > thresholdPx;
+}
+
 export interface InputGuardResult {
   allowed: boolean;
   reason?: string;

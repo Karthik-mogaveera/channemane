@@ -21,6 +21,7 @@ export interface BoardProps {
   onClaimBonus: (pitId: number) => void;
   isInteractable: boolean;
   isBonusInteractable?: boolean;
+  shouldSuppressPitClick?: () => boolean;
 }
 
 export const Board: React.FC<BoardProps> = ({
@@ -34,6 +35,7 @@ export const Board: React.FC<BoardProps> = ({
   onClaimBonus,
   isInteractable,
   isBonusInteractable = isInteractable,
+  shouldSuppressPitClick,
 }) => {
   return (
     <group name="channemane-board-3d">
@@ -63,6 +65,7 @@ export const Board: React.FC<BoardProps> = ({
             onClaimBonus={onClaimBonus}
             isInteractable={isInteractable}
             isBonusInteractable={isBonusInteractable}
+            shouldSuppressClick={shouldSuppressPitClick}
           />
         );
       })}

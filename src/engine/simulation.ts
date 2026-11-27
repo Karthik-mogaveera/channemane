@@ -634,6 +634,21 @@ export class ChannemaneGame {
       if (res.data.roundSettlement) {
         this.preSettlementState = res.data.roundSettlement.preSettlementState ?? null;
       }
+    } else if (res.success && this.turnContext && !this.turnContext.isComplete) {
+      if (
+        this.turnContext.awaitingContinuationPitId === pitId ||
+        this.turnContext.awaitingCapturePitId === pitId
+      ) {
+        this.turnContext.awaitingContinuationPitId = null;
+        this.turnContext.awaitingCapturePitId = null;
+        const finalizeRes = this.finalizeTurn(null);
+        if (finalizeRes.success) {
+          res.data.roundEnded = Boolean(finalizeRes.data.roundEnded);
+          res.data.roundSettlement = finalizeRes.data.roundSettlement;
+          res.data.matchEnded = Boolean(finalizeRes.data.matchEnded);
+          res.data.matchResult = finalizeRes.data.matchResult;
+        }
+      }
     }
     return res;
   }

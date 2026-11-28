@@ -10,7 +10,6 @@ import { useSoundEffects } from "./ui/hooks/useSoundEffects";
 import { Header } from "./ui/components/Header";
 import { TurnBanner } from "./ui/components/TurnBanner";
 import { PlayerPanels } from "./ui/components/PlayerPanels";
-import { GameBoard } from "./ui/components/GameBoard";
 import { SettlementModal } from "./ui/components/SettlementModal";
 import { MatchEndModal } from "./ui/components/MatchEndModal";
 import { RulesModal } from "./ui/components/RulesModal";
@@ -52,7 +51,6 @@ export const App: React.FC<AppProps> = ({
   const [wipPlayerCount, setWipPlayerCount] = useState<MultiplayerPlayerCount | null>(null);
   const [chosenStartingPlayer, setChosenStartingPlayer] =
     useState<Player>("PLAYER_1");
-  const [boardViewMode, setBoardViewMode] = useState<"2D" | "3D">("2D");
   const { isPortraitBlocked } = useOrientation();
   const { isMuted, toggleMute } = useSoundEffects();
 
@@ -100,8 +98,8 @@ export const App: React.FC<AppProps> = ({
     "PLAYER_2",
     2,
     {
-      waitForVisualSettlement: boardViewMode === "3D",
-      deferAudioToVisual: boardViewMode === "3D",
+      waitForVisualSettlement: true,
+      deferAudioToVisual: true,
     }
   );
 
@@ -208,11 +206,6 @@ export const App: React.FC<AppProps> = ({
     setWipPlayerCount(null);
     restartMatch("PLAYER_1", "local", null, undefined, 2);
     setCurrentScreen("MAIN_MENU");
-  };
-
-  const handleToggleBoardView = () => {
-    if (isAnimating) return;
-    setBoardViewMode((prev) => (prev === "2D" ? "3D" : "2D"));
   };
 
   return (
@@ -373,14 +366,6 @@ export const App: React.FC<AppProps> = ({
             playerCount={gameState.playerCount ?? 2}
             isMuted={isMuted}
             onToggleAudio={toggleMute}
-            boardViewMode={boardViewMode}
-            onToggleBoardView={handleToggleBoardView}
-            isViewToggleDisabled={isAnimating}
-            viewToggleDisabledReason={
-              isAnimating
-                ? "View switching is disabled during active animation to preserve visual synchronization"
-                : undefined
-            }
           />
 
           {/* Turn & Status Indicator */}
@@ -457,41 +442,26 @@ export const App: React.FC<AppProps> = ({
             disqualifiedPlayers={gameState.disqualifiedPlayers}
           />
 
-          {/* Physical 2D / 3D Board & Storage Bowls */}
+          {/* 3D Board & Storage Bowls */}
           <main className="game-board-main-container">
-            {boardViewMode === "3D" ? (
-              <Board3D
-                gameState={gameState}
-                authoritativeGameState={authoritativeGameState}
-                selectablePits={selectablePits}
-                activeDropPit={activeDropPit}
-                isAnimating={isAnimating}
-                visualEvents={visualEvents}
-                highlightedContinuationPit={highlightedContinuationPit}
-                highlightedCapturePit={highlightedCapturePit}
-                claimableBonuses={claimableBonuses}
-                interactionState={interactionState}
-                animationSpeed={animationSettings.speed}
-                onSelectPit={selectPit}
-                onConfirmContinuation={confirmContinuation}
-                onConfirmCapture={confirmCapture}
-                onClaimBonus={claimBonus}
-                onVisualSettlementComplete={completeVisualSettlement}
-              />
-            ) : (
-              <GameBoard
-                gameState={gameState}
-                selectablePits={selectablePits}
-                activeDropPit={activeDropPit}
-                isAnimating={isAnimating}
-                highlightedContinuationPit={highlightedContinuationPit}
-                highlightedCapturePit={highlightedCapturePit}
-                onSelectPit={selectPit}
-                onConfirmContinuation={confirmContinuation}
-                onConfirmCapture={confirmCapture}
-                onClaimBonus={claimBonus}
-              />
-            )}
+            <Board3D
+              gameState={gameState}
+              authoritativeGameState={authoritativeGameState}
+              selectablePits={selectablePits}
+              activeDropPit={activeDropPit}
+              isAnimating={isAnimating}
+              visualEvents={visualEvents}
+              highlightedContinuationPit={highlightedContinuationPit}
+              highlightedCapturePit={highlightedCapturePit}
+              claimableBonuses={claimableBonuses}
+              interactionState={interactionState}
+              animationSpeed={animationSettings.speed}
+              onSelectPit={selectPit}
+              onConfirmContinuation={confirmContinuation}
+              onConfirmCapture={confirmCapture}
+              onClaimBonus={claimBonus}
+              onVisualSettlementComplete={completeVisualSettlement}
+            />
           </main>
 
           {/* Settlement Modal (End of Round) */}

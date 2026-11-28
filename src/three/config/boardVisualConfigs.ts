@@ -2,7 +2,7 @@
  * 3D Board Visual Configurations & Coordinate Mapping (2–6 Players)
  * Preserves exact 2-player 14-pit coordinates while supporting authoritative
  * 3-player (15 pits), 4-player (16 pits), 5-player (20 pits), and 6-player (24 pits) layouts
- * matching GameBoard.tsx and src/engine/constants.ts.
+ * matching src/engine/constants.ts.
  */
 
 import { getPitOwner } from "../../engine/constants";

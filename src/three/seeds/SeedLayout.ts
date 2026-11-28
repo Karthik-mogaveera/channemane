@@ -1,6 +1,6 @@
 /**
  * 3D Seed Placement, Surface Seating & Deterministic Color Distribution
- * Preserves authoritative 2D packing compatibility for high counts while seating organic seeds
+ * Uses a deterministic golden-angle spiral / concentric ring packing layout for high counts while seating organic seeds
  * cleanly against carved walnut pit walls and storage dishes with subtle rotation, scale variation,
  * and deterministic light/dark wood tones.
  */

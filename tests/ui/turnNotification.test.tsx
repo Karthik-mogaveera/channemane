@@ -16,6 +16,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent, renderHook } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { useChannemaneGame } from "../../src/ui/hooks/useChannemaneGame";
 
 describe("Turn-Start Notifications (Feature 3)", () => {

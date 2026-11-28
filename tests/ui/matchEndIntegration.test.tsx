@@ -7,6 +7,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame } from "../../src/engine/board";
 import { isMatchOver, checkAndHandleMatchEnd } from "../../src/engine/matchEnd";
 import { ChannemaneGame } from "../../src/engine/simulation";

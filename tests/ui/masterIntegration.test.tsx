@@ -11,6 +11,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import App from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame, verifySeedConservation } from "../../src/engine/board";
 
 describe("Master AI UI & Turn Orchestration Integration", () => {
@@ -41,7 +46,7 @@ describe("Master AI UI & Turn Orchestration Integration", () => {
     });
 
     // Board rendered with Master mode
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
 
     // Turn notification appears: 'Your turn'
@@ -90,7 +95,7 @@ describe("Master AI UI & Turn Orchestration Integration", () => {
       vi.advanceTimersByTime(500);
     });
 
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 
   it("Automatically claims AI-owned bonus during Master game, but never human bonus", async () => {
@@ -154,6 +159,6 @@ describe("Master AI UI & Turn Orchestration Integration", () => {
 
     // Must return to Main Menu without errors or stale callback execution
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
   });
 });

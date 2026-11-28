@@ -370,4 +370,116 @@ describe("3D Board Layout & Visual Representation Suite", () => {
     expect(finalTarget.length()).toBeLessThan(1e-6);
     expect(computeCameraTargetDistance("SIDE", 2, 2.2)).toBe(12.0);
   });
+
+  it("verifies 3D pit and storage seed packing for counts 0, 1, 5, 10, 20, 30, 40, 42, 50, 60, 70 without coincident overlaps", () => {
+    const counts = [0, 1, 5, 10, 20, 30, 40, 42, 50, 60, 70];
+    const pitPos = getPitWorldPosition(4, 2);
+    const verticalStoragePos = getStorageWorldPosition("PLAYER_1", 2);
+    const fourPlayerCfg = getBoardVisualConfig(4);
+    const horizontalSpec = fourPlayerCfg.storages.PLAYER_1!;
+
+    for (const count of counts) {
+      // Pit packing checks
+      const pitRun1 = getPitSeedPositions3D(count, pitPos, 4);
+      const pitRun2 = getPitSeedPositions3D(count, pitPos, 4);
+      expect(pitRun1).toHaveLength(count);
+      expect(pitRun1).toEqual(pitRun2);
+
+      for (const s of pitRun1) {
+        expect(Number.isFinite(s.position[0])).toBe(true);
+        expect(Number.isFinite(s.position[1])).toBe(true);
+        expect(Number.isFinite(s.position[2])).toBe(true);
+        const dx = s.position[0] - pitPos[0];
+        const dz = s.position[2] - pitPos[2];
+        expect(Math.hypot(dx, dz)).toBeLessThan(0.71);
+      }
+
+      for (let i = 0; i < pitRun1.length; i++) {
+        for (let j = i + 1; j < pitRun1.length; j++) {
+          const a = pitRun1[i]!.position;
+          const b = pitRun1[j]!.position;
+          const dist3d = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+          expect(dist3d).toBeGreaterThan(0.02);
+        }
+      }
+
+      // 2P vertical storage packing checks
+      const vRun1 = getStorageSeedPositions3D(count, verticalStoragePos);
+      const vRun2 = getStorageSeedPositions3D(count, verticalStoragePos);
+      expect(vRun1).toHaveLength(count);
+      expect(vRun1).toEqual(vRun2);
+      for (const s of vRun1) {
+        expect(s.position[1]).toBeLessThan(0);
+        expect(Math.abs(s.position[0] - verticalStoragePos[0])).toBeLessThan(0.75);
+        expect(Math.abs(s.position[2] - verticalStoragePos[2])).toBeLessThan(1.7);
+      }
+
+      // 4P horizontal storage packing checks
+      const hRun = getStorageSeedPositions3D(count, horizontalSpec.position, {
+        width: horizontalSpec.width,
+        length: horizontalSpec.length,
+      });
+      expect(hRun).toHaveLength(count);
+      for (const s of hRun) {
+        expect(s.position[1]).toBeLessThan(0);
+        expect(Math.abs(s.position[0] - horizontalSpec.position[0])).toBeLessThan(
+          horizontalSpec.width / 2
+        );
+        expect(Math.abs(s.position[2] - horizontalSpec.position[2])).toBeLessThan(
+          horizontalSpec.length / 2
+        );
+      }
+    }
+  });
+
+  it("verifies 3P, 4P, 5P, and 6P storage orientations, pit rows, and disqualified visual state", () => {
+    // 3P: all 3 storages vertical (P1 left flank, P2/P3 right flanks), 3 rows x 5 cols
+    const cfg3 = getBoardVisualConfig(3);
+    expect(cfg3.storageList.map((s) => [s.player, s.orientation])).toEqual([
+      ["PLAYER_1", "vertical"],
+      ["PLAYER_2", "vertical"],
+      ["PLAYER_3", "vertical"],
+    ]);
+    expect(cfg3.storages.PLAYER_1!.position[0]).toBeLessThan(cfg3.pits[0]!.position[0]);
+    expect(cfg3.storages.PLAYER_2!.position[0]).toBeGreaterThan(cfg3.pits[4]!.position[0]);
+    expect(cfg3.storages.PLAYER_3!.position[0]).toBeGreaterThan(cfg3.storages.PLAYER_2!.position[0]);
+
+    // 4P: all 4 storages horizontal, 2 rows x 8 cols (top P1/P2, bottom P4/P3)
+    const cfg4 = getBoardVisualConfig(4);
+    expect(cfg4.storageList.every((s) => s.orientation === "horizontal")).toBe(true);
+    expect(cfg4.storages.PLAYER_1!.position[2]).toBeLessThan(0);
+    expect(cfg4.storages.PLAYER_2!.position[2]).toBeLessThan(0);
+    expect(cfg4.storages.PLAYER_3!.position[2]).toBeGreaterThan(0);
+    expect(cfg4.storages.PLAYER_4!.position[2]).toBeGreaterThan(0);
+
+    // 5P: all 5 horizontal storages across 3 rows
+    const cfg5 = getBoardVisualConfig(5);
+    expect(cfg5.storageList.every((s) => s.orientation === "horizontal")).toBe(true);
+    expect(cfg5.pitIds).toHaveLength(20);
+
+    // 6P: P1/P2/P5/P6 horizontal, P3/P4 vertical flanks
+    const cfg6 = getBoardVisualConfig(6);
+    expect(cfg6.pitIds).toHaveLength(24);
+    expect(cfg6.storages.PLAYER_1!.orientation).toBe("horizontal");
+    expect(cfg6.storages.PLAYER_2!.orientation).toBe("horizontal");
+    expect(cfg6.storages.PLAYER_3!.orientation).toBe("vertical");
+    expect(cfg6.storages.PLAYER_4!.orientation).toBe("vertical");
+    expect(cfg6.storages.PLAYER_5!.orientation).toBe("horizontal");
+    expect(cfg6.storages.PLAYER_6!.orientation).toBe("horizontal");
+
+    // Disqualified player flags propagate into visual state storages & closed pits
+    const state5 = createInitialGame("PLAYER_1", "local", null, "PLAYER_2", 5);
+    state5.disqualifiedPlayers = ["PLAYER_5"];
+    for (let i = 16; i <= 19; i++) {
+      state5.pits[i]!.status = "CLOSED";
+      state5.pits[i]!.seeds = 0;
+    }
+    const visual5 = mapEngineToVisualState({ gameState: state5 });
+    expect(visual5.storage.player5?.isDisqualified).toBe(true);
+    expect(visual5.storage.player1.isDisqualified).toBe(false);
+    for (let i = 16; i <= 19; i++) {
+      expect(visual5.pits[i]?.status).toBe("CLOSED");
+      expect(visual5.pits[i]?.seeds).toBe(0);
+    }
+  });
 });

@@ -7,6 +7,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("Main Menu & Game Mode Navigation Flow", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -37,7 +42,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     expect(rulesBtn).toHaveTextContent(/Rules/i);
 
     // Game board is NOT opened on initial load
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
     expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
   });
 
@@ -52,7 +57,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     // Difficulty selection screen is displayed
     expect(screen.getByTestId("difficulty-select")).toBeInTheDocument();
     expect(screen.queryByTestId("main-menu")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Exactly 3 difficulty options present
     const beginnerBtn = screen.getByTestId("difficulty-btn-beginner");
@@ -78,7 +83,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
 
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
     expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
   });
 
   it("Scenario 5: Selecting Beginner difficulty opens existing board and records mode='ai', diff='beginner'", () => {
@@ -104,7 +109,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     });
 
     // Game board is now visible
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("main-menu")).not.toBeInTheDocument();
     expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
 
@@ -137,7 +142,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     });
 
     // Expert AI game is launched
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(EXPERT\)/i);
   });
 
@@ -161,7 +166,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     });
 
     // Master launches cleanly
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
   });
 
@@ -176,7 +181,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     // Multiplayer selection screen is displayed
     expect(screen.getByTestId("multiplayer-select")).toBeInTheDocument();
     expect(screen.queryByTestId("difficulty-select")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Click 2 Players
     act(() => {
@@ -184,7 +189,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
     });
 
     // Directly on game board, no difficulty screen ever shown
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.queryByTestId("main-menu")).not.toBeInTheDocument();
 
@@ -225,7 +230,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
       fireEvent.click(screen.getByTestId("player-count-btn-2"));
     });
 
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
 
     // Advance past initial turn announcement
     act(() => {
@@ -246,7 +251,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
 
     // User is back on Main Menu
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Now start another game to verify state is clean (P0 is fresh with 5 seeds)
     act(() => {
@@ -256,7 +261,7 @@ describe("Main Menu & Game Mode Navigation Flow", () => {
       fireEvent.click(screen.getByTestId("player-count-btn-2"));
     });
 
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
     expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
   });

@@ -4,6 +4,11 @@ import { SoundManager, soundManager } from "../../src/ui/audio/soundManager";
 import { useSoundEffects } from "../../src/ui/hooks/useSoundEffects";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("SoundManager & Web Audio Synthesis", () => {
   let mockOscillator: any;
   let mockGain: any;

@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("UI Integration: Channemane Bonus Claiming During and After Sowing", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -23,8 +28,8 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
     // Verification of Requirement 18: No Claim button rendered anywhere
     expect(screen.queryAllByText(/CLAIM \+4/i)).toHaveLength(0);
 
-    // Look for pits with bonus class
-    const bonusPits = Array.from(document.querySelectorAll(".channemane-pit.has-bonus")) as HTMLElement[];
+    // Look for pits with bonus highlight
+    const bonusPits = Array.from(document.querySelectorAll(".has-bonus")) as HTMLElement[];
     if (bonusPits.length > 0) {
       const pitEl = bonusPits[0];
       const pitId = parseInt(pitEl.getAttribute("data-pit-id")!, 10);
@@ -71,7 +76,7 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
       // Verify no Claim button is ever rendered during sowing
       expect(screen.queryAllByText(/CLAIM \+4/i)).toHaveLength(0);
 
-      const bonusPits = Array.from(document.querySelectorAll(".channemane-pit.has-bonus")) as HTMLElement[];
+      const bonusPits = Array.from(document.querySelectorAll(".has-bonus")) as HTMLElement[];
       if (bonusPits.length > 0) {
         const pitEl = bonusPits[0];
         const pitId = parseInt(pitEl.getAttribute("data-pit-id")!, 10);
@@ -101,7 +106,7 @@ describe("UI Integration: Channemane Bonus Claiming During and After Sowing", ()
       }
     }
 
-    // Board remains stable and intact
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    // 3D Board remains stable and intact
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 });

@@ -9,6 +9,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("Regression Suite: Mode Switching State Isolation (Tests A, B, C, D)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -69,7 +74,7 @@ describe("Regression Suite: Mode Switching State Isolation (Tests A, B, C, D)", 
     startThreePlayerGame();
 
     // Verify 15 pits exist (pit-0 through pit-14)
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     for (let i = 0; i < 15; i++) {
       expect(screen.getByTestId(`pit-${i}`)).toBeInTheDocument();
     }
@@ -87,13 +92,13 @@ describe("Regression Suite: Mode Switching State Isolation (Tests A, B, C, D)", 
     returnToMainMenu();
 
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Step 3: Start AI mode
     startAIGame("beginner");
 
     // Step 4: Verify the standard 2-player board and exactly two participants
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
 
     // Exactly 14 pits (pit-0 through pit-13)
     for (let i = 0; i < 14; i++) {
@@ -124,7 +129,7 @@ describe("Regression Suite: Mode Switching State Isolation (Tests A, B, C, D)", 
     startAIGame("expert");
 
     // Verify standard 2-player board
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     for (let i = 0; i < 14; i++) {
       expect(screen.getByTestId(`pit-${i}`)).toBeInTheDocument();
     }
@@ -143,7 +148,7 @@ describe("Regression Suite: Mode Switching State Isolation (Tests A, B, C, D)", 
     startThreePlayerGame();
 
     // Step 4: Verify 15-pit board and three storage areas
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     for (let i = 0; i < 15; i++) {
       expect(screen.getByTestId(`pit-${i}`)).toBeInTheDocument();
     }

@@ -4,7 +4,7 @@
  * - Segmented [ Side ] [ Top ] [ 360° ] controls render in Channemane theme.
  * - Selected mode stays highlighted with accurate aria-pressed state.
  * - Mode switching never resets game state or cancels active sowing animations.
- * - Camera selector only appears when 3D view is active.
+ * - Camera selector renders immediately in the 3D-only board with zero 2D toggle.
  * - Dragging >8px over Pit3D suppresses accidental pit click while stationary tap selects normally.
  */
 
@@ -138,11 +138,12 @@ describe("3D Camera Mode Selector & Interaction Suite", () => {
     expect(onChange).toHaveBeenCalledWith("ORBIT");
   });
 
-  it("shows camera selector only when 3D view is active and preserves game state across mode switches", () => {
+  it("renders camera selector immediately in the 3D-only board with zero 2D toggle and preserves state across mode switches", () => {
     const initialState = createInitialGame("PLAYER_1", "local");
     initialState.pits[0]!.seeds = 0;
     initialState.pits[1]!.seeds = 6;
     initialState.players.player1.storage = 4;
+    initialState.players.player1.roundWins = 1;
 
     render(
       <App
@@ -152,12 +153,11 @@ describe("3D Camera Mode Selector & Interaction Suite", () => {
       />
     );
 
-    // Not rendered in 2D view
-    expect(screen.queryByTestId("camera-mode-selector")).not.toBeInTheDocument();
-
-    // Switch to 3D view
-    fireEvent.click(screen.getByTestId("view-toggle-btn"));
+    // 3D board & camera selector render immediately with zero 2D board or view toggle
     expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("view-toggle-btn")).not.toBeInTheDocument();
+
     expect(screen.getByTestId("camera-mode-selector")).toBeInTheDocument();
     expect(screen.getByTestId("camera-mode-side")).toHaveAttribute("aria-pressed", "true");
 
@@ -171,11 +171,10 @@ describe("3D Camera Mode Selector & Interaction Suite", () => {
     fireEvent.click(screen.getByTestId("camera-mode-side"));
     expect(screen.getByTestId("camera-mode-side")).toHaveAttribute("aria-pressed", "true");
 
-    // Game state remains untouched across camera changes and returning to 2D hides selector
+    // Game state remains untouched across camera mode transitions
     expect(screen.getByTestId("turn-status-text")).toHaveTextContent("PLAYER 1'S TURN");
-    fireEvent.click(screen.getByTestId("view-toggle-btn"));
-    expect(screen.queryByTestId("camera-mode-selector")).not.toBeInTheDocument();
-    expect(screen.getByTestId("storage-player1")).toHaveTextContent("4");
+    expect(screen.getByTestId("p1-wins-count")).toHaveTextContent("1");
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 
   it("blocks Pit3D click when pointer dragged past 8px threshold while allowing stationary tap", () => {

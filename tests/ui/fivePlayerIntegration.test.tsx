@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import App from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("5-Player UI Integration and Gameplay Flow Suite", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -28,7 +33,7 @@ describe("5-Player UI Integration and Gameplay Flow Suite", () => {
     });
 
     // Verify 5-Player Board is mounted
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 5P/i);
 
     // Verify all 5 player cards
@@ -38,22 +43,14 @@ describe("5-Player UI Integration and Gameplay Flow Suite", () => {
     expect(screen.getByTestId("player-card-4")).toBeInTheDocument();
     expect(screen.getByTestId("player-card-5")).toBeInTheDocument();
 
-    // Verify all 5 storage containers
-    expect(screen.getByTestId("p1-storage-container")).toBeInTheDocument();
-    expect(screen.getByTestId("p2-storage-container")).toBeInTheDocument();
-    expect(screen.getByTestId("p3-storage-container")).toBeInTheDocument();
-    expect(screen.getByTestId("p4-storage-container")).toBeInTheDocument();
-    expect(screen.getByTestId("p5-storage-container")).toBeInTheDocument();
+    // Verify all 5 storage bowls exist in 3D board state
+    for (let p = 1; p <= 5; p++) {
+      expect(screen.getByTestId(`storage-player${p}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`p${p}-captured-count`)).toHaveTextContent("0");
+    }
 
-    // Verify 5 pit groups and 3 center ornamental gaps
-    expect(screen.getByTestId("p1-pit-group")).toBeInTheDocument();
-    expect(screen.getByTestId("p2-pit-group")).toBeInTheDocument();
-    expect(screen.getByTestId("p3-pit-group")).toBeInTheDocument();
-    expect(screen.getByTestId("p4-pit-group")).toBeInTheDocument();
-    expect(screen.getByTestId("p5-pit-group")).toBeInTheDocument();
-    expect(screen.getByTestId("board-center-gap-top")).toBeInTheDocument();
-    expect(screen.getByTestId("board-center-gap-middle")).toBeInTheDocument();
-    expect(screen.getByTestId("board-center-gap-bottom")).toBeInTheDocument();
+    // Verify 3D camera selector is active
+    expect(screen.getByTestId("camera-mode-selector")).toBeInTheDocument();
 
     // Verify 20 pits each with 5 seeds (100 seeds total)
     for (let i = 0; i < 20; i++) {
@@ -100,7 +97,7 @@ describe("5-Player UI Integration and Gameplay Flow Suite", () => {
       fireEvent.click(screen.getByTestId("main-menu-btn"));
     });
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Start 2-Player mode and ensure 2P board loads (14 pits, not 20)
     act(() => {

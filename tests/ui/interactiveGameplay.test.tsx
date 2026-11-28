@@ -1,7 +1,67 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
-import { Pit } from "../../src/ui/components/Pit";
+import { Pit3D } from "../../src/three/pits/Pit3D";
+import type { VisualPitState } from "../../src/adapters/engineToVisualState";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
+vi.mock("@react-three/fiber", () => ({
+  useFrame: vi.fn(),
+}));
+
+vi.mock("../../src/three/board/BoardMaterials", () => {
+  const dummyMat = { dispose: vi.fn() };
+  return {
+    BoardMaterialsManager: {
+      getInstance: () => ({
+        cavityMaterial: dummyMat,
+        closedPitMaterial: dummyMat,
+        brassMaterial: dummyMat,
+        walnutMaterial: dummyMat,
+        plinthMaterial: dummyMat,
+        inlayIvoryMaterial: dummyMat,
+        inlaySandstoneMaterial: dummyMat,
+        inlaySageMaterial: dummyMat,
+        getSeedMaterial: () => dummyMat,
+        applyMaxAnisotropy: vi.fn(),
+      }),
+    },
+  };
+});
+
+vi.mock("../../src/three/seeds/SeedMaterials", () => {
+  const dummyMat = { dispose: vi.fn() };
+  return {
+    SeedMaterialsManager: {
+      getInstance: () => ({
+        getMaterial: () => dummyMat,
+        dispose: vi.fn(),
+      }),
+    },
+  };
+});
+
+function makePit3DState(overrides: Partial<VisualPitState> = {}): VisualPitState {
+  return {
+    pitId: 2,
+    owner: "PLAYER_1",
+    seeds: 5,
+    status: "OPEN",
+    bonusAvailable: false,
+    isSelectable: true,
+    isActiveDrop: false,
+    isContinuationTarget: false,
+    isCaptureTarget: false,
+    isClaimableBonus: false,
+    row: "top",
+    columnIndex: 2,
+    ...overrides,
+  };
+}
 
 describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", () => {
   beforeEach(() => {
@@ -75,38 +135,37 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
   });
 
   describe("Section 2: Player-Confirmed Capture Flow", () => {
-    it("highlights capturable pit with amber glow, prompts player, and transfers seeds on confirmation", () => {
+    it("highlights capturable pit in 3D, keeps seeds until confirmation, and transfers seeds on click", () => {
       const handleConfirmCapture = vi.fn();
       const handleSelect = vi.fn();
 
-      render(
-        <Pit
-          pitId={3}
-          owner="PLAYER_1"
-          seeds={6}
-          status="OPEN"
-          bonusAvailable={false}
-          isSelectable={false}
-          isActiveDrop={false}
-          isAnimating={false}
-          isCaptureTarget={true}
-          onSelect={handleSelect}
+      const { container } = render(
+        <Pit3D
+          pitState={makePit3DState({
+            pitId: 3,
+            seeds: 6,
+            isSelectable: false,
+            isCaptureTarget: true,
+          })}
+          playerCount={2}
+          onSelectPit={handleSelect}
           onConfirmCapture={handleConfirmCapture}
           onClaimBonus={vi.fn()}
+          isInteractable={true}
         />
       );
 
-      const pit3 = screen.getByTestId("pit-3");
-      // Requirement 10: Capturable pit highlighted amber
-      expect(pit3).toHaveClass("capture-target");
-      expect(pit3).toHaveAttribute("data-capture-target", "true");
+      const pit3Group = container.querySelector('[name="pit-3"]')!;
+      expect(pit3Group).not.toBeNull();
+      // 1 cavity mesh + 6 Seed3D meshes + 1 hitbox mesh
+      const meshes = Array.from(pit3Group.children).filter(
+        (el) => el.tagName.toLowerCase() === "mesh"
+      );
+      expect(meshes.length - 2).toBe(6);
 
-      // Requirement 11: Seeds remain inside pit
-      expect(pit3).toHaveAttribute("data-seeds", "6");
-
-      // Requirement 12: Tapping executes capture confirmation
+      const hitbox = container.querySelector('[name="pit-3-hitbox"]') as HTMLElement;
       act(() => {
-        fireEvent.click(pit3);
+        fireEvent.click(hitbox);
       });
       expect(handleConfirmCapture).toHaveBeenCalledWith(3);
       expect(handleSelect).not.toHaveBeenCalled();
@@ -120,34 +179,32 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
       expect(screen.queryAllByTestId(/^claim-bonus-/)).toHaveLength(0);
     });
 
-    it("Requirement 20: Long-press (500ms) collects bonus and shows progress ring", () => {
+    it("Requirement 20: Long-press (500ms) collects bonus", () => {
       const handleClaimBonus = vi.fn();
 
-      render(
-        <Pit
-          pitId={2}
-          owner="PLAYER_1"
-          seeds={4}
-          status="OPEN"
-          bonusAvailable={true}
-          isSelectable={true}
-          isActiveDrop={false}
-          isAnimating={false}
-          onSelect={vi.fn()}
+      const { container } = render(
+        <Pit3D
+          pitState={makePit3DState({
+            pitId: 2,
+            seeds: 4,
+            bonusAvailable: true,
+            isClaimableBonus: true,
+            isSelectable: true,
+          })}
+          playerCount={2}
+          onSelectPit={vi.fn()}
           onClaimBonus={handleClaimBonus}
+          isInteractable={true}
+          isBonusInteractable={true}
         />
       );
 
-      const pit2 = screen.getByTestId("pit-2");
-      expect(pit2).toHaveClass("has-bonus");
+      const hitbox = container.querySelector('[name="pit-2-hitbox"]') as HTMLElement;
 
       // Start long-press pointerDown
       act(() => {
-        fireEvent.pointerDown(pit2, { clientX: 50, clientY: 50, button: 0 });
+        fireEvent.pointerDown(hitbox, { clientX: 50, clientY: 50, button: 0 });
       });
-
-      // Progress indicator should be visible during hold
-      expect(screen.getByTestId("hold-progress-2")).toBeInTheDocument();
 
       // Advance 500ms
       act(() => {
@@ -162,60 +219,62 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
       const handleClaimBonus = vi.fn();
       const handleSelect = vi.fn();
 
-      render(
-        <Pit
-          pitId={2}
-          owner="PLAYER_1"
-          seeds={4}
-          status="OPEN"
-          bonusAvailable={true}
-          isSelectable={true}
-          isActiveDrop={false}
-          isAnimating={false}
-          onSelect={handleSelect}
+      const { container } = render(
+        <Pit3D
+          pitState={makePit3DState({
+            pitId: 2,
+            seeds: 4,
+            bonusAvailable: true,
+            isClaimableBonus: true,
+            isSelectable: true,
+          })}
+          playerCount={2}
+          onSelectPit={handleSelect}
           onClaimBonus={handleClaimBonus}
+          isInteractable={true}
+          isBonusInteractable={true}
         />
       );
 
-      const pit2 = screen.getByTestId("pit-2");
+      const hitbox = container.querySelector('[name="pit-2-hitbox"]') as HTMLElement;
 
       act(() => {
-        fireEvent.pointerDown(pit2, { clientX: 50, clientY: 50, button: 0 });
+        fireEvent.pointerDown(hitbox, { clientX: 50, clientY: 50, button: 0 });
         vi.advanceTimersByTime(300); // Only 300ms
-        fireEvent.pointerUp(pit2);
+        fireEvent.pointerUp(hitbox);
       });
 
       // Bonus must NOT be awarded
       expect(handleClaimBonus).not.toHaveBeenCalled();
-      // Progress indicator removed immediately
-      expect(screen.queryByTestId("hold-progress-2")).not.toBeInTheDocument();
     });
 
     it("Requirement 22: Moving finger away (>10px) cancels hold gesture without collecting bonus", () => {
       const handleClaimBonus = vi.fn();
 
-      render(
-        <Pit
-          pitId={2}
-          owner="PLAYER_1"
-          seeds={4}
-          status="OPEN"
-          bonusAvailable={true}
-          isSelectable={true}
-          isActiveDrop={false}
-          isAnimating={false}
-          onSelect={vi.fn()}
+      const { container } = render(
+        <Pit3D
+          pitState={makePit3DState({
+            pitId: 2,
+            seeds: 4,
+            bonusAvailable: true,
+            isClaimableBonus: true,
+            isSelectable: true,
+          })}
+          playerCount={2}
+          onSelectPit={vi.fn()}
           onClaimBonus={handleClaimBonus}
+          isInteractable={true}
+          isBonusInteractable={true}
         />
       );
 
-      const pit2 = screen.getByTestId("pit-2");
+      const hitbox = container.querySelector('[name="pit-2-hitbox"]') as HTMLElement;
 
       act(() => {
-        fireEvent.pointerDown(pit2, { clientX: 50, clientY: 50, button: 0 });
+        fireEvent.pointerDown(hitbox, { clientX: 50, clientY: 50, button: 0 });
         vi.advanceTimersByTime(200);
-        // Finger moved by 25px (> 10px)
-        fireEvent.pointerMove(pit2, { clientX: 75, clientY: 50 });
+        // Finger moved by 25px (> 8px)
+        fireEvent.pointerMove(hitbox, { clientX: 75, clientY: 50 });
         vi.advanceTimersByTime(400);
       });
 
@@ -226,27 +285,30 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
       const handleClaimBonus = vi.fn();
       const handleSelect = vi.fn();
 
-      render(
-        <Pit
-          pitId={0}
-          owner="PLAYER_1"
-          seeds={4}
-          status="OPEN"
-          bonusAvailable={true}
-          isSelectable={true}
-          isActiveDrop={false}
-          isAnimating={false}
-          onSelect={handleSelect}
+      const { container } = render(
+        <Pit3D
+          pitState={makePit3DState({
+            pitId: 0,
+            seeds: 4,
+            bonusAvailable: true,
+            isClaimableBonus: true,
+            isSelectable: true,
+            columnIndex: 0,
+          })}
+          playerCount={2}
+          onSelectPit={handleSelect}
           onClaimBonus={handleClaimBonus}
+          isInteractable={true}
+          isBonusInteractable={true}
         />
       );
 
-      const pit0 = screen.getByTestId("pit-0");
+      const hitbox = container.querySelector('[name="pit-0-hitbox"]') as HTMLElement;
 
       act(() => {
-        fireEvent.pointerDown(pit0, { clientX: 50, clientY: 50, button: 0 });
+        fireEvent.pointerDown(hitbox, { clientX: 50, clientY: 50, button: 0 });
         vi.advanceTimersByTime(500);
-        fireEvent.click(pit0);
+        fireEvent.click(hitbox);
       });
 
       expect(handleClaimBonus).toHaveBeenCalledWith(0);
@@ -254,10 +316,10 @@ describe("Interactive Gameplay UI: Sowing, Capture Confirmation, and Gestures", 
       expect(handleSelect).not.toHaveBeenCalled();
     });
 
-    it("Requirement 33: Desktop right-click on bonus pit collects bonus without context menu", () => {
+    it("Requirement 33: Desktop right-click on 3D board does not open context menu", () => {
       render(<App initialScreen="GAME" />);
 
-      const board = screen.getByTestId("channemane-board");
+      const board = screen.getByTestId("channemane-board-3d");
       const defaultPrevented = fireEvent.contextMenu(board);
       expect(defaultPrevented).toBe(false); // e.preventDefault() was called
     });

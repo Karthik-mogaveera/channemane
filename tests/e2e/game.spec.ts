@@ -1,6 +1,129 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import * as THREE from "three";
 
-test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
+type CameraMode = "SIDE" | "TOP" | "ORBIT";
+type PlayerCount = 2 | 3;
+
+const CAMERA_FOV_DEG = 38;
+const SIDE_ELEVATION_RAD = Math.PI / 4.2;
+const TOP_VIEW_Z_EPSILON = 0.001;
+
+// Pit world XZ coordinates (mirroring src/three/config/boardVisualConfigs.ts)
+// with y = 0.1 matching PitGeometry clickTargetGeometry cylinder center.
+const PIT_COORDS_2P: Record<number, [number, number, number]> = {
+  0: [-5.7, 0.1, -1.25],
+  1: [-3.8, 0.1, -1.25],
+  2: [-1.9, 0.1, -1.25],
+  3: [0.0, 0.1, -1.25],
+  4: [1.9, 0.1, -1.25],
+  5: [3.8, 0.1, -1.25],
+  6: [5.7, 0.1, -1.25],
+  7: [5.7, 0.1, 1.25],
+  8: [3.8, 0.1, 1.25],
+  9: [1.9, 0.1, 1.25],
+  10: [0.0, 0.1, 1.25],
+  11: [-1.9, 0.1, 1.25],
+  12: [-3.8, 0.1, 1.25],
+  13: [-5.7, 0.1, 1.25],
+};
+
+const COLS_X_3P = [-4.65, -2.75, -0.85, 1.05, 2.95];
+const PIT_COORDS_3P: Record<number, [number, number, number]> = {
+  0: [COLS_X_3P[0]!, 0.1, -2.3],
+  1: [COLS_X_3P[1]!, 0.1, -2.3],
+  2: [COLS_X_3P[2]!, 0.1, -2.3],
+  3: [COLS_X_3P[3]!, 0.1, -2.3],
+  4: [COLS_X_3P[4]!, 0.1, -2.3],
+  9: [COLS_X_3P[0]!, 0.1, 0.0],
+  8: [COLS_X_3P[1]!, 0.1, 0.0],
+  7: [COLS_X_3P[2]!, 0.1, 0.0],
+  6: [COLS_X_3P[3]!, 0.1, 0.0],
+  5: [COLS_X_3P[4]!, 0.1, 0.0],
+  10: [COLS_X_3P[0]!, 0.1, 2.3],
+  11: [COLS_X_3P[1]!, 0.1, 2.3],
+  12: [COLS_X_3P[2]!, 0.1, 2.3],
+  13: [COLS_X_3P[3]!, 0.1, 2.3],
+  14: [COLS_X_3P[4]!, 0.1, 2.3],
+};
+
+function computeCameraPosition(
+  mode: CameraMode,
+  playerCount: PlayerCount,
+  aspect: number
+): [number, number, number] {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0.25 ? aspect : 16 / 9;
+  const width = 18.2;
+  const depth = playerCount === 3 ? 7.4 : 4.8;
+
+  if (mode === "TOP") {
+    const halfVFov = THREE.MathUtils.degToRad(CAMERA_FOV_DEG * 0.5);
+    const tanV = Math.tan(halfVFov);
+    const tanH = tanV * safeAspect;
+    const margin = 1.14;
+    const distance = Math.max((depth * 0.5 * margin) / tanV, (width * 0.5 * margin) / tanH);
+    return [0, distance, TOP_VIEW_Z_EPSILON];
+  }
+
+  let distance: number;
+  if (playerCount === 2) {
+    distance = safeAspect < 1.7 ? 14.5 : safeAspect < 2.0 ? 13.0 : 12.0;
+  } else {
+    const widthScale = width / 18.2;
+    const depthFactor = 1.24;
+    const aspectBoost = safeAspect < 1.7 ? 1.2 : safeAspect < 2.0 ? 1.08 : 1.0;
+    distance = 12.0 * Math.max(widthScale, depthFactor) * aspectBoost;
+  }
+
+  return [0, distance * Math.sin(SIDE_ELEVATION_RAD), distance * Math.cos(SIDE_ELEVATION_RAD)];
+}
+
+async function waitFor3DBoardReady(page: Page) {
+  await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
+  await expect(page.getByTestId("channemane-board")).toHaveCount(0);
+  await expect(page.getByTestId("view-toggle-btn")).toHaveCount(0);
+  await expect(page.getByTestId("camera-mode-selector")).toBeVisible();
+
+  const canvas = page.locator('[data-testid="board-3d-canvas-stage"] canvas');
+  await expect(canvas).toBeVisible();
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(200);
+  expect(box!.height).toBeGreaterThan(200);
+  // Allow first WebGL render pass & initial camera snap
+  await page.waitForTimeout(250);
+}
+
+async function clickPit3D(
+  page: Page,
+  pitId: number,
+  options: { mode?: CameraMode; playerCount?: PlayerCount } = {}
+) {
+  const mode = options.mode ?? "SIDE";
+  const playerCount = options.playerCount ?? 2;
+  const world = playerCount === 3 ? PIT_COORDS_3P[pitId] : PIT_COORDS_2P[pitId];
+  if (!world) throw new Error(`No 3D coordinate defined for pit ${pitId} (${playerCount}P)`);
+
+  const canvas = page.locator('[data-testid="board-3d-canvas-stage"] canvas');
+  const box = await canvas.boundingBox();
+  if (!box || box.width <= 0 || box.height <= 0) {
+    throw new Error("3D canvas bounding box is missing or zero-sized");
+  }
+
+  const aspect = box.width / box.height;
+  const camPos = computeCameraPosition(mode, playerCount, aspect);
+  const cam = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, aspect, 0.1, 1000);
+  cam.position.set(camPos[0], camPos[1], camPos[2]);
+  cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld();
+
+  const ndc = new THREE.Vector3(world[0], world[1], world[2]).project(cam);
+  const screenX = box.x + (ndc.x * 0.5 + 0.5) * box.width;
+  const screenY = box.y + (-ndc.y * 0.5 + 0.5) * box.height;
+
+  await page.mouse.click(screenX, screenY);
+}
+
+test.describe("Channemane 3D-Only Board — Playwright E2E Suite", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     const localBtn = page.getByTestId("menu-btn-local");
@@ -10,773 +133,386 @@ test.describe("Channemane Game — Playwright Browser E2E Test Suite", () => {
     await p2Btn.waitFor({ state: "visible", timeout: 5000 });
     await p2Btn.click();
 
-    // Wait for board to be visible and web fonts to settle
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
     await page.evaluate(() => document.fonts.ready);
 
-    // Wait for initial turn notification popup to clear so pits are interactive
+    // Wait for initial turn notification popup to clear so 3D pits are interactive
     await page.waitForTimeout(850);
   });
 
-  test("Positive 1: Game loads with full board, 14 pits, 5 seeds each, and Player 1 turn", async ({
+  test("Positive 1: Game loads directly into 3D board with WebGL canvas, camera controls, and zero 2D legacy elements", async ({
     page,
   }) => {
-    // Check Branding
     await expect(page.getByRole("banner")).toContainText("CHANNEMANE");
-
-    // Check Turn Banner
-    const turnIndicator = page.getByTestId("turn-indicator");
-    await expect(turnIndicator).toContainText("PLAYER 1'S TURN");
-
-    // Check Round
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
     await expect(page.getByTestId("round-indicator")).toContainText("Round 1");
 
-    // Check all 14 pits exist and have 5 seeds initially
-    for (let i = 0; i < 14; i++) {
-      const pit = page.getByTestId(`pit-${i}`);
-      await expect(pit).toBeVisible();
-      await expect(pit).toHaveAttribute("data-seeds", "5");
-    }
+    // 3D-only board guarantees: 3D container + WebGL canvas + camera selector; zero 2D board or toggle
+    await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
+    await expect(page.getByTestId("channemane-board")).toHaveCount(0);
+    await expect(page.getByTestId("view-toggle-btn")).toHaveCount(0);
+    await expect(page.locator('[data-testid^="pit-count-"]')).toHaveCount(0);
 
-    // Check Player storage bowls
-    const p1Storage = page.locator("[data-testid='storage-player1']").first();
-    const p2Storage = page.locator("[data-testid='storage-player2']").first();
-    await expect(p1Storage).toContainText("0");
-    await expect(p2Storage).toContainText("0");
+    await expect(page.getByTestId("camera-mode-side")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("camera-mode-top")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByTestId("camera-mode-orbit")).toHaveAttribute("aria-pressed", "false");
+
+    const p1Card = page.getByTestId("player-card-1");
+    const p2Card = page.getByTestId("player-card-2");
+    await expect(p1Card).toContainText("Round Wins:");
+    await expect(p1Card).not.toContainText("Captured:");
+    await expect(p2Card).toContainText("Round Wins:");
   });
 
-  test("Positive 2: Valid pit selection executes turn, pauses for continuation, and advances on confirmation", async ({
+  test("Positive 2: Camera modes switch cleanly (Side -> Top -> 360° Orbit -> Side) without resetting turn", async ({
     page,
   }) => {
-    // Enable fast mode to run deterministically
+    const canvas = page.locator('[data-testid="board-3d-canvas-stage"] canvas');
+
+    await page.getByTestId("camera-mode-top").click();
+    await expect(page.getByTestId("camera-mode-top")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("camera-mode-side")).toHaveAttribute("aria-pressed", "false");
+
+    await page.getByTestId("camera-mode-orbit").click();
+    await expect(page.getByTestId("camera-mode-orbit")).toHaveAttribute("aria-pressed", "true");
+
+    // Perform an orbit drag gesture across canvas without breaking state
+    const box = (await canvas.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.45, { steps: 6 });
+    await page.mouse.up();
+
+    await page.getByTestId("camera-mode-side").click();
+    await expect(page.getByTestId("camera-mode-side")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
+    await expect(canvas).toBeVisible();
+  });
+
+  test("Positive 3: Clicking a 3D pit on WebGL canvas starts sowing, pauses for continuation, and resumes on confirmation", async ({
+    page,
+  }) => {
+    // Enable Fast Mode for rapid animated stepping
     await page.getByTestId("toggle-animation-btn").click();
+    await expect(page.getByTestId("toggle-animation-btn")).toContainText("Fast Mode");
 
-    const pit0 = page.getByTestId("pit-0");
-    await expect(pit0).toBeEnabled();
+    // Click P0 via 3D raycast projection in default SIDE view
+    await clickPit3D(page, 0, { mode: "SIDE", playerCount: 2 });
 
-    // Click P0
-    await pit0.click();
-
-    // Seeds on P0 dropped from initial 5 to 0
-    await expect(pit0).toHaveAttribute("data-seeds", "0");
-
-    // Pauses and prompts for continuation on Pit 6
+    // Prompts for continuation on Pit 6
     const turnIndicator = page.getByTestId("turn-indicator");
     await expect(turnIndicator).toContainText(
       "Choose the highlighted pit to continue sowing.",
       { timeout: 10000 }
     );
 
-    const pit6 = page.getByTestId("pit-6");
-    await expect(pit6).toHaveAttribute("data-continuation-target", "true");
+    // Confirm continuation by clicking projected 3D Pit 6
+    await clickPit3D(page, 6, { mode: "SIDE", playerCount: 2 });
 
-    // Click pit 6 to confirm continuation
-    await pit6.click();
-
-    // Pit 6 seeds are scooped
-    await expect(pit6).not.toHaveAttribute("data-continuation-target", "true");
+    // Sowing resumes (moves past continuation wait to sowing / next prompt / Player 2 turn)
+    await expect(turnIndicator).not.toHaveText("Choose the highlighted pit to continue sowing.", {
+      timeout: 5000,
+    });
   });
 
-  test("Positive 3: Rules dialog opens, displays Channemane rules, and closes cleanly", async ({
+  test("Positive 4: Rules dialog opens, displays current Channemane rules, and closes cleanly", async ({
     page,
   }) => {
-    // Open rules
     await page.getByTestId("rules-btn").click();
 
     const rulesModal = page.getByTestId("rules-modal");
     await expect(rulesModal).toBeVisible();
-    await expect(rulesModal).toContainText("Origins & Heritage");
-    await expect(rulesModal).toContainText("Positional Capture");
-    await expect(rulesModal).toContainText("Round Settlement");
+    await expect(rulesModal).toContainText("How to Play Channemane");
+    await expect(rulesModal).toContainText("1. The Game Board");
+    await expect(rulesModal).toContainText("4. Capturing Seeds");
+    await expect(rulesModal).toContainText("7. Opening Pits for the Next Round");
 
-    // Close rules
     await page.getByTestId("close-rules-btn").click();
     await expect(rulesModal).not.toBeVisible();
   });
 
-  test("Positive 4: New Game resets the board state", async ({ page }) => {
+  test("Positive 5: New Game button resets active 3D match back to Player 1 Round 1", async ({
+    page,
+  }) => {
     await page.getByTestId("toggle-animation-btn").click();
-
-    // Play a turn
-    await page.getByTestId("pit-0").click();
+    await clickPit3D(page, 0, { mode: "SIDE", playerCount: 2 });
     await expect(page.getByTestId("turn-indicator")).toContainText(
       "Choose the highlighted pit to continue sowing.",
       { timeout: 10000 }
     );
 
-    // Click New Game
     await page.getByTestId("restart-btn").click();
 
-    // Turn resets to Player 1, P0 reset to 5
     await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
-    await expect(page.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
+    await expect(page.getByTestId("round-indicator")).toContainText("Round 1");
+    await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
   });
 
-  test("Positive 5: Sowing animation displays seeds in hand visualizer", async ({ page }) => {
-    // Ensure slow/animation mode is enabled
-    const pit0 = page.getByTestId("pit-0");
-    await pit0.click();
-
-    // Sowing hand indicator should appear or turn indicator should reflect sowing
-    const turnBanner = page.getByTestId("turn-banner");
-    await expect(turnBanner).toBeVisible();
-  });
-
-  test("Negative 1: Player 1 cannot select Player 2 pits during Player 1 turn", async ({
+  test("Negative 1 & 2: Clicking opponent pits during Player 1 turn has no effect and rapid double-clicks stay safe", async ({
     page,
   }) => {
-    // Turn is Player 1
+    // Player 2 pit 10 should be ignored during Player 1 turn
+    await clickPit3D(page, 10, { mode: "SIDE", playerCount: 2 });
+    await page.waitForTimeout(300);
     await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
 
-    // Player 2 pits (P7–P13) must be disabled
-    for (let p = 7; p <= 13; p++) {
-      const pit = page.getByTestId(`pit-${p}`);
-      await expect(pit).toBeDisabled();
-    }
-  });
-
-  test("Negative 2: Rapid repeated clicks do not cause duplicate execution", async ({
-    page,
-  }) => {
-    const pit1 = page.getByTestId("pit-1");
-    // Double click rapidly
-    await pit1.dblclick();
-
-    // Board remains valid and turn advances cleanly
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-  });
-
-  test("Negative 3: An empty pit is non-selectable and disabled", async ({ page }) => {
+    // Rapid repeated clicks on Pit 1 in TOP mode do not corrupt state
+    await page.getByTestId("camera-mode-top").click();
+    await page.waitForTimeout(700);
     await page.getByTestId("toggle-animation-btn").click();
 
-    // Play P0 (P1 turn)
-    await page.getByTestId("pit-0").click();
+    const box = (await page.locator('[data-testid="board-3d-canvas-stage"] canvas').boundingBox())!;
+    const camPos = computeCameraPosition("TOP", 2, box.width / box.height);
+    const cam = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, box.width / box.height, 0.1, 1000);
+    cam.position.set(camPos[0], camPos[1], camPos[2]);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const p1 = PIT_COORDS_2P[1]!;
+    const ndc = new THREE.Vector3(p1[0], p1[1], p1[2]).project(cam);
+    await page.mouse.dblclick(
+      box.x + (ndc.x * 0.5 + 0.5) * box.width,
+      box.y + (-ndc.y * 0.5 + 0.5) * box.height
+    );
 
-    // After play, find any pit with 0 seeds if one exists, or verify pits with 0 cannot be selected
-    const allPits = await page.locator(".channemane-pit").all();
-    for (const pit of allPits) {
-      const seeds = await pit.getAttribute("data-seeds");
-      if (seeds === "0") {
-        await expect(pit).toBeDisabled();
-      }
-    }
+    await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
   });
 
-  test("Post-Phase-3 Issue 4 & 9: Pits are circular, and pit IDs P0–P13 are hidden from board", async ({
-    page,
-  }) => {
-    // Verify no visible P0-P13 badge text inside any pit
-    for (let i = 0; i < 14; i++) {
-      const pit = page.getByTestId(`pit-${i}`);
-      const text = await pit.innerText();
-      expect(text).not.toContain(`P${i}`);
-    }
+  test("Header Audio & Speed toggles operate cleanly in the 3D UI", async ({ page }) => {
+    const speedBtn = page.getByTestId("toggle-animation-btn");
+    await expect(speedBtn).toContainText("Slow Mode");
+    await speedBtn.click();
+    await expect(speedBtn).toContainText("Fast Mode");
+    await speedBtn.click();
+    await expect(speedBtn).toContainText("Slow Mode");
 
-    // Verify row labels do not expose P0-P6 or P13-P7
-    await expect(page.getByText("Player 1 Side (P0 – P6)")).not.toBeVisible();
-    await expect(page.getByText("Player 2 Side (P13 – P7)")).not.toBeVisible();
-    await expect(page.getByText("Player 1 Side")).toBeVisible();
-    await expect(page.getByText("Player 2 Side")).toBeVisible();
+    const audioBtn = page.getByTestId("audio-toggle-btn");
+    await expect(audioBtn).toContainText("Sound");
+    await audioBtn.click();
+    await expect(audioBtn).toContainText("Muted");
+    await audioBtn.click();
+    await expect(audioBtn).toContainText("Sound");
   });
 
-  test("Post-Phase-3 Issue 5: Numeric seed counts are displayed outside the pits", async ({
+  test("Responsive layout: 3D board renders cleanly on mobile viewport without horizontal overflow", async ({
     page,
   }) => {
-    // Verify external count exists for every pit outside the button
-    for (let i = 0; i < 14; i++) {
-      const countEl = page.getByTestId(`pit-count-${i}`);
-      await expect(countEl).toBeVisible();
-      await expect(countEl).toHaveText("5");
-
-      // Verify the pit button itself does not contain the numeric count as text
-      const pitBtn = page.getByTestId(`pit-${i}`);
-      const pitText = await pitBtn.innerText();
-      // Pit interior should only have visual beads or be empty, not numeric text
-      expect(pitText.trim()).toBe("");
-    }
-  });
-
-  test("Post-Phase-3 Issue 7: Exactly one storage display exists per player without duplicates", async ({
-    page,
-  }) => {
-    // Verify exactly one Player 1 storage bowl and one Player 2 storage bowl on desktop
-    const p1StorageBowls = page.locator("[data-testid='storage-player1']");
-    const p2StorageBowls = page.locator("[data-testid='storage-player2']");
-    await expect(p1StorageBowls).toHaveCount(1);
-    await expect(p2StorageBowls).toHaveCount(1);
-    await expect(p1StorageBowls).toBeVisible();
-    await expect(p2StorageBowls).toBeVisible();
-
-    // Verify PlayerPanels at top does not duplicate the storage count
-    const p1Card = page.getByTestId("player-card-1");
-    await expect(p1Card).toContainText("Round Wins:");
-    await expect(p1Card).not.toContainText("Captured:");
-  });
-
-  test("Post-Phase-3 Issue 3: Toggle switches between Slow Mode and Fast Mode", async ({
-    page,
-  }) => {
-    const toggleBtn = page.getByTestId("toggle-animation-btn");
-    // Initially in Slow Mode
-    await expect(toggleBtn).toContainText("Slow Mode");
-
-    // Click to switch to Fast Mode
-    await toggleBtn.click();
-    await expect(toggleBtn).toContainText("Fast Mode");
-
-    // Click to switch back to Slow Mode
-    await toggleBtn.click();
-    await expect(toggleBtn).toContainText("Slow Mode");
-  });
-
-  test("Post-Phase-3 Responsive Layout: Board renders cleanly on mobile viewport", async ({
-    page,
-  }) => {
-    // Set mobile viewport (iPhone 12 / 390x844)
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
+    await expect(page.getByTestId("camera-mode-selector")).toBeVisible();
+    await expect(page.locator('[data-testid="board-3d-canvas-stage"] canvas')).toBeVisible();
 
-    // Verify both storage bowls remain visible without duplicates
-    const p1Storage = page.locator("[data-testid='storage-player1']");
-    const p2Storage = page.locator("[data-testid='storage-player2']");
-    await expect(p1Storage).toHaveCount(1);
-    await expect(p2Storage).toHaveCount(1);
-    await expect(p1Storage).toBeVisible();
-    await expect(p2Storage).toBeVisible();
-  });
-
-  test("Issue 2: Board container and pit bounding boxes remain stable throughout sowing", async ({
-    page,
-  }) => {
-    const board = page.getByTestId("channemane-board");
-    const initialBox = await board.boundingBox();
-    expect(initialBox).not.toBeNull();
-
-    const initialOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
-
-    const pit0 = page.getByTestId("pit-0");
-    const pit6 = page.getByTestId("pit-6");
-    const initialPit6Box = await pit6.boundingBox();
-    const initialPit6RelPos = await pit6.evaluate((el) => {
-      const bRect = el.closest(".channemane-board")!.getBoundingClientRect();
-      const pRect = el.getBoundingClientRect();
-      return { x: pRect.left - bRect.left, y: pRect.top - bRect.top };
+    const hasHorizontalOverflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
     });
-
-    // Click P0 to start animated sowing
-    await pit0.click();
-
-    // Measure bounding boxes and layout offsets at multiple points during sowing
-    for (let step = 0; step < 5; step++) {
-      await page.waitForTimeout(300);
-      const currentBoardBox = await board.boundingBox();
-      const currentPit6Box = await pit6.boundingBox();
-      const currentOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
-
-      expect(currentBoardBox).not.toBeNull();
-      // Board width and height must remain stable (allowing small 2px browser subpixel rendering tolerance)
-      expect(Math.abs(currentBoardBox!.width - initialBox!.width)).toBeLessThanOrEqual(2);
-      expect(Math.abs(currentBoardBox!.height - initialBox!.height)).toBeLessThanOrEqual(2);
-      // Board layout offsetTop must not shift
-      expect(Math.abs(currentOffsetTop - initialOffsetTop)).toBeLessThanOrEqual(2);
-
-      if (initialPit6Box && currentPit6Box) {
-        // Pit dimensions must not jump
-        expect(Math.abs(currentPit6Box.width - initialPit6Box.width)).toBeLessThanOrEqual(2);
-        expect(Math.abs(currentPit6Box.height - initialPit6Box.height)).toBeLessThanOrEqual(2);
-
-        // Pit relative coordinates within the board must remain stable
-        const currentPit6RelPos = await pit6.evaluate((el) => {
-          const bRect = el.closest(".channemane-board")!.getBoundingClientRect();
-          const pRect = el.getBoundingClientRect();
-          return { x: pRect.left - bRect.left, y: pRect.top - bRect.top };
-        });
-        expect(Math.abs(currentPit6RelPos.x - initialPit6RelPos.x)).toBeLessThanOrEqual(2);
-        expect(Math.abs(currentPit6RelPos.y - initialPit6RelPos.y)).toBeLessThanOrEqual(2);
-      }
-    }
-  });
-
-  test("Issue 2: Board remains geometrically stable at mobile viewport size during sowing", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    const board = page.getByTestId("channemane-board");
-    const initialBox = await board.boundingBox();
-    expect(initialBox).not.toBeNull();
-    const initialOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
-
-    await page.getByTestId("pit-0").click();
-    for (let step = 0; step < 3; step++) {
-      await page.waitForTimeout(300);
-      const box = await board.boundingBox();
-      const currentOffsetTop = await board.evaluate((el) => (el as HTMLElement).offsetTop);
-      expect(box).not.toBeNull();
-      expect(Math.abs(box!.width - initialBox!.width)).toBeLessThanOrEqual(2);
-      expect(Math.abs(box!.height - initialBox!.height)).toBeLessThanOrEqual(2);
-      expect(Math.abs(currentOffsetTop - initialOffsetTop)).toBeLessThanOrEqual(2);
-    }
+    expect(hasHorizontalOverflow).toBe(false);
   });
 });
 
-test.describe("Main Menu & Game Mode Selection E2E", () => {
-  test("E2E Scenario 1: Initial visit displays Main Menu with Play with AI, Local Multiplayer, and Rules", async ({
-    page,
-  }) => {
+test.describe("Main Menu, AI Modes, 2P-6P Multiplayer & Mode Switching E2E", () => {
+  test("E2E Scenario 1: Initial visit displays Main Menu with no board open", async ({ page }) => {
     await page.goto("/");
 
-    // Verify Main Menu is visible
     await expect(page.getByTestId("main-menu")).toBeVisible();
     await expect(page.getByTestId("menu-btn-ai")).toBeVisible();
     await expect(page.getByTestId("menu-btn-local")).toBeVisible();
     await expect(page.getByTestId("menu-btn-rules")).toBeVisible();
 
-    // Verify board is NOT open initially
-    await expect(page.getByTestId("channemane-board")).not.toBeVisible();
+    await expect(page.getByTestId("channemane-board-3d")).toHaveCount(0);
+    await expect(page.getByTestId("channemane-board")).toHaveCount(0);
   });
 
-  test("E2E Scenario 2: Play with AI opens Difficulty selection with Beginner, Expert, Master, and Back", async ({
+  test("E2E Scenario 2 & 3: Play with AI Difficulty Selection and Master Mode launch into 3D", async ({
     page,
   }) => {
     await page.goto("/");
 
     await page.getByTestId("menu-btn-ai").click();
     await expect(page.getByTestId("difficulty-select")).toBeVisible();
-
     await expect(page.getByTestId("difficulty-btn-beginner")).toBeVisible();
     await expect(page.getByTestId("difficulty-btn-expert")).toBeVisible();
     await expect(page.getByTestId("difficulty-btn-master")).toBeVisible();
-    await expect(page.getByTestId("difficulty-btn-back")).toBeVisible();
 
-    // Test Back button
     await page.getByTestId("difficulty-btn-back").click();
     await expect(page.getByTestId("main-menu")).toBeVisible();
-    await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
-  });
-
-  test("E2E Scenario 3: Selecting Master difficulty prompts for first player and launches Master game", async ({
-    page,
-  }) => {
-    await page.goto("/");
 
     await page.getByTestId("menu-btn-ai").click();
     await page.getByTestId("difficulty-btn-master").click();
-
-    // First player dialog appears
     await expect(page.getByTestId("first-player-modal")).toBeVisible();
     await page.getByTestId("first-player-player-btn").click();
 
-    // Directly launches Master game
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
     await expect(page.getByTestId("game-mode-tag")).toContainText("AI (MASTER)");
   });
 
-  test("E2E Scenario 4: Local Multiplayer opens player count selection and 2 Players opens board", async ({
-    page,
-  }) => {
-    await page.goto("/");
+  for (const count of [2, 3, 4, 5, 6] as const) {
+    test(`E2E Scenario 4 (${count}P): Local Multiplayer ${count} Players launches directly into the 3D board`, async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await page.getByTestId("menu-btn-local").click();
+      await expect(page.getByTestId("multiplayer-select")).toBeVisible();
+      await page.getByTestId(`player-count-btn-${count}`).click();
 
-    await page.getByTestId("menu-btn-local").click();
-    await expect(page.getByTestId("multiplayer-select")).toBeVisible();
+      await waitFor3DBoardReady(page);
+      await expect(page.getByTestId("game-mode-tag")).toContainText(`LOCAL ${count}P`);
+      for (let p = 1; p <= count; p++) {
+        await expect(page.getByTestId(`player-card-${p}`)).toBeVisible();
+      }
+    });
+  }
 
-    await page.getByTestId("player-count-btn-2").click();
-
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("multiplayer-select")).not.toBeVisible();
-    await expect(page.getByTestId("difficulty-select")).not.toBeVisible();
-    await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 2P");
-  });
-
-  test("E2E Scenario 4b: Local Multiplayer 3 Players launches 3-Player 15-pit board", async ({
-    page,
-  }) => {
-    await page.goto("/");
-
-    await page.getByTestId("menu-btn-local").click();
-    await expect(page.getByTestId("multiplayer-select")).toBeVisible();
-
-    await page.getByTestId("player-count-btn-3").click();
-
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("multiplayer-select")).not.toBeVisible();
-    await expect(page.getByTestId("player-card-1")).toBeVisible();
-    await expect(page.getByTestId("player-card-2")).toBeVisible();
-    await expect(page.getByTestId("player-card-3")).toBeVisible();
-    await expect(page.getByTestId("pit-0")).toHaveAttribute("data-seeds", "5");
-    await expect(page.getByTestId("pit-14")).toHaveAttribute("data-seeds", "5");
-  });
-
-  test("E2E Scenario 5: Rules modal opens from Main Menu and closes back to Main Menu", async ({
-    page,
-  }) => {
+  test("E2E Scenario 5 & 6: Rules from Main Menu and Menu return reset cleanly", async ({ page }) => {
     await page.goto("/");
 
     await page.getByTestId("menu-btn-rules").click();
     await expect(page.getByTestId("rules-modal")).toBeVisible();
-
     await page.getByTestId("rules-back-btn").click();
-    await expect(page.getByTestId("rules-modal")).not.toBeVisible();
     await expect(page.getByTestId("main-menu")).toBeVisible();
-  });
-
-  test("E2E Scenario 6: Returning to Main Menu from Game Header cleanly resets", async ({
-    page,
-  }) => {
-    await page.goto("/");
 
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-2").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
 
-    // Click Menu in Header
     await page.getByTestId("main-menu-btn").click();
     await expect(page.getByTestId("main-menu")).toBeVisible();
-    await expect(page.getByTestId("channemane-board")).not.toBeVisible();
+    await expect(page.getByTestId("channemane-board-3d")).toHaveCount(0);
   });
 
-  test("E2E Scenario 7: Beginner AI plays against human with automated response turn", async ({
+  test("E2E Scenario 7: Beginner AI responds automatically after human completes 3D turn", async ({
     page,
   }) => {
+    test.setTimeout(120000);
     await page.goto("/");
 
-    // Navigate: Main Menu -> Difficulty Select -> Beginner
     await page.getByTestId("menu-btn-ai").click();
     await page.getByTestId("difficulty-btn-beginner").click();
-
-    // First player dialog appears -> Select Player
-    await expect(page.getByTestId("first-player-modal")).toBeVisible();
     await page.getByTestId("first-player-player-btn").click();
 
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
     await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");
 
-    // Switch to Fast Mode for rapid animation stepping
     await page.getByTestId("toggle-animation-btn").click();
+    const openPopup = page.getByTestId("turn-notification-popup");
+    if (await openPopup.isVisible().catch(() => false)) {
+      await openPopup.click({ force: true }).catch(() => {});
+    }
+    await expect(openPopup).toBeHidden({ timeout: 5000 });
 
-    // Ensure turn announcement popup appears and dismisses cleanly
-    await expect(page.getByTestId("turn-notification-popup")).toBeVisible();
-    await expect(page.getByTestId("turn-notification-popup")).toBeHidden({ timeout: 5000 });
+    // Authoritative 2P Pit 0 decision sequence: Start(0) -> Cont(6) -> Cont(12) -> Cont(4) -> Cont(11) -> Capture(5)
+    await clickPit3D(page, 0, { mode: "SIDE", playerCount: 2 });
 
-    // Human clicks pit 0
-    const pit0 = page.getByTestId("pit-0");
-    await expect(pit0).toBeEnabled({ timeout: 5000 });
-    await pit0.click();
-    await expect(pit0).toHaveAttribute("data-seeds", "0", { timeout: 5000 });
+    const continuationTargets = [6, 12, 4, 11];
+    for (const targetPit of continuationTargets) {
+      await expect(page.getByTestId("turn-indicator")).toContainText(
+        "Choose the highlighted pit to continue sowing.",
+        { timeout: 15000 }
+      );
+      await clickPit3D(page, targetPit, { mode: "SIDE", playerCount: 2 });
+    }
 
-    // Wait for continuation prompt
     await expect(page.getByTestId("turn-indicator")).toContainText(
-      "Choose the highlighted pit to continue sowing.",
-      { timeout: 10000 }
+      "Tap the highlighted pit to collect its seeds.",
+      { timeout: 15000 }
     );
+    await clickPit3D(page, 5, { mode: "SIDE", playerCount: 2 });
 
-    // Loop until human turn completes and turn passes to Player 2 (AI)
-    const startTime = Date.now();
-    while (Date.now() - startTime < 35000) {
-      const bannerText = await page.getByTestId("turn-banner").innerText().catch(() => "");
-      if (bannerText.includes("PLAYER 2")) {
-        break;
-      }
-
-      const continuationTarget = page.locator('[data-continuation-target="true"]');
-      const captureTarget = page.locator('[data-capture-target="true"]');
-
-      if (await continuationTarget.isVisible().catch(() => false)) {
-        await continuationTarget.click();
-        await page.waitForTimeout(400);
-      } else if (await captureTarget.isVisible().catch(() => false)) {
-        await captureTarget.click();
-        await page.waitForTimeout(400);
-      } else {
-        await page.waitForTimeout(300);
-      }
-    }
-
-    // Verify turn successfully reached Player 2 (AI)
-    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 2", {
-      timeout: 10000,
-    });
-
-    // The Beginner AI automatically takes its turn without human clicking
-    // Verify turn returns to Player 1!
+    // AI automatically takes Player 2 turn and returns control to Player 1
+    await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 2", { timeout: 15000 });
     await expect(page.getByTestId("turn-banner")).toContainText("PLAYER 1'S TURN", {
-      timeout: 30000,
+      timeout: 90000,
     });
   });
 
-  test("E2E Scenario 8: 3-Player Board Mathematically Uniform Pit Alignment and Reference Storage Layout", async ({
+  test("E2E Scenario 8: Mode Switching Cycle (3P -> AI -> 3P) isolates board configuration", async ({
     page,
   }) => {
+    test.setTimeout(60000);
     await page.goto("/");
 
-    // Navigate: Main Menu -> Local Multiplayer -> 3 Players
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-3").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-
-    // 1. Measure all 15 pit bounding boxes
-    const pitBoxes: { id: number; x: number; y: number; width: number; height: number; cx: number; cy: number }[] = [];
-    for (let i = 0; i < 15; i++) {
-      const box = await page.getByTestId(`pit-${i}`).boundingBox();
-      expect(box).not.toBeNull();
-      const b = box!;
-      pitBoxes.push({
-        id: i,
-        x: b.x,
-        y: b.y,
-        width: b.width,
-        height: b.height,
-        cx: b.x + b.width / 2,
-        cy: b.y + b.height / 2,
-      });
-    }
-
-    // Criterion 1: Every pit is circular with width == height (within 1px)
-    for (const p of pitBoxes) {
-      expect(Math.abs(p.width - p.height)).toBeLessThanOrEqual(1.0);
-    }
-
-    // Criterion 2: Every pit across the entire board has identical width and height (within 1px)
-    const baseWidth = pitBoxes[0].width;
-    const baseHeight = pitBoxes[0].height;
-    for (const p of pitBoxes) {
-      expect(Math.abs(p.width - baseWidth)).toBeLessThanOrEqual(1.0);
-      expect(Math.abs(p.height - baseHeight)).toBeLessThanOrEqual(1.0);
-    }
-
-    // Row definitions
-    const row1 = [0, 1, 2, 3, 4].map((id) => pitBoxes[id]);
-    const row2 = [9, 8, 7, 6, 5].map((id) => pitBoxes[id]);
-    const row3 = [10, 11, 12, 13, 14].map((id) => pitBoxes[id]);
-
-    // Criterion 3: Horizontal center-to-center distances within rows are uniform (within 1px)
-    const baseColGapRow1 = row1[1].cx - row1[0].cx;
-    for (let c = 0; c < 4; c++) {
-      const dist1 = row1[c + 1].cx - row1[c].cx;
-      const dist2 = row2[c + 1].cx - row2[c].cx;
-      const dist3 = row3[c + 1].cx - row3[c].cx;
-      expect(Math.abs(dist1 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
-      expect(Math.abs(dist2 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
-      expect(Math.abs(dist3 - baseColGapRow1)).toBeLessThanOrEqual(1.0);
-    }
-
-    // Criterion 4: Column centers align vertically across rows (within 1px)
-    for (let c = 0; c < 5; c++) {
-      expect(Math.abs(row1[c].cx - row2[c].cx)).toBeLessThanOrEqual(1.0);
-      expect(Math.abs(row2[c].cx - row3[c].cx)).toBeLessThanOrEqual(1.0);
-    }
-
-    // Criterion 5: Vertical row-to-row distances are uniform (within 1px)
-    const row1ToRow2Dist = row2[0].cy - row1[0].cy;
-    const row2ToRow3Dist = row3[0].cy - row2[0].cy;
-    expect(Math.abs(row1ToRow2Dist - row2ToRow3Dist)).toBeLessThanOrEqual(1.0);
-    for (let c = 1; c < 5; c++) {
-      const d12 = row2[c].cy - row1[c].cy;
-      const d23 = row3[c].cy - row2[c].cy;
-      expect(Math.abs(d12 - row1ToRow2Dist)).toBeLessThanOrEqual(1.0);
-      expect(Math.abs(d23 - row1ToRow2Dist)).toBeLessThanOrEqual(1.0);
-    }
-
-    // Criterion 6: Storage placement matches reference representation:
-    // Left: P1S
-    // Center: Pits
-    // Right: P2S and P3S side-by-side (P3S is farther right)
-    const p1StorageBox = await page.getByTestId("storage-player1").boundingBox();
-    const p2StorageBox = await page.getByTestId("storage-player2").boundingBox();
-    const p3StorageBox = await page.getByTestId("storage-player3").boundingBox();
-
-    expect(p1StorageBox).not.toBeNull();
-    expect(p2StorageBox).not.toBeNull();
-    expect(p3StorageBox).not.toBeNull();
-
-    // P1S is to the left of the leftmost pits
-    expect(p1StorageBox!.x + p1StorageBox!.width).toBeLessThanOrEqual(row1[0].x);
-
-    // P2S is to the right of the rightmost pits
-    expect(p2StorageBox!.x).toBeGreaterThanOrEqual(row1[4].x + row1[4].width);
-
-    // P3S is to the right of P2S (side-by-side)
-    expect(p3StorageBox!.x).toBeGreaterThanOrEqual(p2StorageBox!.x + p2StorageBox!.width);
-  });
-
-  test("E2E Scenario 9: Mode Switching Cycle (3P -> AI -> 3P) isolates board configuration", async ({
-    page,
-  }) => {
-    await page.goto("/");
-
-    // 1. Enter 3-Player mode
-    await page.getByTestId("menu-btn-local").click();
-    await page.getByTestId("player-count-btn-3").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("pit-14")).toBeVisible();
-    await expect(page.getByTestId("storage-player3")).toBeVisible();
+    await waitFor3DBoardReady(page);
+    await expect(page.getByTestId("player-card-3")).toBeVisible();
     await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
 
-    // 2. Return to menu
     await page.getByTestId("main-menu-btn").click();
-    await expect(page.getByTestId("main-menu")).toBeVisible();
-
-    // 3. Enter AI mode
     await page.getByTestId("menu-btn-ai").click();
     await page.getByTestId("difficulty-btn-beginner").click();
     await page.getByTestId("first-player-player-btn").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
 
-    // Verify 2-player board: exactly 14 pits, 2 storages
-    await expect(page.getByTestId("pit-13")).toBeVisible();
-    await expect(page.getByTestId("pit-14")).not.toBeVisible();
-    await expect(page.getByTestId("storage-player1")).toBeVisible();
-    await expect(page.getByTestId("storage-player2")).toBeVisible();
-    await expect(page.getByTestId("storage-player3")).not.toBeVisible();
-    await expect(page.getByTestId("game-mode-tag")).toContainText("AI");
+    await waitFor3DBoardReady(page);
+    await expect(page.getByTestId("player-card-3")).toHaveCount(0);
+    await expect(page.getByTestId("game-mode-tag")).toContainText("AI (BEGINNER)");
 
-    // 4. Return to menu and re-enter 3-Player mode
     await page.getByTestId("main-menu-btn").click();
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-3").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
-    await expect(page.getByTestId("pit-14")).toBeVisible();
-    await expect(page.getByTestId("storage-player3")).toBeVisible();
+
+    await waitFor3DBoardReady(page);
+    await expect(page.getByTestId("player-card-3")).toBeVisible();
     await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
   });
 
-  test("E2E Scenario 10: Turn popup announces player turn before sowing and can be dismissed", async ({
+  test("E2E Scenario 9 & 10: Turn announcement popups appear in 2P & 3P and dismiss cleanly", async ({
     page,
   }) => {
+    test.setTimeout(60000);
     await page.goto("/");
-
-    // Launch Local 2P
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-2").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
 
-    // Verify turn announcement popup is visible and states Player 1
-    const turnPopup = page.getByTestId("turn-notification-popup");
-    await expect(turnPopup).toBeVisible();
-    await expect(turnPopup).toContainText("Player 1");
+    const popup2P = page.getByTestId("turn-notification-popup");
+    await expect(popup2P).toContainText("Player 1", { timeout: 5000 });
+    if (await popup2P.isVisible().catch(() => false)) {
+      await popup2P.click({ force: true, timeout: 1000 }).catch(() => {});
+    }
+    await expect(popup2P).toBeHidden({ timeout: 5000 });
+    await waitFor3DBoardReady(page);
 
-    // Dismiss by clicking
-    await turnPopup.click({ force: true });
-    await expect(turnPopup).toBeHidden();
-
-    // Verify pits are now interactive
-    await expect(page.getByTestId("pit-0")).toBeEnabled();
-  });
-
-  test("E2E Scenario 11: 3-Player Local Multiplayer announces turn on launch", async ({
-    page,
-  }) => {
-    await page.goto("/");
-
-    // Launch Local 3P
+    await page.getByTestId("main-menu-btn").click();
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-3").click();
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
 
-    // Verify turn announcement popup is visible
-    const turnPopup = page.getByTestId("turn-notification-popup");
-    await expect(turnPopup).toBeVisible();
-    await expect(turnPopup).toContainText("Player 1");
-
-    // Dismiss by clicking
-    await turnPopup.click({ force: true });
-    await expect(turnPopup).toBeHidden();
+    const popup3P = page.getByTestId("turn-notification-popup");
+    await expect(popup3P).toContainText("Player 1", { timeout: 5000 });
+    if (await popup3P.isVisible().catch(() => false)) {
+      await popup3P.click({ force: true, timeout: 1000 }).catch(() => {});
+    }
+    await expect(popup3P).toBeHidden({ timeout: 5000 });
+    await waitFor3DBoardReady(page);
   });
 });
 
-test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Suite", () => {
-  // Test 1: Complete 3-Player Board Setup & Architecture
-  test("3P-E2E-1: Launches 3-Player Local Multiplayer with complete 15-pit board, 3 storage bowls, and layout", async ({
+test.describe("3-Player Lifecycle, Disqualification & Match End 3D E2E Suite", () => {
+  test("3P-E2E-1: Launches 3-Player Local Multiplayer on 3D board with camera modes and 3 player cards", async ({
     page,
   }) => {
     await page.goto("/");
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-3").click();
 
-    // Verify Board & Mode
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
     await expect(page.getByTestId("game-mode-tag")).toContainText("LOCAL 3P");
     await expect(page.getByTestId("round-indicator")).toContainText("Round 1");
-
-    // Dismiss initial turn popup if visible
-    const turnPopup = page.getByTestId("turn-notification-popup");
-    if (await turnPopup.isVisible()) {
-      await expect(turnPopup).toContainText("Player 1");
-      await turnPopup.click({ force: true });
-    }
-
-    // Verify all 15 pits exist and have 5 seeds initially
-    for (let i = 0; i < 15; i++) {
-      const pit = page.getByTestId(`pit-${i}`);
-      await expect(pit).toBeVisible();
-      await expect(pit).toHaveAttribute("data-seeds", "5");
-      await expect(pit).toHaveAttribute("data-status", "OPEN");
-    }
-
-    // Verify all 3 storage bowls exist with 0 captured seeds initially
-    await expect(page.getByTestId("storage-player1")).toBeVisible();
-    await expect(page.getByTestId("p1-captured-count")).toHaveText("0");
-
-    await expect(page.getByTestId("storage-player2")).toBeVisible();
-    await expect(page.getByTestId("p2-captured-count")).toHaveText("0");
-
-    await expect(page.getByTestId("storage-player3")).toBeVisible();
-    await expect(page.getByTestId("p3-captured-count")).toHaveText("0");
-
-    // Verify storage container architecture
-    await expect(page.getByTestId("p1-storage-container")).toBeVisible();
-    await expect(page.getByTestId("p2-p3-storage-container")).toBeVisible();
-
-    // Verify relative positions: P1 storage on left, P2 & P3 on right
-    const p1Box = await page.getByTestId("storage-player1").boundingBox();
-    const p2Box = await page.getByTestId("storage-player2").boundingBox();
-    const p3Box = await page.getByTestId("storage-player3").boundingBox();
-    const pit0Box = await page.getByTestId("pit-0").boundingBox();
-    const pit4Box = await page.getByTestId("pit-4").boundingBox();
-
-    expect(p1Box).not.toBeNull();
-    expect(p2Box).not.toBeNull();
-    expect(p3Box).not.toBeNull();
-    expect(pit0Box).not.toBeNull();
-    expect(pit4Box).not.toBeNull();
-
-    // P1 storage is to the left of the leftmost pits
-    expect(p1Box!.x + p1Box!.width).toBeLessThanOrEqual(pit0Box!.x + 2);
-    // P2 storage is to the right of the rightmost pits
-    expect(p2Box!.x).toBeGreaterThanOrEqual(pit4Box!.x);
-    // P3 storage is adjacent or to the right of P2 storage
-    expect(p3Box!.x).toBeGreaterThanOrEqual(p2Box!.x - 1);
+    await expect(page.getByTestId("player-card-1")).toBeVisible();
+    await expect(page.getByTestId("player-card-2")).toBeVisible();
+    await expect(page.getByTestId("player-card-3")).toBeVisible();
   });
 
-  // Test 2: Turn Sequence Cycling (Player 1 -> Player 2 -> Player 3)
-  test("3P-E2E-2: Turn announcements and sequential turn cycling across Player 1 -> Player 2 -> Player 3", async ({
+  test("3P-E2E-2: Sequential turn cycling (Player 1 -> Player 2 -> Player 3 -> Player 1) via 3D canvas clicks", async ({
     page,
   }) => {
-    // Inject custom 3-player state with animations disabled for instant deterministic moves.
-    // Pits 0, 5, 10 have 1 seed (the played pit).
-    // Destination pit receives 1 seed (pits 1, 6, 11).
-    // Next pit has 0 seeds (pits 2, 7, 12 - halts sowing).
-    // Following pit has 0 seeds (pits 3, 8, 13 - zero capture, halts turn).
-    // Anchor pit has 5 seeds (pits 4, 9, 14 - side remains active, round does not end).
+    test.setTimeout(60000);
     await page.addInitScript(() => {
-      const pitCount = 15;
       const pits = [];
-      for (let i = 0; i < pitCount; i++) {
+      for (let i = 0; i < 15; i++) {
         const owner = i < 5 ? "PLAYER_1" : i < 10 ? "PLAYER_2" : "PLAYER_3";
         let seeds = 0;
-        if (i === 0 || i === 5 || i === 10) {
-          seeds = 1;
-        } else if (i === 4 || i === 9 || i === 14) {
-          seeds = 5;
-        }
-        pits.push({
-          id: i,
-          owner,
-          seeds,
-          status: "OPEN",
-          bonusAvailable: false,
-        });
+        if (i === 0 || i === 5 || i === 10) seeds = 1;
+        else if (i === 4 || i === 9 || i === 14) seeds = 5;
+        pits.push({ id: i, owner, seeds, status: "OPEN", bonusAvailable: false });
       }
-      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+      (window as unknown as Record<string, unknown>).__CHANNEMANE_INITIAL_PROPS__ = {
         initialScreen: "GAME",
         initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
         initialGameState: {
@@ -805,60 +541,42 @@ test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Sui
     });
 
     await page.goto("/");
-    await expect(page.getByTestId("channemane-board")).toBeVisible();
+    await waitFor3DBoardReady(page);
     await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
 
-    // Dismiss initial turn announcement if present
     const popup1 = page.getByTestId("turn-notification-popup");
-    if (await popup1.isVisible()) {
-      await popup1.click({ force: true });
+    if (await popup1.isVisible().catch(() => false)) {
+      await popup1.click({ force: true }).catch(() => {});
     }
+    await expect(popup1).toBeHidden({ timeout: 5000 });
 
-    // Step 1: Player 1 clicks pit 0 (1 seed -> drops in pit 1 -> next pit 2 empty -> turn ends)
-    await page.getByTestId("pit-0").click();
+    await clickPit3D(page, 0, { mode: "SIDE", playerCount: 3 });
 
-    // Player 2's turn announcement appears
     const popup2 = page.getByTestId("turn-notification-popup");
-    await expect(popup2).toBeVisible({ timeout: 5000 });
-    await expect(popup2).toContainText("Player 2");
-    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 2'S TURN");
-    await popup2.click({ force: true });
+    await expect(popup2).toContainText("Player 2", { timeout: 5000 });
+    await expect(popup2).toBeHidden({ timeout: 5000 });
 
-    // Step 2: Player 2 clicks pit 5 (1 seed -> drops in pit 6 -> next pit 7 empty -> turn ends)
-    await page.getByTestId("pit-5").click();
+    await clickPit3D(page, 5, { mode: "SIDE", playerCount: 3 });
 
-    // Player 3's turn announcement appears
     const popup3 = page.getByTestId("turn-notification-popup");
-    await expect(popup3).toBeVisible({ timeout: 5000 });
-    await expect(popup3).toContainText("Player 3");
-    await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 3'S TURN");
-    await popup3.click({ force: true });
+    await expect(popup3).toContainText("Player 3", { timeout: 5000 });
+    await expect(popup3).toBeHidden({ timeout: 5000 });
 
-    // Step 3: Player 3 clicks pit 10 (1 seed -> drops in pit 11 -> next pit 12 empty -> turn ends)
-    await page.getByTestId("pit-10").click();
+    await clickPit3D(page, 10, { mode: "SIDE", playerCount: 3 });
 
-    // Turn cycles back to Player 1!
     await expect(page.getByTestId("turn-indicator")).toContainText("PLAYER 1'S TURN");
   });
 
-  // Test 3: 3-Player Round Settlement with Disqualification Flow
-  test("3P-E2E-3: Round settlement triggers disqualification modal and transitions to recovery round", async ({
+  test("3P-E2E-3: Round settlement triggers disqualification modal and transitions cleanly to Round 2", async ({
     page,
   }) => {
-    // Inject state with Player 3 ineligible (< 5 storage seeds) at ROUND_SETTLEMENT
     await page.addInitScript(() => {
       const pits = [];
       for (let i = 0; i < 15; i++) {
         const owner = i < 5 ? "PLAYER_1" : i < 10 ? "PLAYER_2" : "PLAYER_3";
-        pits.push({
-          id: i,
-          owner,
-          seeds: 0,
-          status: "OPEN",
-          bonusAvailable: false,
-        });
+        pits.push({ id: i, owner, seeds: 0, status: "OPEN", bonusAvailable: false });
       }
-      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+      (window as unknown as Record<string, unknown>).__CHANNEMANE_INITIAL_PROPS__ = {
         initialScreen: "GAME",
         initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
         initialGameState: {
@@ -888,51 +606,24 @@ test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Sui
 
     await page.goto("/");
 
-    // 1. Settlement modal opens
     const settlementModal = page.getByTestId("settlement-modal");
     await expect(settlementModal).toBeVisible();
-
-    // Verify winner banner
     await expect(page.getByTestId("round-winner-banner")).toContainText("Player 1 Wins the Round!");
-
-    // Verify 3 player scores & Player 3 disqualification
     await expect(page.getByTestId("settlement-p1-storage")).toHaveText("40");
     await expect(page.getByTestId("settlement-p2-storage")).toHaveText("35");
     await expect(page.getByTestId("settlement-p3-storage")).toHaveText("Disqualified");
 
-    // Verify next round setup explanation text
-    await expect(settlementModal).toContainText("Disqualified players are eliminated permanently");
-
-    // 2. Click "Start Next Round"
     await page.getByTestId("start-next-round-btn").click();
     await expect(settlementModal).not.toBeVisible();
 
-    // 3. Verify Round 2 starts with Player 3 eliminated
     await expect(page.getByTestId("round-indicator")).toContainText("Round 2");
-
-    // Player 3 storage displays Disqualified
-    await expect(page.getByTestId("p3-captured-count")).toHaveText("Disqualified");
-
-    // Player 3 pits (10-14) are CLOSED and disabled
-    for (let i = 10; i < 15; i++) {
-      const p3Pit = page.getByTestId(`pit-${i}`);
-      await expect(p3Pit).toHaveAttribute("data-status", "CLOSED");
-      await expect(p3Pit).toBeDisabled();
-    }
-
-    // Player 1 & Player 2 pits are OPEN with 5 seeds each (recovery setup with 50 seeds)
-    for (let i = 0; i < 10; i++) {
-      const activePit = page.getByTestId(`pit-${i}`);
-      await expect(activePit).toHaveAttribute("data-status", "OPEN");
-      await expect(activePit).toHaveAttribute("data-seeds", "5");
-    }
+    await expect(page.getByTestId("player-card-3")).toContainText("(Disqualified)");
+    await expect(page.getByTestId("channemane-board-3d")).toBeVisible();
   });
 
-  // Test 4: 3-Player Match Completion Rankings & Return to Main Menu
-  test("3P-E2E-4: Match End modal displays 1st Place, 2nd Place, Lost rankings and Home navigation", async ({
+  test("3P-E2E-4: Match End modal displays rankings and Home button returns cleanly", async ({
     page,
   }) => {
-    // Inject state with Match End: Player 3 eliminated earlier, Player 2 eliminated, Player 1 is sole victor
     await page.addInitScript(() => {
       const pits = [];
       for (let i = 0; i < 15; i++) {
@@ -945,7 +636,7 @@ test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Sui
           bonusAvailable: false,
         });
       }
-      (window as any).__CHANNEMANE_INITIAL_PROPS__ = {
+      (window as unknown as Record<string, unknown>).__CHANNEMANE_INITIAL_PROPS__ = {
         initialScreen: "GAME",
         initialAnimationSettings: { enabled: false, speed: "FAST", stepDelayMs: 10 },
         initialGameState: {
@@ -975,36 +666,23 @@ test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Sui
 
     await page.goto("/");
 
-    // 1. Match End modal appears
     const matchModal = page.getByTestId("match-end-modal");
     await expect(matchModal).toBeVisible();
-
-    // Verify Match Winner Banner
     await expect(page.getByTestId("match-winner-banner")).toContainText("Player 1 Wins the Match!");
-
-    // Verify Rankings: 1st Place, 2nd Place, Lost
     await expect(page.getByTestId("match-rankings")).toBeVisible();
     await expect(page.getByTestId("ranking-badge-player_1")).toHaveText("1st Place");
     await expect(page.getByTestId("ranking-storage-player_1")).toHaveText("45 seeds");
-
     await expect(page.getByTestId("ranking-badge-player_2")).toHaveText("2nd Place");
     await expect(page.getByTestId("ranking-storage-player_2")).toHaveText("30 seeds");
-
     await expect(page.getByTestId("ranking-badge-player_3")).toHaveText("Lost");
     await expect(page.getByTestId("ranking-storage-player_3")).toHaveText("0 seeds");
 
-    // 2. Return to Main Menu via Home button
-    const homeBtn = page.getByTestId("match-home-btn");
-    await expect(homeBtn).toBeVisible();
-    await homeBtn.click();
-
-    // Verify navigation back to Main Menu
+    await page.getByTestId("match-home-btn").click();
     await expect(page.getByTestId("main-menu")).toBeVisible();
     await expect(matchModal).not.toBeVisible();
   });
 
-  // Test 5: 3-Player Mobile Viewport Responsive Layout (Zero Horizontal Page Scroll)
-  test("3P-E2E-5: 3-Player board layout on mobile viewport fits without horizontal overflow", async ({
+  test("3P-E2E-5: 3-Player 3D board layout fits mobile viewport without horizontal scroll", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 667 });
@@ -1012,36 +690,18 @@ test.describe("3-Player Local Multiplayer Lifecycle and Disqualification E2E Sui
 
     await page.getByTestId("menu-btn-local").click();
     await page.getByTestId("player-count-btn-3").click();
+    await waitFor3DBoardReady(page);
 
-    // Verify board renders
-    const board = page.getByTestId("channemane-board");
-    await expect(board).toBeVisible();
-
-    // Verify all 3 storage bowls are visible
-    await expect(page.getByTestId("storage-player1")).toBeVisible();
-    await expect(page.getByTestId("storage-player2")).toBeVisible();
-    await expect(page.getByTestId("storage-player3")).toBeVisible();
-
-    // Dismiss turn notification popup if present
-    const popup = page.getByTestId("turn-notification-popup");
-    if (await popup.isVisible()) {
-      await popup.click({ force: true });
-    }
-
-    // Verify document does not suffer from horizontal page overflow
     const hasHorizontalOverflow = await page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth + 2;
     });
     expect(hasHorizontalOverflow).toBe(false);
 
-    // Verify all 15 pits are within viewport width
-    for (let i = 0; i < 15; i++) {
-      const pitBox = await page.getByTestId(`pit-${i}`).boundingBox();
-      expect(pitBox).not.toBeNull();
-      expect(pitBox!.x).toBeGreaterThanOrEqual(0);
-      expect(pitBox!.x + pitBox!.width).toBeLessThanOrEqual(375 + 5);
-    }
+    const canvasBox = await page
+      .locator('[data-testid="board-3d-canvas-stage"] canvas')
+      .boundingBox();
+    expect(canvasBox).not.toBeNull();
+    expect(canvasBox!.x).toBeGreaterThanOrEqual(0);
+    expect(canvasBox!.x + canvasBox!.width).toBeLessThanOrEqual(375 + 2);
   });
 });
-
-

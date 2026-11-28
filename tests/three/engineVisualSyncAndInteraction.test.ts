@@ -5,7 +5,7 @@
  * - Continuous sowing, closed pit skipping, and capture event mapping.
  * - Bonus availability and claiming visual synchronization.
  * - Scene reconciliation upon animation cancellation.
- * - 2D and 3D view toggle preserves state without resetting match.
+ * - Deterministic 3D visual state synchronization and camera mode invariance.
  */
 
 import { describe, it, expect } from "vitest";
@@ -148,23 +148,22 @@ describe("Engine-to-Visual Synchronisation & Interaction Suite", () => {
     coordinator.dispose();
   });
 
-  it("switching between 2D and 3D views preserves complete game state and seed counts", () => {
+  it("maps authoritative engine mutations deterministically into 3D visual state", () => {
     const state1 = createInitialGame("PLAYER_1", "local");
     state1.pits[0]!.seeds = 0;
     state1.pits[1]!.seeds = 6;
     state1.players.player1.storage = 8;
     state1.players.player2.storage = 2;
 
-    const cloneFor2D = cloneGameState(state1);
-    const cloneFor3D = cloneGameState(state1);
+    const visualA = mapEngineToVisualState({ gameState: cloneGameState(state1) });
+    const visualB = mapEngineToVisualState({ gameState: cloneGameState(state1) });
 
-    const visual2D = mapEngineToVisualState({ gameState: cloneFor2D });
-    const visual3D = mapEngineToVisualState({ gameState: cloneFor3D });
-
-    expect(visual2D.totalVisibleSeeds).toBe(visual3D.totalVisibleSeeds);
-    expect(visual2D.storage.player1.seeds).toBe(visual3D.storage.player1.seeds);
-    expect(visual2D.storage.player2.seeds).toBe(visual3D.storage.player2.seeds);
-    expect(visual2D.currentPlayer).toBe(visual3D.currentPlayer);
+    expect(visualA.totalVisibleSeeds).toBe(visualB.totalVisibleSeeds);
+    expect(visualA.storage.player1.seeds).toBe(8);
+    expect(visualA.storage.player2.seeds).toBe(2);
+    expect(visualA.pits[0]?.seeds).toBe(0);
+    expect(visualA.pits[1]?.seeds).toBe(6);
+    expect(visualA.currentPlayer).toBe(visualB.currentPlayer);
   });
 
   it("maps continuation targets, capture targets, closed pits, and settlement waves accurately across 2P-6P", () => {

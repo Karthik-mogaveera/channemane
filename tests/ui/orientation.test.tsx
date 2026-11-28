@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("Mobile Landscape-Only Orientation Enforcement", () => {
   const originalMatchMedia = window.matchMedia;
 
@@ -79,7 +84,7 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
     expect(
       screen.queryByTestId("orientation-prompt-overlay")
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 
   it("Test 3: Does not block desktop gameplay even when window is narrow/tall without touch", () => {
@@ -91,7 +96,7 @@ describe("Mobile Landscape-Only Orientation Enforcement", () => {
     expect(
       screen.queryByTestId("orientation-prompt-overlay")
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 
   it("Test 4: Preserves complete game state across simulated orientation changes", () => {

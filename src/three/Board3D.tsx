@@ -323,8 +323,8 @@ export const Board3D: React.FC<Board3DProps> = ({
         </h3>
         <p className="webgl-fallback-desc">
           {contextLost
-            ? "The WebGL graphics context was interrupted. Switch to 2D View or reload to continue seamlessly."
-            : "Your device or browser does not currently support WebGL rendering. Please switch to the 2D board view for a fully animated experience."}
+            ? "The WebGL graphics context was interrupted. Reload the page or re-enable hardware acceleration to resume the 3D board."
+            : "Your device or browser does not currently support WebGL rendering. Please enable WebGL or use a WebGL-capable browser to play the 3D Channemane board."}
         </p>
       </div>
     );

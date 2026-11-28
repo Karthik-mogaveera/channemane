@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
-import { GameBoard } from "../../src/ui/components/GameBoard";
+import { Board3DTestDouble } from "./helpers/board3dTestDouble";
 import { createInitialGame } from "../../src/engine/board";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble: Double } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Double };
+});
 
 describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
   beforeEach(() => {
@@ -92,21 +97,18 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
 
     // Pickup
     expect(pit0).toHaveAttribute("data-seeds", "0");
-    expect(screen.getByTestId("pit-count-0")).toHaveTextContent("0");
 
     // Step 1: drop in P1
     act(() => {
       vi.advanceTimersByTime(450);
     });
     expect(screen.getByTestId("pit-1")).toHaveAttribute("data-seeds", "6");
-    expect(screen.getByTestId("pit-count-1")).toHaveTextContent("6");
 
     // Step 2: drop in P2
     act(() => {
       vi.advanceTimersByTime(450);
     });
     expect(screen.getByTestId("pit-2")).toHaveAttribute("data-seeds", "6");
-    expect(screen.getByTestId("pit-count-2")).toHaveTextContent("6");
 
     // Complete drops for batch 1 (reaches WAITING_FOR_CONTINUATION on pit 6)
     act(() => {
@@ -156,11 +158,13 @@ describe("ISSUE 2: Board Geometric Stability During Sowing", () => {
     const handleClaimBonus = vi.fn();
 
     render(
-      <GameBoard
+      <Board3DTestDouble
         gameState={game}
         selectablePits={[0]}
         activeDropPit={null}
         isAnimating={false}
+        claimableBonuses={[3]}
+        interactionState="WAITING_FOR_START"
         onSelectPit={handleSelectPit}
         onClaimBonus={handleClaimBonus}
       />

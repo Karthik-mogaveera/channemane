@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame, verifySeedConservation } from "../../src/engine/board";
 import { executeRoundSettlement } from "../../src/engine/settlement";
 import { ChannemaneGame } from "../../src/engine/simulation";

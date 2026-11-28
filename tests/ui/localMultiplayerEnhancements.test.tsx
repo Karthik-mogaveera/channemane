@@ -9,6 +9,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame } from "../../src/engine/board";
 import { executeRoundSettlement } from "../../src/engine/settlement";
 import { checkAndHandleMatchEnd } from "../../src/engine/matchEnd";
@@ -269,7 +274,7 @@ describe("Local Multiplayer Enhancements & Disqualification Suite", () => {
     });
 
     // The game must be a fresh 2-player board (14 pits, no disqualified players)
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("three-player-pits-grid")).not.toBeInTheDocument();
     expect(screen.getByTestId("pit-0")).toBeInTheDocument();
     expect(screen.getByTestId("pit-13")).toBeInTheDocument();

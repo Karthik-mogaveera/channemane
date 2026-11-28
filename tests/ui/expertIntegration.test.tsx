@@ -13,6 +13,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame, verifySeedConservation } from "../../src/engine/board";
 
 describe("Expert AI UI & Turn Orchestration Integration", () => {
@@ -64,7 +69,7 @@ describe("Expert AI UI & Turn Orchestration Integration", () => {
     });
 
     // Board rendered
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
 
     // Turn notification appears: 'Your turn'
     expect(screen.getByTestId("turn-notification-popup")).toHaveTextContent("Your turn");
@@ -114,7 +119,7 @@ describe("Expert AI UI & Turn Orchestration Integration", () => {
     });
 
     // Sowing occurred or turn transitioned cleanly
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
   });
 
   it("Automatically claims AI-owned bonus during Expert game, but never human bonus", async () => {
@@ -177,7 +182,7 @@ describe("Expert AI UI & Turn Orchestration Integration", () => {
     });
 
     // Game is mounted with Master AI
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
   });
 

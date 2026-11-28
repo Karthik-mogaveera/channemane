@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("App Integration with Channemane Engine", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -23,19 +28,15 @@ describe("App Integration with Channemane Engine", () => {
     // Turn banner
     expect(screen.getByTestId("turn-indicator")).toHaveTextContent("PLAYER 1'S TURN");
 
-    // Board and 14 pits with initial 5 seeds and external counts
+    // Board and 14 pits with initial 5 seeds (no external pit count badges in 3D view)
     for (let i = 0; i < 14; i++) {
       const pit = screen.getByTestId(`pit-${i}`);
       expect(pit).toBeInTheDocument();
       expect(pit).toHaveAttribute("data-seeds", "5");
 
-      // Verify pit IDs P0-P13 are hidden from pit face (Issue 9)
+      // Verify pit IDs P0-P13 are hidden
       expect(pit.textContent).not.toMatch(new RegExp(`^P${i}$`));
-
-      // Verify external count element exists outside pit button (Issue 5)
-      const countEl = screen.getByTestId(`pit-count-${i}`);
-      expect(countEl).toBeInTheDocument();
-      expect(countEl).toHaveTextContent("5");
+      expect(screen.queryByTestId(`pit-count-${i}`)).not.toBeInTheDocument();
     }
 
     // Single storage display per player (Issue 7)
@@ -108,7 +109,6 @@ describe("App Integration with Channemane Engine", () => {
     // Pit 1 seeds incremented in real-time from 5 to 6
     const pit1 = screen.getByTestId("pit-1");
     expect(pit1.getAttribute("data-seeds")).toBe("6");
-    expect(screen.getByTestId("pit-count-1")).toHaveTextContent("6");
 
     // Complete all animation steps for this batch
     act(() => {

@@ -16,6 +16,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import App from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("Local Multiplayer Player Count Selection", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -66,7 +71,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     expect(btn6).toHaveTextContent("Play Now");
 
     // Board is not mounted yet
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
   });
 
   it("Requirement 3 & 4: Clicking Back returns to the Main Menu, and re-entering works cleanly", () => {
@@ -86,7 +91,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     // Main Menu is back
     expect(screen.getByTestId("main-menu")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("channemane-board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("channemane-board-3d")).not.toBeInTheDocument();
 
     // Re-enter Local Multiplayer
     act(() => {
@@ -107,7 +112,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     });
 
     // Directly on game board with LOCAL 2P mode
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 2P/i);
 
@@ -138,7 +143,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     });
 
     // Directly on game board with 3-Player Board
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
 
     // Verify 3 player cards and 15 pits
@@ -161,7 +166,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     });
 
     // Directly on game board with 4-Player Board
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 4P/i);
 
@@ -186,7 +191,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     });
 
     // Directly on game board with 5-Player Board
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 5P/i);
 
@@ -212,7 +217,7 @@ describe("Local Multiplayer Player Count Selection", () => {
     });
 
     // Directly on game board with 6-Player Board
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.queryByTestId("multiplayer-select")).not.toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 6P/i);
 

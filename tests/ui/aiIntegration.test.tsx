@@ -6,6 +6,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
+
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
 import { createInitialGame } from "../../src/engine/board";
 
 describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)", () => {
@@ -225,7 +230,7 @@ describe("Beginner AI UI & Turn Orchestration Integration (Sections 12.D & 12.E)
     // AI storage should now have 4 seeds from pit 7
     expect(screen.getByTestId("p2-captured-count")).toHaveTextContent("4");
     // Human pit 1 MUST STILL have 4 seeds with bonusAvailable intact (not auto-claimed!)
-    expect(screen.getByTestId("pit-count-1")).toHaveTextContent("4");
+    expect(screen.getByTestId("pit-1")).toHaveAttribute("data-seeds", "4");
 
     // Advance time for AI to play remaining move and complete turn
     await act(async () => {

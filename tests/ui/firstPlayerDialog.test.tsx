@@ -16,6 +16,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { App } from "../../src/App";
 
+vi.mock("../../src/three/Board3D", async () => {
+  const { Board3DTestDouble } = await import("./helpers/board3dTestDouble");
+  return { Board3D: Board3DTestDouble };
+});
+
 describe("Who will Play first Dialog (Feature 2)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +73,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     fireEvent.click(screen.getByTestId("first-player-player-btn"));
 
     // Board opens
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(BEGINNER\)/i);
     // Player 1 turn is active
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 1's Turn/i);
@@ -82,7 +87,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     fireEvent.click(screen.getByTestId("first-player-ai-btn"));
 
     // Board opens
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(BEGINNER\)/i);
     // Player 2 (AI) turn is active
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 2's Turn/i);
@@ -96,7 +101,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     fireEvent.click(screen.getByTestId("first-player-player-btn"));
 
     // Board is mounted with Expert AI
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(EXPERT\)/i);
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 1's Turn/i);
   });
@@ -109,7 +114,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
     fireEvent.click(screen.getByTestId("first-player-ai-btn"));
 
     // Board is mounted with Master AI and AI as opening player
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/AI \(MASTER\)/i);
     expect(screen.getByTestId("turn-banner")).toHaveTextContent(/Player 2's Turn/i);
   });
@@ -122,7 +127,7 @@ describe("Who will Play first Dialog (Feature 2)", () => {
 
     // Directly opens board, never opens first-player dialog
     expect(screen.queryByTestId("first-player-modal")).not.toBeInTheDocument();
-    expect(screen.getByTestId("channemane-board")).toBeInTheDocument();
+    expect(screen.getByTestId("channemane-board-3d")).toBeInTheDocument();
     expect(screen.getByTestId("game-mode-tag")).toHaveTextContent(/LOCAL 2P/i);
   });
 
